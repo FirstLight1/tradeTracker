@@ -1,0 +1,10 @@
+p{
+    display: inline;
+    margin: 20px;
+}
+
+.auction-tab{
+    border:5px solid black;
+    border-radius: 15px;
+    padding: 15px;
+}
