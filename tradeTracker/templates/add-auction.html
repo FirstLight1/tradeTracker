@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form action="/add" method="post">
+        <label for="cardName"></label>
+        <input type="text" name="cardName" required>
+        <label for="condition"></label>
+        <select name="condition">
+            <option value=""></option>
+            <option value="mint">Mint</option>
+            <option value="nearMint">Near Mint</option>
+            <option value="excellent">Excellent</option>
+            <option value="good">Good</option>
+            <option value="lightPlayed">Light Played</option>
+            <option value="played">Played</option>
+            <option value="poor">Poor</option>
+        </select>
+        <label for="buyPrice"></label>
+        <input type="number" name="buyPrice">
+        <label for="marketValue"></label>
+        <input type="number" name="marketValue">
+        <label for="sellPrice"></label>
+        <input type="number" name="sellPrice">
+        <button type="submit" value="submit">submit</button>
+    </form>
+</body>
+</html>

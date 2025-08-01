@@ -1,6 +1,8 @@
 import os
 from flask import Flask
 
+from . import actions
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
@@ -21,8 +23,9 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    from . import db, tracker
+    from . import db, tracker, actions
     db.init_app(app)
     app.register_blueprint(tracker.bp)
+    app.register_blueprint(actions.bp)
 
     return app
