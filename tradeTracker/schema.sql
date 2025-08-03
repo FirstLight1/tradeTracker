@@ -15,6 +15,7 @@ CREATE TABLE cards (
     buy INTEGER,
     market_value INTEGER,
     sell INTEGER,
+    sold INTEGER,
     profit INTEGER,
     FOREIGN KEY (auction_id) REFERENCES auctions (id)
 );

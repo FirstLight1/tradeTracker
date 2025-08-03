@@ -1,0 +1,13 @@
+.auction-container,
+.cards-header{
+    display: flex;
+    align-items: center;
+}
+
+.cards-header p{
+    padding: 15px;
+}
+
+.cards-header select{
+    height: 25px;
+}

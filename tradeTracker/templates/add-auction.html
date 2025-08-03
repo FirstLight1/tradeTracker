@@ -3,30 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/addAuction.css">
     <title>Document</title>
 </head>
 <body>
-    <form action="/add" method="post">
-        <label for="cardName"></label>
-        <input type="text" name="cardName" required>
-        <label for="condition"></label>
-        <select name="condition">
-            <option value=""></option>
-            <option value="mint">Mint</option>
-            <option value="nearMint">Near Mint</option>
-            <option value="excellent">Excellent</option>
-            <option value="good">Good</option>
-            <option value="lightPlayed">Light Played</option>
-            <option value="played">Played</option>
-            <option value="poor">Poor</option>
-        </select>
-        <label for="buyPrice"></label>
-        <input type="number" name="buyPrice">
-        <label for="marketValue"></label>
-        <input type="number" name="marketValue">
-        <label for="sellPrice"></label>
-        <input type="number" name="sellPrice">
-        <button type="submit" value="submit">submit</button>
-    </form>
+    <dir class="auction-container">
+        <dir>
+            <label >Auction name</label><br>
+            <input type="text">
+        </dir>
+        <dir>
+            <label>Buy price</label><br>
+            <input type="text">
+        </dir>
+        <dir>
+            <label>Auction profit</label><br>
+            <input type="text">
+        </dir>
+    </dir>
+    <dir>
+        <dir class="cards-header">
+            <p>Card name</p>
+            <p>Condition</p>
+            <p>Buy price</p>
+            <p>Market price</p>
+            <p>Sell price</p>
+            <p>Sold</p>
+            <p>Profit</p>
+        </dir>
+        <dir class="cards-container">
+            <dir class="card">
+                <input type="text" name="cardName">
+                <select name="condition">
+                    <option value=""></option>
+                    <option value="mint">Mint</option>
+                    <option value="nearMint">Near Mint</option>
+                    <option value="excellent">Excellent</option>
+                    <option value="good">Good</option>
+                    <option value="lightPlayed">Light Played</option>
+                    <option value="played">Played</option>
+                    <option value="poor">Poor</option>
+                </select>
+                <input type="text" name="buyPrice">
+                <input type="text" name="marketValue" class="marketValue" oninput="handleCardInput(this)">
+                <input type="text" name="sellPrice">
+                <input type="checkbox" name="sold">
+                <input type="text" name="profit">
+            </dir>
+        </dir>
+    </dir>
+    <button>Add card</button>
+    <button>Save</button>
+<!--        
+<form action="/add" method="post">
+<label for="cardName"></label>
+<input type="text" name="cardName" required>
+<label for="condition"></label>
+<select name="condition">
+    <option value=""></option>
+    <option value="mint">Mint</option>
+    <option value="nearMint">Near Mint</option>
+    <option value="excellent">Excellent</option>
+    <option value="good">Good</option>
+    <option value="lightPlayed">Light Played</option>
+    <option value="played">Played</option>
+    <option value="poor">Poor</option>
+</select>
+<label for="buyPrice"></label>
+<input type="number" name="buyPrice">
+<label for="marketValue"></label>
+<input type="number" name="marketValue">
+<label for="sellPrice"></label>
+<input type="number" name="sellPrice">
+<button type="submit" value="submit">submit</button>
+</form>
+-->
+    <script src="../static/addAuction.js"></script>
 </body>
 </html>
