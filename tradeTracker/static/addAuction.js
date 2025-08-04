@@ -23,13 +23,63 @@ function handleCardInput(input){
         newCardName.oninput = function () {
         handleCardInput(this);
       };
-      const test = lastCard.querySelector('select[name=condition').value;
-      console.log(test);
       container.appendChild(newCard)
     }
 }
 
-let cards = [];
+ class struct{
+    constructor(){
+        this.cardName = null;
+        this.condition = null;
+        this.buyPrice = null;
+        this.marketValue = null;
+        this.sellPrice = null;
+        this.checkbox = null;
+        this.profit = null;
+    }
+ }
+
+const cardsArr = [];
+
+const saveButton = document.querySelector('.save-btn')
+//add typechecks
+saveButton.addEventListener('click', (btn) =>{
+    const auctionName = document.querySelector('.auction-name').value;
+    const auctionBuy = document.querySelector('.auction-buy-price').value;
+    const auctionProfit = document.querySelector('.auction-profit').value;
+    let auction = {
+        name: auctionName.trim() || null,
+        buy: auctionBuy.trim() || null,
+        profit: auctionProfit.trim() || null
+    };
+    cardsArr.push(auction);
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(ell =>{
+        let card = new struct();
+        const input = (selector) =>
+            ell.querySelector(selector)?.value.trim() || null;
+        const test = input('input[name=cardName');
+        console.log(test);
+        card.cardName = input('input[name=cardName');
+        card.condition = input('select[name=condition');
+        card.buyPrice = input('input[name=buyPrice');
+        card.marketValue = input('input[name=marketValue');
+        card.sellPrice = input('input[name=sellPrice');
+        card.checkbox = ell.querySelector('input[name=sold]').checked;
+        card.profit = input('input[name=profit]');
+        if(card.sold === true && card.sellPrice !== null && card.buyPrice !==null){
+            card.profit = card.sellPrice - card.buyPrice;
+        }
+        console.log(card);
+        if(card.cardName !== null && card.marketValue !== null){
+            cardsArr.push(card);
+        }
+    });
+    const jsonString = JSON.stringify(cardsArr);
+    console.log(jsonString);
+    
+})
+
 
 
 
