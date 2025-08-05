@@ -43,7 +43,7 @@ const cardsArr = [];
 
 const saveButton = document.querySelector('.save-btn')
 //add typechecks
-saveButton.addEventListener('click', (btn) =>{
+saveButton.addEventListener('click', () =>{
     const auctionName = document.querySelector('.auction-name').value;
     const auctionBuy = document.querySelector('.auction-buy-price').value;
     const auctionProfit = document.querySelector('.auction-profit').value;
@@ -60,14 +60,14 @@ saveButton.addEventListener('click', (btn) =>{
             ell.querySelector(selector)?.value.trim() || null;
         const test = input('input[name=cardName');
         console.log(test);
-        card.cardName = input('input[name=cardName');
-        card.condition = input('select[name=condition');
-        card.buyPrice = input('input[name=buyPrice');
-        card.marketValue = input('input[name=marketValue');
-        card.sellPrice = input('input[name=sellPrice');
+        card.cardName = input('input[name=cardName]');
+        card.condition = input('select[name=condition]');
+        card.buyPrice = input('input[name=buyPrice]');
+        card.marketValue = input('input[name=marketValue]');
+        card.sellPrice = input('input[name=sellPrice]');
         card.checkbox = ell.querySelector('input[name=sold]').checked;
         card.profit = input('input[name=profit]');
-        if(card.sold === true && card.sellPrice !== null && card.buyPrice !==null){
+        if(card.checkbox === true && card.sellPrice !== null && card.buyPrice !==null){
             card.profit = card.sellPrice - card.buyPrice;
         }
         console.log(card);
@@ -75,9 +75,24 @@ saveButton.addEventListener('click', (btn) =>{
             cardsArr.push(card);
         }
     });
-    const jsonString = JSON.stringify(cardsArr);
-    console.log(jsonString);
-    
+    const jsonbody = JSON.stringify(cardsArr);
+    console.log(jsonbody);
+    fetch('/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: jsonbody
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.location.href = '/';
+        }
+    })
+        .catch(error => {
+            console.error('Error:', error);
+        });
 })
 
 

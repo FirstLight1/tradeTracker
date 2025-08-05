@@ -3,8 +3,9 @@ DROP TABLE IF EXISTS cards;
 
 CREATE TABLE auctions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    auction_price INTEGER,
-    auction_profit INTEGER
+    auction_name TEXT,
+    auction_price REAL,
+    auction_profit REAL
 );
 
 CREATE TABLE cards (
@@ -12,10 +13,11 @@ CREATE TABLE cards (
     auction_id INTEGER NOT NULL,
     card_name TEXT NOT NULL,
     condition TEXT,
-    buy INTEGER,
-    market_value INTEGER,
-    sell INTEGER,
-    sold INTEGER,
-    profit INTEGER,
+    card_price REAL,
+    market_value REAL,
+    sell_price REAL,
+    --boolean
+    sold REAL,
+    profit REAL,
     FOREIGN KEY (auction_id) REFERENCES auctions (id)
 );
