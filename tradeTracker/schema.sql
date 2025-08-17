@@ -5,7 +5,8 @@ CREATE TABLE auctions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     auction_name TEXT,
     auction_price REAL,
-    auction_profit REAL
+    auction_profit REAL,
+    date_created TEXT
 );
 
 CREATE TABLE cards (

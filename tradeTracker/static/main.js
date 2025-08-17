@@ -1,5 +1,13 @@
 const auctionContainer = document.querySelector('.auction-container');
 
+function renderField(value, inputType, className, placeholder) {
+    if (value === null) {
+        return `<input type="${inputType}" class="${className}" placeholder="${placeholder}">`;
+    } else {
+        return `<p class="${className}">${value}</p>`;
+    }
+}
+
 async function loadAuctions() {
     try {
         const response = await fetch('/loadAuctions');
@@ -28,7 +36,7 @@ async function loadAuctions() {
         const viewButtons = document.querySelectorAll('.view-auction');
         viewButtons.forEach(button => {
             button.addEventListener('click', async () => {
-                console.log('View auction button clicked for ID:', button.getAttribute('data-id'));
+                //console.log('View auction button clicked for ID:', button.getAttribute('data-id'));
                 const auctionId = button.getAttribute('data-id');
                 const cardsUrl = '/loadCards/' + auctionId;
                 try {
@@ -42,10 +50,15 @@ async function loadAuctions() {
                     cards.forEach(card => {
                         const cardDiv = document.createElement('div');
                         cardDiv.classList.add('card');
+
                         cardDiv.innerHTML = `
-                            <p>${card.card_name}</p>
-                            <p>${card.card_price}</p>
-                            <button class="view-card" data-id="${card.id}">View</button>
+                            ${renderField(card.card_name, 'text', 'card-info', 'Card Name')}
+                            <p class='card-info'>${card.condition ? card.condition : 'Unknown'}</p>
+                            ${renderField(card.card_price + '€', 'text', 'card-info', 'Card Price')}
+                            ${renderField(card.market_value + '€', 'text', 'card-info', 'Market Value')}
+                            ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', 'card-info', 'Sell Price')}
+                            <input type="checkbox" class='card-info-checkbox' ${card.sold ? 'checked' : ''}>
+                            ${renderField(card.profit ? card.profit + '€' : 'None', 'text', 'card-info', 'Profit')}
                         `;
                         cardsContainer.appendChild(cardDiv);
                     });
@@ -54,9 +67,37 @@ async function loadAuctions() {
                 }
             });
         });
+        const deleteButton = document.querySelectorAll('.delete-auction');
+        deleteButton.forEach(button => {
+        button.addEventListener('click', () =>{
+            const auctionId = button.getAttribute('data-id');
+            fetch(`/delete/${auctionId}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    //console.log('Auction deleted successfully');
+                    // Remove the auction from the UI
+                    const auctionDiv = button.closest('.auction-tab');
+                    auctionDiv.remove();
+                } else {
+                    console.error('Error deleting auction:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting auction:', error);
+            });
+        })
+    });
+
+
+
     } catch (error) {
         console.error('Error loading auctions:', error);
     }
+
 }
+
 
 loadAuctions();

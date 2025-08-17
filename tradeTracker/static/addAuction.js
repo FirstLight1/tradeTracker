@@ -1,3 +1,5 @@
+
+
 function handleCardInput(input){
     const container = document.querySelector(".cards-container")
     const cards = document.querySelectorAll(".card")
@@ -40,17 +42,18 @@ function handleCardInput(input){
  }
 
 const cardsArr = [];
-
 const saveButton = document.querySelector('.save-btn')
 //add typechecks
 saveButton.addEventListener('click', () =>{
     const auctionName = document.querySelector('.auction-name').value;
     const auctionBuy = document.querySelector('.auction-buy-price').value;
     const auctionProfit = document.querySelector('.auction-profit').value;
+    const date = new Date().toISOString().slice(0, 10);
     let auction = {
         name: auctionName.trim() || null,
         buy: auctionBuy.trim() || null,
-        profit: auctionProfit.trim() || null
+        profit: auctionProfit.trim() || null,
+        date: date.trim() || null
     };
     cardsArr.push(auction);
     const cards = document.querySelectorAll('.card');
@@ -58,8 +61,8 @@ saveButton.addEventListener('click', () =>{
         let card = new struct();
         const input = (selector) =>
             ell.querySelector(selector)?.value.trim() || null;
-        const test = input('input[name=cardName');
-        console.log(test);
+        //const test = input('input[name=cardName]');
+        //console.log(test);
         card.cardName = input('input[name=cardName]');
         card.condition = input('select[name=condition]');
         card.buyPrice = input('input[name=buyPrice]');
@@ -94,7 +97,6 @@ saveButton.addEventListener('click', () =>{
             console.error('Error:', error);
         });
 })
-
 
 
 

@@ -16,13 +16,14 @@ def add():
         cardsArr = request.get_json()
         db = get_db()
         auction = {
-            'name': cardsArr[0]['name'],
-            'buy': cardsArr[0]['buy'],
-            'profit': cardsArr[0]['profit']
+            'name': cardsArr[0]['name'] if 'name' in cardsArr[0] else None,
+            'buy': cardsArr[0]['buy'] if 'buy' in cardsArr[0] else None,
+            'profit': cardsArr[0]['profit'] if 'profit' in cardsArr[0] else None,
+            'date': cardsArr[0]['date'] if 'date' in cardsArr[0] else None
         }
         cursor = db.execute(
-            'INSERT INTO auctions (auction_name, auction_price, auction_profit) VALUES (?, ?, ?)',
-            (auction['name'], auction['buy'], auction['profit'])
+            'INSERT INTO auctions (auction_name, auction_price, auction_profit, date_created) VALUES (?, ?, ?, ?)',
+            (auction['name'], auction['buy'], auction['profit'], auction['date'])
         )
         auction_id = cursor.lastrowid
         for card in cardsArr[1:]:
@@ -54,3 +55,12 @@ def loadCards(auction_id):
     db = get_db()
     cards = db.execute('SELECT * FROM cards WHERE auction_id = ?', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards])
+
+@bp.route('/delete/<int:auction_id>', methods=('DELETE',))
+def delete(auction_id):
+    db = get_db()
+    db.execute('DELETE FROM cards WHERE auction_id = ?', (auction_id,))
+    db.execute('DELETE FROM auctions WHERE id = ?', (auction_id,))
+    db.commit()
+    return jsonify({'status': 'success'})
+
