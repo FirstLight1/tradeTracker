@@ -1,8 +1,8 @@
 const auctionContainer = document.querySelector('.auction-container');
 
-function renderField(value, inputType, className, placeholder) {
+function renderField(value, inputType, className, placeholder, datafield) {
     if (value === null) {
-        return `<input type="${inputType}" class="${className}" placeholder="${placeholder}">`;
+        return `<input type="${inputType}" class="${className}" placeholder="${placeholder}" data-field="${datafield}">`;
     } else {
         return `<p class="${className}">${value}</p>`;
     }
@@ -42,7 +42,7 @@ async function loadAuctions() {
                 try {
                     const response = await fetch(cardsUrl);
                     const cards = await response.json();
-                    console.log('Cards loaded:', cards);
+                    //console.log('Cards loaded:', cards);
                     const auctionDiv = button.closest('.auction-tab');
                     const cardsContainer = auctionDiv.querySelector('.cards-container');
 
@@ -52,15 +52,81 @@ async function loadAuctions() {
                         cardDiv.classList.add('card');
 
                         cardDiv.innerHTML = `
-                            ${renderField(card.card_name, 'text', 'card-info', 'Card Name')}
-                            <p class='card-info'>${card.condition ? card.condition : 'Unknown'}</p>
-                            ${renderField(card.card_price + '€', 'text', 'card-info', 'Card Price')}
-                            ${renderField(card.market_value + '€', 'text', 'card-info', 'Market Value')}
-                            ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', 'card-info', 'Sell Price')}
+                            ${renderField(card.card_name, 'text', 'card-info', 'Card Name', 'card_name')}
+                            <p class='card-info condition' data-field="condition">${card.condition ? card.condition : 'Unknown'}</p>
+                            ${renderField(card.card_price + '€', 'text', 'card-info', 'Card Price', 'card_price')}
+                            ${renderField(card.market_value + '€', 'text', 'card-info', 'Market Value', 'market_value')}
+                            ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', 'card-info', 'Sell Price', 'sell_price')}
                             <input type="checkbox" class='card-info-checkbox' ${card.sold ? 'checked' : ''}>
-                            ${renderField(card.profit ? card.profit + '€' : 'None', 'text', 'card-info', 'Profit')}
+                            ${renderField(card.profit ? card.profit + '€' : ' ', 'text', 'card-info', 'Profit', 'profit')}
+                            <span hidden>${card.id}</span>
                         `;
                         cardsContainer.appendChild(cardDiv);
+                    });
+                    cardsContainer.addEventListener('dblclick', (event) => {
+                        if (event.target.closest('.card') && !(event.target.tagName === "DIV")) {
+                            
+                            if (event.target.classList.contains('condition')) {
+                                const value = event.target.textContent;
+                                const select = document.createElement('select');
+                                const options = [' ', 'Mint', 'Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'];
+                                options.forEach(option => {
+                                    const opt = document.createElement('option');
+                                    opt.value = option;
+                                    opt.textContent = option;
+                                    if (option === value) {
+                                        opt.selected = true;
+                                    }
+                                    select.appendChild(opt);
+                                });
+                                event.target.replaceWith(select);
+                                select.addEventListener('change', (event) => {
+                                    const selectedValue = event.target.value;
+                                    const p = document.createElement('p');
+                                    p.classList.add('card-info', 'condition');
+                                    p.textContent = selectedValue || value;
+                                    select.replaceWith(p);
+                                });
+                            }
+                            if (event.target.tagName === "P") {
+                                const value = event.target.textContent;
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.value = value;
+                                event.target.replaceWith(input);
+                                input.focus();
+                                input.addEventListener('blur', (event) => {
+                                    const newValue = event.target.value;
+                                    const p = document.createElement('p');
+                                    p.classList.add('card-info');
+                                    if(newValue.includes("€")){
+                                        p.textContent = newValue || value;
+                                    }else if(newValue.includes("None")){
+                                        p.textContent = "None";
+                                    } else {
+                                        p.textContent = newValue || value;
+                                    }
+                                    input.replaceWith(p);
+                                    fetch(`/update/${card.id}`, {
+                                        method: 'PATCH',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            [p.dataset.field]: p.textContent
+                                        })
+                                        .then(res => res.json())
+                                        .then(data => console.log(data))
+                                        .catch(err => console.error('Error updating card:', err))
+                                    });
+                                });
+                                input.addEventListener('keydown', (event) => {
+                                    if (event.key === 'Enter') {
+                                        input.blur();
+                                    }
+                                });
+                            }
+                        }
                     });
                 } catch (error) {
                     console.error('Error loading cards:', error);
@@ -69,30 +135,27 @@ async function loadAuctions() {
         });
         const deleteButton = document.querySelectorAll('.delete-auction');
         deleteButton.forEach(button => {
-        button.addEventListener('click', () =>{
-            const auctionId = button.getAttribute('data-id');
-            fetch(`/delete/${auctionId}`, {
-                method: 'DELETE',
+            button.addEventListener('click', () =>{
+                const auctionId = button.getAttribute('data-id');
+                fetch(`/delete/${auctionId}`, {
+                    method: 'DELETE',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        //console.log('Auction deleted successfully');
+                        // Remove the auction from the UI
+                        const auctionDiv = button.closest('.auction-tab');
+                        auctionDiv.remove();
+                    } else {
+                        console.error('Error deleting auction:', data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting auction:', error);
+                });
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    //console.log('Auction deleted successfully');
-                    // Remove the auction from the UI
-                    const auctionDiv = button.closest('.auction-tab');
-                    auctionDiv.remove();
-                } else {
-                    console.error('Error deleting auction:', data);
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting auction:', error);
-            });
-        })
-    });
-
-
-
+        });
     } catch (error) {
         console.error('Error loading auctions:', error);
     }
