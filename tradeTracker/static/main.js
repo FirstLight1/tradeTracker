@@ -4,7 +4,7 @@ function renderField(value, inputType, className, placeholder, datafield) {
     if (value === null) {
         return `<input type="${inputType}" class="${className}" placeholder="${placeholder}" data-field="${datafield}">`;
     } else {
-        return `<p class="${className}">${value}</p>`;
+        return `<p class="${className}" data-field="${datafield}">${value}</p>`;
     }
 }
 
@@ -59,13 +59,15 @@ async function loadAuctions() {
                             ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', 'card-info', 'Sell Price', 'sell_price')}
                             <input type="checkbox" class='card-info-checkbox' ${card.sold ? 'checked' : ''}>
                             ${renderField(card.profit ? card.profit + '€' : ' ', 'text', 'card-info', 'Profit', 'profit')}
-                            <span hidden>${card.id}</span>
+                            <span hidden class = "card-id">${card.id}</span>
                         `;
                         cardsContainer.appendChild(cardDiv);
                     });
                     cardsContainer.addEventListener('dblclick', (event) => {
                         if (event.target.closest('.card') && !(event.target.tagName === "DIV")) {
-                            
+                            //console.log('Card double-clicked:', event.target);
+                            const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
+                            console.log('Card ID:', cardId);
                             if (event.target.classList.contains('condition')) {
                                 const value = event.target.textContent;
                                 const select = document.createElement('select');
@@ -90,6 +92,8 @@ async function loadAuctions() {
                             }
                             if (event.target.tagName === "P") {
                                 const value = event.target.textContent;
+                                const dataset = event.target.dataset.field;
+                                console.log(dataset);
                                 const input = document.createElement('input');
                                 input.type = 'text';
                                 input.value = value;
@@ -99,26 +103,30 @@ async function loadAuctions() {
                                     const newValue = event.target.value;
                                     const p = document.createElement('p');
                                     p.classList.add('card-info');
+                                    p.dataset.field = dataset;
                                     if(newValue.includes("€")){
                                         p.textContent = newValue || value;
                                     }else if(newValue.includes("None")){
                                         p.textContent = "None";
                                     } else {
-                                        p.textContent = newValue || value;
+                                        p.textContent = newValue + "€" || value;
                                     }
                                     input.replaceWith(p);
-                                    fetch(`/update/${card.id}`, {
+                                    console.log('Updating card:', cardId, p.dataset.field, p.textContent);
+                                    const val = p.textContent.replace('€', '').trim();
+                                    fetch(`/update/${cardId}`, {
                                         method: 'PATCH',
                                         headers: {
                                             'Content-Type': 'application/json'
                                         },
                                         body: JSON.stringify({
-                                            [p.dataset.field]: p.textContent
+                                            field: p.dataset.field,
+                                            value: val
                                         })
-                                        .then(res => res.json())
-                                        .then(data => console.log(data))
-                                        .catch(err => console.error('Error updating card:', err))
-                                    });
+                                    })
+                                    .then(res => res.json())
+                                    .then(data => console.log(data))
+                                    .catch(err => console.error('Error updating card:', err))
                                 });
                                 input.addEventListener('keydown', (event) => {
                                     if (event.key === 'Enter') {

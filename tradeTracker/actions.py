@@ -64,3 +64,17 @@ def delete(auction_id):
     db.commit()
     return jsonify({'status': 'success'})
 
+@bp.route('/update/<int:card_id>', methods=('PATCH',))
+def update(card_id):
+    db = get_db()
+    data = request.get_json()
+    print(data)
+    field = data.get("field")
+    value = data.get("value")
+    print(f"Updating card {card_id}: {field} = {value}")
+    allowed_fields = {"card_name", "condition", "card_price", "sell_price", "sold", "profit"}
+
+    if field in allowed_fields:
+        db.execute(f'UPDATE cards SET {field} = ? WHERE id = ?', (value, card_id))
+        db.commit()
+    return jsonify({'status': 'success'})
