@@ -1,10 +1,10 @@
 const auctionContainer = document.querySelector('.auction-container');
 
-function renderField(value, inputType, className, placeholder, datafield) {
+function renderField(value, inputType, classList, placeholder, datafield) {
     if (value === null) {
-        return `<input type="${inputType}" class="${className}" placeholder="${placeholder}" data-field="${datafield}">`;
+        return `<input type="${inputType}" class="${classList.join(' ')}" placeholder="${placeholder}" data-field="${datafield}">`;
     } else {
-        return `<p class="${className}" data-field="${datafield}">${value}</p>`;
+        return `<p class=" ${classList.join(' ')}" data-field="${datafield}">${value}</p>`;
     }
 }
 
@@ -16,7 +16,21 @@ function appendEuroSign(value){
     }
 }
 
+function updateSoldStatus(cardId, isChecked) {
+    fetch(`/update/${cardId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ field: 'sold', value: isChecked })
+    });
+
+
+}
+
 function patchValue(id, value, dataset){
+    console.log(value);
+    value = value.replace('€', '');
     fetch(`/update/${id}`, {
         method: 'PATCH',
         headers: {
@@ -69,13 +83,13 @@ async function loadAuctions() {
                         cardDiv.classList.add('card');
 
                         cardDiv.innerHTML = `
-                            ${renderField(card.card_name, 'text', 'card-info', 'Card Name', 'card_name')}
+                            ${renderField(card.card_name, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
                             <p class='card-info condition' data-field="condition">${card.condition ? card.condition : 'Unknown'}</p>
-                            ${renderField(card.card_price + '€', 'text', 'card-info', 'Card Price', 'card_price')}
-                            ${renderField(card.market_value + '€', 'text', 'card-info', 'Market Value', 'market_value')}
-                            ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', 'card-info', 'Sell Price', 'sell_price')}
+                            ${renderField(card.card_price + '€', 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
+                            ${renderField(card.market_value + '€', 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
+                            ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
                             <input type="checkbox" class='card-info-checkbox' ${card.sold ? 'checked' : ''}>
-                            ${renderField(card.profit ? card.profit + '€' : ' ', 'text', 'card-info', 'Profit', 'profit')}
+                            ${renderField(card.profit ? card.profit + '€' : ' ', 'text', ['card-info', 'profit'], 'Profit', 'profit')}
                             <span hidden class = "card-id">${card.id}</span>
                         `;
                         cardsContainer.appendChild(cardDiv);
@@ -122,13 +136,13 @@ async function loadAuctions() {
                                 input.addEventListener('blur', (event) => {
                                     const newValue = event.target.value;
                                     const p = document.createElement('p');
-                                    p.classList.add('card-info');
+                                    p.classList.add('card-info', dataset);
                                     p.dataset.field = dataset;
                                     p.textContent = appendEuroSign(newValue);
                                     input.replaceWith(p);
                                     console.log('Updating card:', cardId, p.dataset.field, p.textContent);
-                                    const val = p.textContent.replace('€', '').trim();
-                                    patchValue(cardId, val, p.dataset.field);
+                                    //const val = p.textContent.replace('€', '').trim();
+                                    patchValue(cardId, p.textContent, p.dataset.field);
                                 });
                                 input.addEventListener('keydown', (event) => {
                                     if (event.key === 'Enter') {
@@ -137,6 +151,30 @@ async function loadAuctions() {
                                 });
                             }
                         }
+                    });
+                    const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox');
+                    checkboxes.forEach((checkbox) => {
+                        checkbox.addEventListener('click', (event) => {
+                            const isChecked = event.target.checked;
+                            let profitElement = event.target.closest('.card').querySelector('.profit');
+                            if (!Boolean(profitElement.textContent) || !isChecked === true){
+                                event.preventDefault();
+                            }else{
+                                const cardBuyElement = event.target.closest('.card').querySelector('.card-price').textContent.replace('€', '');
+                                const cardSellElement = event.target.closest('.card').querySelector('.sell-price').textContent.replace('€', '');
+                                const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
+                                if (!Boolean(cardBuyElement) || !Boolean(cardSellElement)){
+                                    event.preventDefault();
+                                } else{
+                                    let profit = cardSellElement - cardBuyElement;
+                                    profit = appendEuroSign(profit);
+                                    profitElement.textContent = profit;
+                                    checkbox.checked = true; // Keep checkbox checked
+                                    updateSoldStatus(cardId, isChecked);
+                                    patchValue(cardId, profit, profitElement.dataset.field);
+                                }
+                            }
+                        }, false);
                     });
                 } catch (error) {
                     console.error('Error loading cards:', error);
