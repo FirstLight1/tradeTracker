@@ -8,6 +8,24 @@ function renderField(value, inputType, className, placeholder, datafield) {
     }
 }
 
+function appendEuroSign(value){
+    if (isNaN(value)){
+        return value;
+    } else{
+        return value + '€';
+    }
+}
+
+function patchValue(id, value, dataset){
+    fetch(`/update/${id}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ field: dataset, value: value })
+    });
+}
+
 async function loadAuctions() {
     try {
         const response = await fetch('/loadAuctions');
@@ -23,7 +41,6 @@ async function loadAuctions() {
                 <p>${auctionPrice}</p>
                 <p>${auctionProfit}</p>
                 <button class="view-auction" data-id="${auction.id}">View</button>
-                <button class="edit-auction" data-id="${auction.id}">Edit</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
                 <div class="cards-container">
                     <!-- Cards will be loaded here -->
@@ -72,6 +89,7 @@ async function loadAuctions() {
                                 const value = event.target.textContent;
                                 const select = document.createElement('select');
                                 const options = [' ', 'Mint', 'Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'];
+                                const dataset = event.target.dataset.field;
                                 options.forEach(option => {
                                     const opt = document.createElement('option');
                                     opt.value = option;
@@ -88,6 +106,8 @@ async function loadAuctions() {
                                     p.classList.add('card-info', 'condition');
                                     p.textContent = selectedValue || value;
                                     select.replaceWith(p);
+                                    console.log('Updating card:', cardId, dataset, p.textContent);
+                                    patchValue(cardId, p.textContent, dataset);
                                 });
                             }
                             if (event.target.tagName === "P") {
@@ -104,29 +124,11 @@ async function loadAuctions() {
                                     const p = document.createElement('p');
                                     p.classList.add('card-info');
                                     p.dataset.field = dataset;
-                                    if(newValue.includes("€")){
-                                        p.textContent = newValue || value;
-                                    }else if(newValue.includes("None")){
-                                        p.textContent = "None";
-                                    } else {
-                                        p.textContent = newValue + "€" || value;
-                                    }
+                                    p.textContent = appendEuroSign(newValue);
                                     input.replaceWith(p);
                                     console.log('Updating card:', cardId, p.dataset.field, p.textContent);
                                     const val = p.textContent.replace('€', '').trim();
-                                    fetch(`/update/${cardId}`, {
-                                        method: 'PATCH',
-                                        headers: {
-                                            'Content-Type': 'application/json'
-                                        },
-                                        body: JSON.stringify({
-                                            field: p.dataset.field,
-                                            value: val
-                                        })
-                                    })
-                                    .then(res => res.json())
-                                    .then(data => console.log(data))
-                                    .catch(err => console.error('Error updating card:', err))
+                                    patchValue(cardId, val, p.dataset.field);
                                 });
                                 input.addEventListener('keydown', (event) => {
                                     if (event.key === 'Enter') {

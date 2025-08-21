@@ -72,7 +72,7 @@ def update(card_id):
     field = data.get("field")
     value = data.get("value")
     print(f"Updating card {card_id}: {field} = {value}")
-    allowed_fields = {"card_name", "condition", "card_price", "sell_price", "sold", "profit"}
+    allowed_fields = {"card_name", "condition", "card_price", "market_value", "sell_price", "sold", "profit"}
 
     if field in allowed_fields:
         db.execute(f'UPDATE cards SET {field} = ? WHERE id = ?', (value, card_id))
