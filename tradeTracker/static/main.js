@@ -58,6 +58,25 @@ function patchValue(id, value, dataset){
     });
 }
 
+function deleteAuction(id, div){
+    fetch(`/deleteAuction/${id}`, {
+        method: 'DELETE',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            //console.log('Auction deleted successfully');
+            // Remove the auction from the UI
+            div.remove();
+        } else {
+            console.error('Error deleting auction:', data);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting auction:', error);
+    });
+}
+
 async function loadAuctions() {
     try {
         const response = await fetch('/loadAuctions');
@@ -65,6 +84,7 @@ async function loadAuctions() {
         data.forEach(auction => {
             const auctionDiv = document.createElement('div');
             auctionDiv.classList.add('auction-tab');
+            auctionDiv.setAttribute('data-id', auction.id);
             let auctionName = auction.auction_name || "Auction " + auction.id; // Fallback for name
             let auctionPrice = auction.auction_price || ""; // Fallback for buy price  
             let auctionProfit = auction.auction_profit || ""; // Fallback for profit
@@ -119,7 +139,7 @@ async function loadAuctions() {
                             //console.log('Card double-clicked:', event.target);
                             const cardDiv = event.target.closest('.card');
                             const cardId = cardDiv.querySelector('.card-id').textContent;
-                            console.log('Card ID:', cardId);
+                            //console.log('Card ID:', cardId);
                             if (event.target.classList.contains('condition')) {
                                 const value = event.target.textContent;
                                 const select = document.createElement('select');
@@ -239,9 +259,9 @@ async function loadAuctions() {
                     deleteCard.forEach((button) => {
                         button.addEventListener('click', () => {
                             const cardId = button.getAttribute('data-id');
-                            console.log(cardId);
+                            //console.log(cardId);
                             const cardDiv = button.closest('.card');
-                            console.log(cardDiv);
+                            //console.log(cardDiv);
                             fetch(`/deleteCard/${cardId}`, {
                                 method: 'DELETE',
                             })
@@ -256,6 +276,12 @@ async function loadAuctions() {
                             .catch(error =>{
                                 console.error("Error:", error);
                             });
+                            const cardsContainer = button.closest('.cards-container');
+                            if (cardsContainer.childElementCount === 1){
+                                const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
+                                const auctionDiv = cardsContainer.closest('.auction-tab');
+                                deleteAuction(auctionId, auctionDiv);
+                            }
                         });
                     });
 
@@ -268,23 +294,8 @@ async function loadAuctions() {
         deleteButton.forEach(button => {
             button.addEventListener('click', () =>{
                 const auctionId = button.getAttribute('data-id');
-                fetch(`/deleteAuction/${auctionId}`, {
-                    method: 'DELETE',
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        //console.log('Auction deleted successfully');
-                        // Remove the auction from the UI
-                        const auctionDiv = button.closest('.auction-tab');
-                        auctionDiv.remove();
-                    } else {
-                        console.error('Error deleting auction:', data);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting auction:', error);
-                });
+                const auctionDiv = button.closest('.auction-tab');
+                deleteAuction(auctionId, auctionDiv);
             })
         });
     } catch (error) {

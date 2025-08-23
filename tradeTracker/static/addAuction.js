@@ -55,7 +55,9 @@ saveButton.addEventListener('click', () =>{
         profit: auctionProfit.trim() || null,
         date: date.trim() || null
     };
-    cardsArr.push(auction);
+    if(cardsArr.length === 0){
+        cardsArr.push(auction);
+    }
     const cards = document.querySelectorAll('.card');
     cards.forEach(ell =>{
         let card = new struct();
@@ -73,29 +75,31 @@ saveButton.addEventListener('click', () =>{
         if(card.checkbox === true && card.sellPrice !== null && card.buyPrice !==null){
             card.profit = card.sellPrice - card.buyPrice;
         }
-        console.log(card);
         if(card.cardName !== null && card.marketValue !== null){
             cardsArr.push(card);
         }
     });
-    const jsonbody = JSON.stringify(cardsArr);
-    console.log(jsonbody);
-    fetch('/add', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: jsonbody
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            window.location.href = '/';
-        }
-    })
-        .catch(error => {
-            console.error('Error:', error);
-        });
+    console.log(cardsArr);
+    console.log(cardsArr.length);
+    if (cardsArr.length !== 1){
+        const jsonbody = JSON.stringify(cardsArr);
+        fetch('/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: jsonbody
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = '/';
+            }
+        })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
 })
 
 
