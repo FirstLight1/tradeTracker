@@ -109,6 +109,7 @@ async function loadAuctions() {
                             <input type="checkbox" class='card-info-checkbox' ${card.sold ? 'checked' : ''}>
                             ${renderField(card.profit ? card.profit + '€' : ' ', 'text', ['card-info', 'profit'], 'Profit', 'profit')}
                             <span hidden class = "card-id">${card.id}</span>
+                            <button class=delete-card data-id="${card.id}">Delete</button>
                         `;
                         cardsContainer.appendChild(cardDiv);
                     });
@@ -233,6 +234,31 @@ async function loadAuctions() {
                             }
                         });
                     });
+
+                    const deleteCard = document.querySelectorAll('.delete-card');
+                    deleteCard.forEach((button) => {
+                        button.addEventListener('click', () => {
+                            const cardId = button.getAttribute('data-id');
+                            console.log(cardId);
+                            const cardDiv = button.closest('.card');
+                            console.log(cardDiv);
+                            fetch(`/deleteCard/${cardId}`, {
+                                method: 'DELETE',
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if(data.status === 'success'){
+                                    cardDiv.remove();
+                                }else{
+                                    console.error('Something went wrong, send me this:', data);
+                                }
+                            })
+                            .catch(error =>{
+                                console.error("Error:", error);
+                            });
+                        });
+                    });
+
                 } catch (error) {
                     console.error('Error loading cards:', error);
                 }
@@ -242,7 +268,7 @@ async function loadAuctions() {
         deleteButton.forEach(button => {
             button.addEventListener('click', () =>{
                 const auctionId = button.getAttribute('data-id');
-                fetch(`/delete/${auctionId}`, {
+                fetch(`/deleteAuction/${auctionId}`, {
                     method: 'DELETE',
                 })
                 .then(response => response.json())

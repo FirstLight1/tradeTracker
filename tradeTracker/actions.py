@@ -3,11 +3,8 @@ from tradeTracker.db import get_db
 
 bp = Blueprint('actions', __name__)
 
-
 @bp.route('/addForm')
 def addForm():
-    #create new auction
-    #export auction_id
     return render_template("add-auction.html")
 
 @bp.route('/add', methods=('GET', 'POST'))
@@ -56,8 +53,17 @@ def loadCards(auction_id):
     cards = db.execute('SELECT * FROM cards WHERE auction_id = ?', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards])
 
-@bp.route('/delete/<int:auction_id>', methods=('DELETE',))
-def delete(auction_id):
+@bp.route('/deleteCard/<int:card_id>', methods=('DELETE',))
+def deleteCard(card_id):
+    x = type(card_id)
+    print(x)
+    db = get_db()
+    db.execute('DELETE FROM cards WHERE id = ?', (card_id,))
+    db.commit()
+    return jsonify({'status' : 'success'})
+
+@bp.route('/deleteAuction/<int:auction_id>', methods=('DELETE',))
+def deleteAuction(auction_id):
     db = get_db()
     db.execute('DELETE FROM cards WHERE auction_id = ?', (auction_id,))
     db.execute('DELETE FROM auctions WHERE id = ?', (auction_id,))
