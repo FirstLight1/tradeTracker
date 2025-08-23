@@ -16,6 +16,24 @@ function appendEuroSign(value){
     }
 }
 
+function createPElement(dataset, value, element){
+    const p = document.createElement('p');
+    p.dataset.field = dataset;
+    p.classList.add('card-info', dataset.replace('_', '-'));
+    p.textContent = appendEuroSign(value);
+    element.replaceWith(p);
+}
+
+function getInputValueAndPatch(value, element, dataset, cardId){
+    if (!Boolean(value)){
+        return null;
+    }
+    createPElement(dataset, value, element);
+    //console.log('Updating card:', cardId, p.dataset.field, p.textContent);
+    //const val = p.textContent.replace('€', '').trim();
+    patchValue(cardId, value, dataset);
+}
+
 function updateSoldStatus(cardId, isChecked) {
     fetch(`/update/${cardId}`, {
         method: 'PATCH',
@@ -24,12 +42,10 @@ function updateSoldStatus(cardId, isChecked) {
         },
         body: JSON.stringify({ field: 'sold', value: isChecked })
     });
-
-
 }
 
 function patchValue(id, value, dataset){
-    console.log(value);
+    //console.log(value);
     value = value.replace('€', '');
     fetch(`/update/${id}`, {
         method: 'PATCH',
@@ -85,8 +101,8 @@ async function loadAuctions() {
                         cardDiv.innerHTML = `
                             ${renderField(card.card_name, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
                             <p class='card-info condition' data-field="condition">${card.condition ? card.condition : 'Unknown'}</p>
-                            ${renderField(card.card_price + '€', 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
-                            ${renderField(card.market_value + '€', 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
+                            ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
+                            ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
                             ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
                             <input type="checkbox" class='card-info-checkbox' ${card.sold ? 'checked' : ''}>
                             ${renderField(card.profit ? card.profit + '€' : ' ', 'text', ['card-info', 'profit'], 'Profit', 'profit')}
@@ -94,6 +110,7 @@ async function loadAuctions() {
                         `;
                         cardsContainer.appendChild(cardDiv);
                     });
+
                     cardsContainer.addEventListener('dblclick', (event) => {
                         if (event.target.closest('.card') && !(event.target.tagName === "DIV")) {
                             //console.log('Card double-clicked:', event.target);
@@ -135,14 +152,8 @@ async function loadAuctions() {
                                 input.focus();
                                 input.addEventListener('blur', (event) => {
                                     const newValue = event.target.value;
-                                    const p = document.createElement('p');
-                                    p.classList.add('card-info', dataset);
-                                    p.dataset.field = dataset;
-                                    p.textContent = appendEuroSign(newValue);
-                                    input.replaceWith(p);
-                                    console.log('Updating card:', cardId, p.dataset.field, p.textContent);
-                                    //const val = p.textContent.replace('€', '').trim();
-                                    patchValue(cardId, p.textContent, p.dataset.field);
+                                    console.log(newValue);
+                                    getInputValueAndPatch(newValue, input, dataset, cardId) || createPElement(dataset, value, input);
                                 });
                                 input.addEventListener('keydown', (event) => {
                                     if (event.key === 'Enter') {
@@ -152,6 +163,7 @@ async function loadAuctions() {
                             }
                         }
                     });
+
                     const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox');
                     checkboxes.forEach((checkbox) => {
                         checkbox.addEventListener('click', (event) => {
@@ -175,6 +187,20 @@ async function loadAuctions() {
                                 }
                             }
                         }, false);
+                    });
+
+                    const inputFields = cardsContainer.querySelectorAll('input[type="text"]');
+                    inputFields.forEach((input) => {
+                        input.addEventListener('blur', (event) =>{
+                            console.log(event.target.value);
+                            const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
+                            getInputValueAndPatch(event.target.value, input, event.target.dataset.field, cardId);
+                        })
+                        input.addEventListener('keydown', (event) => {
+                            if(event.key === 'Enter'){
+                                input.blur();
+                            }
+                        });
                     });
                 } catch (error) {
                     console.error('Error loading cards:', error);
