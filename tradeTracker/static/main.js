@@ -16,7 +16,7 @@ function appendEuroSign(value){
     }
 }
 
-function createPElement(dataset, value, element){
+function replaceWithPElement(dataset, value, element){
     const p = document.createElement('p');
     p.dataset.field = dataset;
     p.classList.add('card-info', dataset.replace('_', '-'));
@@ -28,9 +28,10 @@ function getInputValueAndPatch(value, element, dataset, cardId){
     if (!Boolean(value)){
         return null;
     }
-    createPElement(dataset, value, element);
+    replaceWithPElement(dataset, value, element);
     //console.log('Updating card:', cardId, p.dataset.field, p.textContent);
     //const val = p.textContent.replace('€', '').trim();
+
     patchValue(cardId, value, dataset);
 }
 
@@ -46,6 +47,7 @@ function updateSoldStatus(cardId, isChecked) {
 
 function patchValue(id, value, dataset){
     //console.log(value);
+    value = String(value);
     value = value.replace('€', '');
     fetch(`/update/${id}`, {
         method: 'PATCH',
@@ -114,7 +116,8 @@ async function loadAuctions() {
                     cardsContainer.addEventListener('dblclick', (event) => {
                         if (event.target.closest('.card') && !(event.target.tagName === "DIV")) {
                             //console.log('Card double-clicked:', event.target);
-                            const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
+                            const cardDiv = event.target.closest('.card');
+                            const cardId = cardDiv.querySelector('.card-id').textContent;
                             console.log('Card ID:', cardId);
                             if (event.target.classList.contains('condition')) {
                                 const value = event.target.textContent;
@@ -137,23 +140,49 @@ async function loadAuctions() {
                                     p.classList.add('card-info', 'condition');
                                     p.textContent = selectedValue || value;
                                     select.replaceWith(p);
-                                    console.log('Updating card:', cardId, dataset, p.textContent);
+                                    //console.log('Updating card:', cardId, dataset, p.textContent);
                                     patchValue(cardId, p.textContent, dataset);
                                 });
                             }
                             if (event.target.tagName === "P") {
                                 const value = event.target.textContent;
                                 const dataset = event.target.dataset.field;
-                                console.log(dataset);
+                                //console.log(dataset);
                                 const input = document.createElement('input');
                                 input.type = 'text';
                                 input.value = value;
+                                input.classList.add(...event.target.classList);
                                 event.target.replaceWith(input);
                                 input.focus();
-                                input.addEventListener('blur', (event) => {
-                                    const newValue = event.target.value;
-                                    console.log(newValue);
-                                    getInputValueAndPatch(newValue, input, dataset, cardId) || createPElement(dataset, value, input);
+                                input.addEventListener('blur', (blurEvent) => {
+                                    const newValue = blurEvent.target.value;
+
+                                    getInputValueAndPatch(newValue || value, input, dataset, cardId);
+                                    if (blurEvent.target.classList.contains('card-price') || blurEvent.target.classList.contains('sell-price')) {
+                                        // Recalculate profit
+                                        if (cardDiv) {
+                                            const buyInput = cardDiv.querySelector('.card-price');
+                                            const sellInput = cardDiv.querySelector('.sell-price');
+                                            const profitElement = cardDiv.querySelector('.profit');
+
+                                            // Determine updated buy/sell values
+                                            let buyValue = buyInput ? buyInput.textContent.replace('€', '') : '';
+                                            let sellValue = sellInput ? sellInput.textContent.replace('€', '') : '';
+
+                                            if (blurEvent.target.classList.contains('card-price')) {
+                                                buyValue = blurEvent.target.value.replace('€', '');
+                                            }
+                                            if (blurEvent.target.classList.contains('sell-price')) {
+                                                sellValue = blurEvent.target.value.replace('€', '');
+                                            }
+                                            const profit = Number(sellValue) - Number(buyValue);
+                                            if (profitElement) {
+                                                const profitDataSet = profitElement.dataset.field;
+                                                replaceWithPElement(profitDataSet, profit, profitElement);
+                                                patchValue(cardId, profit, profitDataSet);
+                                            }
+                                        }
+                                    }
                                 });
                                 input.addEventListener('keydown', (event) => {
                                     if (event.key === 'Enter') {
@@ -194,7 +223,9 @@ async function loadAuctions() {
                         input.addEventListener('blur', (event) =>{
                             console.log(event.target.value);
                             const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
-                            getInputValueAndPatch(event.target.value, input, event.target.dataset.field, cardId);
+                            const value = event.target.value;
+                            const dataset = event.target.dataset;
+                            getInputValueAndPatch(value, input, dataset.field, cardId);
                         })
                         input.addEventListener('keydown', (event) => {
                             if(event.key === 'Enter'){
