@@ -29,9 +29,6 @@ function getInputValueAndPatch(value, element, dataset, cardId){
         return null;
     }
     replaceWithPElement(dataset, value, element);
-    //console.log('Updating card:', cardId, p.dataset.field, p.textContent);
-    //const val = p.textContent.replace('€', '').trim();
-
     patchValue(cardId, value, dataset);
 }
 
@@ -46,7 +43,6 @@ function updateSoldStatus(cardId, isChecked) {
 }
 
 function patchValue(id, value, dataset){
-    //console.log(value);
     value = String(value);
     value = value.replace('€', '');
     fetch(`/update/${id}`, {
@@ -135,7 +131,7 @@ async function loadAuctions() {
                     });
 
                     cardsContainer.addEventListener('dblclick', (event) => {
-                        if (event.target.closest('.card') && !(event.target.tagName === "DIV")) {
+                        if (event.target.closest('.card') && !(event.target.tagName === "DIV") && !(event.target.classList.contains('profit'))) {
                             //console.log('Card double-clicked:', event.target);
                             const cardDiv = event.target.closest('.card');
                             const cardId = cardDiv.querySelector('.card-id').textContent;
@@ -187,14 +183,14 @@ async function loadAuctions() {
                                             const profitElement = cardDiv.querySelector('.profit');
 
                                             // Determine updated buy/sell values
-                                            let buyValue = buyInput ? buyInput.textContent.replace('€', '') : '';
-                                            let sellValue = sellInput ? sellInput.textContent.replace('€', '') : '';
+                                            let buyValue = buyInput ? buyInput.textContent.replace('€', '').trim() : '';
+                                            let sellValue = sellInput ? sellInput.textContent.replace('€', '').trim() : '';
 
                                             if (blurEvent.target.classList.contains('card-price')) {
-                                                buyValue = blurEvent.target.value.replace('€', '');
+                                                buyValue = blurEvent.target.value.replace('€', '').trim();
                                             }
                                             if (blurEvent.target.classList.contains('sell-price')) {
-                                                sellValue = blurEvent.target.value.replace('€', '');
+                                                sellValue = blurEvent.target.value.replace('€', '').trim();
                                             }
                                             const profit = Number(sellValue) - Number(buyValue);
                                             if (profitElement) {
