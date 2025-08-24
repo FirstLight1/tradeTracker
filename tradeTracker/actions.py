@@ -55,8 +55,6 @@ def loadCards(auction_id):
 
 @bp.route('/deleteCard/<int:card_id>', methods=('DELETE',))
 def deleteCard(card_id):
-    x = type(card_id)
-    print(x)
     db = get_db()
     db.execute('DELETE FROM cards WHERE id = ?', (card_id,))
     db.commit()
@@ -74,10 +72,8 @@ def deleteAuction(auction_id):
 def update(card_id):
     db = get_db()
     data = request.get_json()
-    print(data)
     field = data.get("field")
     value = data.get("value")
-    print(f"Updating card {card_id}: {field} = {value}")
     allowed_fields = {"card_name", "condition", "card_price", "market_value", "sell_price", "sold", "profit"}
 
     if field in allowed_fields:
