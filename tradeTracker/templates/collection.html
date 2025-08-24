@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Trade Tracker</h1>
+    <button><a href="{{ url_for('actions.renderAuctions') }}">Auctions</a></button>
+    <button><a href="{{ url_for('actions.renderAddCardsToCollection') }}">Add Card(s)</a></button>
+    <div class="collection">
+        <!-- cards go here -->
+    </div>
+</body>
+</html>

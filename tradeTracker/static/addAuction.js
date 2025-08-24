@@ -46,7 +46,7 @@ saveButton.addEventListener('click', () =>{
     const auctionName = document.querySelector('.auction-name').value;
     const auctionBuy = document.querySelector('.auction-buy-price').value;
     const auctionProfit = document.querySelector('.auction-profit').value;
-    const date = new Date().toISOString().slice(0, 10);
+    const date = new Date().toISOString();
     let auction = {
         name: auctionName.trim() || null,
         buy: auctionBuy ? parseFloat(auctionBuy.replace(',','.')) : null,

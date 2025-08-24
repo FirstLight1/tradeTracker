@@ -1,5 +1,3 @@
-const auctionContainer = document.querySelector('.auction-container');
-
 function renderField(value, inputType, classList, placeholder, datafield) {
     if (value === null) {
         return `<input type="${inputType}" class="${classList.join(' ')}" placeholder="${placeholder}" data-field="${datafield}">`;
@@ -74,6 +72,7 @@ function deleteAuction(id, div){
 }
 
 async function loadAuctions() {
+    const auctionContainer = document.querySelector('.auction-container');
     try {
         const response = await fetch('/loadAuctions');
         const data = await response.json();

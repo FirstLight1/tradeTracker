@@ -7,6 +7,18 @@ bp = Blueprint('actions', __name__)
 def addForm():
     return render_template("add-auction.html")
 
+@bp.route('/collection')
+def renderCollection():
+    return render_template("collection.html")
+
+@bp.route('/')
+def renderAuctions():
+    return render_template("index.html")
+
+@bp.route('/renderAddCardsToCollection')
+def renderAddCardsToCollection():
+    return render_template("addCardsToCollection.html")
+
 @bp.route('/add', methods=('GET', 'POST'))
 def add():
     if request.method == 'POST':
@@ -51,7 +63,7 @@ def loadAuctions():
 def loadCards(auction_id):
     db = get_db()
     cards = db.execute('SELECT * FROM cards WHERE auction_id = ?', (auction_id,)).fetchall()
-    return jsonify([dict(card) for card in cards])
+    return jsonify([dict(card) for card in cards]),200
 
 @bp.route('/deleteCard/<int:card_id>', methods=('DELETE',))
 def deleteCard(card_id):
@@ -66,7 +78,7 @@ def deleteAuction(auction_id):
     db.execute('DELETE FROM cards WHERE auction_id = ?', (auction_id,))
     db.execute('DELETE FROM auctions WHERE id = ?', (auction_id,))
     db.commit()
-    return jsonify({'status': 'success'})
+    return jsonify({'status': 'success'}),200
 
 @bp.route('/update/<int:card_id>', methods=('PATCH',))
 def update(card_id):
@@ -79,4 +91,24 @@ def update(card_id):
     if field in allowed_fields:
         db.execute(f'UPDATE cards SET {field} = ? WHERE id = ?', (value, card_id))
         db.commit()
-    return jsonify({'status': 'success'})
+    return jsonify({'status': 'success'}),200
+
+@bp.route('/addToCollecton', methods=('GET','POST'))
+def addToCollection():
+    if request.method == 'POST':
+        cards = request.get_json()
+        db = get_db()
+        for card in cards:
+            db.execute('INSERT INTO collection (card_name, card_num, conditon, buy_price, market_value) VALUES = (?, ?, ?, ?, ?)',
+            (
+                card.get('cardName'),
+                card.get('cardNum').
+                card.get('condition'),
+                card.get('buyPrice'),
+                card.get('marketValue'),
+            )
+        )
+    db.commit()
+    return jsonify({'status': 'successfull'}), 201
+        
+    

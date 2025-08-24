@@ -3,38 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../static/addAuction.css">
     <title>Document</title>
 </head>
 <body>
-    <button><a href="/">Go Back</a></button>
-    <dir class="auction-container">
-        <dir>
-            <label >Auction name</label><br>
-            <input type="text" class="auction-name">
-        </dir>
-        <dir>
-            <label>Buy price</label><br>
-            <input type="text" class="auction-buy-price" required>
-        </dir>
-        <dir>
-            <label>Auction profit</label><br>
-            <input type="text" class="auction-profit">
-        </dir>
-    </dir>
     <dir>
         <dir class="cards-header">
             <p>Card name</p>
+            <p>Card number</p>
             <p>Condition</p>
-            <p>Buy price</p>
             <p>Market price</p>
-            <p>Sell price</p>
-            <p>Sold</p>
-            <p>Profit</p>
         </dir>
-        <dir class="cards-container">
+         <dir class="cards-container">
             <dir class="card">
-                <input type="text" name="cardName">
+                <input type="text" name="cardName" oninput="handleCardInput(this)">
+                <input type="text" name="cardNum">
                 <select name="condition">
                     <option value=""></option>
                     <option value="Mint">Mint</option>
@@ -46,15 +28,11 @@
                     <option value="Poor">Poor</option>
                 </select>
                 <input type="text" name="buyPrice">
-                <input type="text" name="marketValue" class="marketValue" oninput="handleCardInput(this)">
-                <input type="text" name="sellPrice">
-                <input type="checkbox" name="sold">
-                <input type="text" name="profit">
+                <input type="text" name="marketValue" class="marketValue">
             </dir>
-        </dir>
     </dir>
     <button>Add card</button>
     <button class="save-btn">Save</button>
-    <script src="../static/addAuction.js"></script>
+    <script src="../static/addToCollection.js"></script>
 </body>
 </html>
