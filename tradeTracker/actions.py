@@ -97,18 +97,32 @@ def update(card_id):
 def addToCollection():
     if request.method == 'POST':
         cards = request.get_json()
+        #print(cards)
         db = get_db()
         for card in cards:
-            db.execute('INSERT INTO collection (card_name, card_num, conditon, buy_price, market_value) VALUES = (?, ?, ?, ?, ?)',
+            db.execute('INSERT INTO collection (card_name, card_num, condition, buy_price, market_value)'
+            ' VALUES (?, ?, ?, ?, ?)',
             (
                 card.get('cardName'),
-                card.get('cardNum').
+                card.get('cardNum'),
                 card.get('condition'),
                 card.get('buyPrice'),
                 card.get('marketValue'),
             )
         )
+        db.commit()
+    return jsonify({'status': 'success'}), 201
+
+@bp.route('/loadCollection')
+def loadCollection():
+    db = get_db()
+    cards = db.execute('SELECT * FROM collection').fetchall()
+    return jsonify([dict(card) for card in cards])
+
+@bp.route('/deleteFromCollection/<int:card_id>', methods=('DELETE',))
+def deleteFromCollection(card_id):
+    db = get_db()
+    db.execute('DELETE FROM collection WHERE id = ?', (card_id, ))
     db.commit()
-    return jsonify({'status': 'successfull'}), 201
-        
-    
+    return jsonify({'status': 'success'}), 200
+

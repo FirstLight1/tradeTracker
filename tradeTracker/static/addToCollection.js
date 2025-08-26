@@ -1,13 +1,5 @@
-function handleCardInput(input){
-    const container = document.querySelector(".cards-container")
-    const cards = document.querySelectorAll(".card")
-    const currentCard = input.closest('.card');
-    const lastCard = cards[cards.length - 1];
-
-    if(currentCard ==lastCard && input.value.trim() !== ''){
-        const newCard = lastCard.cloneNode(true);
-
-        newCard.querySelectorAll('input').forEach(el =>{
+function createNewCard(newCard){
+     newCard.querySelectorAll('input').forEach(el =>{
             if (el.type == 'checkbox') {
                 el.checked = false;
             } else{
@@ -22,15 +14,26 @@ function handleCardInput(input){
         const newCardName = newCard.querySelector('.marketValue');
         newCardName.oninput = function () {
         handleCardInput(this);
-      };
-      container.appendChild(newCard)
-    }
+        }
+        return newCard;
+}
+
+function handleCardInput(input){
+    const container = document.querySelector(".cards-container")
+    const cards = document.querySelectorAll(".card")
+    const currentCard = input.closest('.card');
+    const lastCard = cards[cards.length - 1];
+
+    if(currentCard == lastCard && input.value.trim() !== ''){
+        const newCard = createNewCard(lastCard.cloneNode(true));
+        container.appendChild(newCard)
+    };
 }
 
 class struct{
     constructor(){
         this.cardName = null;
-        this.carNum = null;
+        this.cardNum = null;
         this.condition = null;
         this.buyPrice = null;
         this.marketValue = null;
@@ -54,7 +57,7 @@ saveButton.addEventListener('click', () => {
         };
 
         card.cardName = input('input[name=cardName]');
-        card.carNum = input('input[name=cardNum]');
+        card.cardNum = input('input[name=cardNum]');
         card.condition = input('select[name=condition]');
         card.buyPrice = inputNumber('input[name=buyPrice]');
         card.marketValue = inputNumber('input[name=marketValue]');
@@ -63,11 +66,12 @@ saveButton.addEventListener('click', () => {
         }
     });
     const body = JSON.stringify(cardsArr);
+    console.log(body);
 
     fetch('/addToCollecton', {
         method : 'POST',
         headers: {
-            'Content-Type':'application/json'
+            'Content-Type': 'application/json'
         },
         body: body,
     })
@@ -81,5 +85,15 @@ saveButton.addEventListener('click', () => {
         console.error('Error:', error);
     });
 });
+
+const addCardButton =  document.querySelector('.add-card');
+addCardButton.addEventListener('click', () =>{
+    const cards = document.querySelectorAll('.card');
+    const card = cards[0];
+    const container = document.querySelector(".cards-container")
+    const newCard = createNewCard(card.cloneNode(true));
+
+    container.append(newCard);
+})
 
 

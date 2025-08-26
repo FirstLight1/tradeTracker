@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS auctions;
 DROP TABLE IF EXISTS cards;
+DROP TABLE IF EXISTS collection;
 
 CREATE TABLE auctions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -9,7 +10,7 @@ CREATE TABLE auctions (
     date_created TEXT
 );
 
-INSERT INTO auctions (auction_name) VALUES ('Singles')
+INSERT INTO auctions (auction_name) VALUES ('Singles');
 
 CREATE TABLE cards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,19 +20,18 @@ CREATE TABLE cards (
     card_price REAL,
     market_value REAL,
     sell_price REAL,
-    --boolean
-    sold INTEGER,
+    sold INTEGER DEFAULT 0, -- boolean (0 = false, 1 = true)
     profit REAL,
     FOREIGN KEY (auction_id) REFERENCES auctions (id)
 );
 
 CREATE INDEX idx_cards_card_name ON cards(card_name);
 
-CREATE TABLE collection(
+CREATE TABLE collection (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     card_name TEXT NOT NULL,
     card_num TEXT,
     condition TEXT,
     buy_price REAL,
-    market_value REAL,
-)
+    market_value REAL
+);

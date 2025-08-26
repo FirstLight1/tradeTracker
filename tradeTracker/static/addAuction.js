@@ -1,13 +1,5 @@
-function handleCardInput(input){
-    const container = document.querySelector(".cards-container")
-    const cards = document.querySelectorAll(".card")
-    const currentCard = input.closest('.card');
-    const lastCard = cards[cards.length - 1];
-
-    if(currentCard ==lastCard && input.value.trim() !== ''){
-        const newCard = lastCard.cloneNode(true);
-
-        newCard.querySelectorAll('input').forEach(el =>{
+function createNewCard(newCard){
+     newCard.querySelectorAll('input').forEach(el =>{
             if (el.type == 'checkbox') {
                 el.checked = false;
             } else{
@@ -22,8 +14,20 @@ function handleCardInput(input){
         const newCardName = newCard.querySelector('.marketValue');
         newCardName.oninput = function () {
         handleCardInput(this);
-      };
-      container.appendChild(newCard)
+        }
+        return newCard;
+}
+
+
+function handleCardInput(input){
+    const container = document.querySelector(".cards-container")
+    const cards = document.querySelectorAll(".card")
+    const currentCard = input.closest('.card');
+    const lastCard = cards[cards.length - 1];
+
+    if(currentCard ==lastCard && input.value.trim() !== ''){
+        const newCard = createNewCard(lastCard.cloneNode(true));
+        container.appendChild(newCard)
     }
 }
 
@@ -108,6 +112,15 @@ saveButton.addEventListener('click', () =>{
     }
 })
 
+const addCardButton = document.querySelector('.add-card');
+addCardButton.addEventListener('click', () =>{
+    const cards = document.querySelectorAll('.card');
+    const card = cards[0];
+    const container = document.querySelector(".cards-container")
+    const newCard = createNewCard(card.cloneNode(true));
+
+    container.append(newCard);
+})
 
 
 

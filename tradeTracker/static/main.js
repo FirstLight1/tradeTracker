@@ -1,4 +1,4 @@
-function renderField(value, inputType, classList, placeholder, datafield) {
+export function renderField(value, inputType, classList, placeholder, datafield) {
     if (value === null) {
         return `<input type="${inputType}" class="${classList.join(' ')}" placeholder="${placeholder}" data-field="${datafield}">`;
     } else {
@@ -6,7 +6,7 @@ function renderField(value, inputType, classList, placeholder, datafield) {
     }
 }
 
-function appendEuroSign(value){
+export function appendEuroSign(value){
     if (isNaN(value)){
         return value;
     } else{
@@ -14,7 +14,7 @@ function appendEuroSign(value){
     }
 }
 
-function replaceWithPElement(dataset, value, element){
+export function replaceWithPElement(dataset, value, element){
     const p = document.createElement('p');
     p.dataset.field = dataset;
     p.classList.add('card-info', dataset.replace('_', '-'));
@@ -22,7 +22,7 @@ function replaceWithPElement(dataset, value, element){
     element.replaceWith(p);
 }
 
-function getInputValueAndPatch(value, element, dataset, cardId){
+export function getInputValueAndPatch(value, element, dataset, cardId){
     if (!Boolean(value)){
         return null;
     }
@@ -40,7 +40,7 @@ function updateSoldStatus(cardId, isChecked) {
     });
 }
 
-function patchValue(id, value, dataset){
+export function patchValue(id, value, dataset){
     value = String(value);
     value = value.replace('€', '');
     fetch(`/update/${id}`, {
@@ -71,6 +71,24 @@ function deleteAuction(id, div){
     });
 }
 
+function removeCard(id, div){
+    fetch(`/deleteCard/${id}`,{
+        method: 'DELETE',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === 'success'){
+            div.remove()
+        }else{
+            console.error('Error deleting card:', data);
+
+        }
+    })
+        .catch(error => {
+        console.error('Error deleting card:', error);
+    });
+}
+
 async function loadAuctions() {
     const auctionContainer = document.querySelector('.auction-container');
     try {
@@ -80,7 +98,7 @@ async function loadAuctions() {
             const auctionDiv = document.createElement('div');
             auctionDiv.classList.add('auction-tab');
             auctionDiv.setAttribute('data-id', auction.id);
-            let auctionName = auction.auction_name || "Auction " + auction.id; // Fallback for name
+            let auctionName = auction.auction_name || "Auction " + (auction.id - 1); // Fallback for name
             let auctionPrice = auction.auction_price || ""; // Fallback for buy price  
             let auctionProfit = auction.auction_profit || ""; // Fallback for profit
             auctionDiv.innerHTML = `
@@ -261,20 +279,7 @@ async function loadAuctions() {
                                 //console.log(cardId);
                                 const cardDiv = button.closest('.card');
                                 //console.log(cardDiv);
-                                fetch(`/deleteCard/${cardId}`, {
-                                    method: 'DELETE',
-                                })
-                                .then(response => response.json())
-                                .then(data => {
-                                    if(data.status === 'success'){
-                                        cardDiv.remove();
-                                    }else{
-                                        console.error('Something went wrong, send me this:', data);
-                                    }
-                                })
-                                .catch(error =>{
-                                    console.error("Error:", error);
-                                });
+                                removeCard(cardId, cardDiv);
                                 const cardsContainer = button.closest('.cards-container');
                                 if (cardsContainer.childElementCount === 1){
                                     const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
