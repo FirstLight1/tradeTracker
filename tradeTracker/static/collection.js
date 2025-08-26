@@ -1,4 +1,4 @@
-import {renderField, appendEuroSign, replaceWithPElement} from './main.js';
+import {renderField, replaceWithPElement} from './main.js';
 
 function removeCard(id, div){
     try{
@@ -123,6 +123,23 @@ async function fetchCollection(){
                 }
             }
         });
+
+        const inputFields = collectionContainer.querySelectorAll('input[type="text"]');
+        inputFields.forEach((input) => {
+            input.addEventListener('blur', (event) =>{
+                console.log(event.target.value);
+                const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
+                const value = event.target.value;
+                const dataset = event.target.dataset;
+                getInputValueAndPatch(value, input, dataset.field, cardId);
+            })
+            input.addEventListener('keydown', (event) => {
+                if(event.key === 'Enter'){
+                    input.blur();
+                }
+            });
+        });
+
 
     } catch(err){
         console.error(err);

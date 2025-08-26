@@ -6,7 +6,10 @@ export function renderField(value, inputType, classList, placeholder, datafield)
     }
 }
 
-export function appendEuroSign(value){
+function appendEuroSign(value, dataset){
+    if (dataset === 'card_num'){
+        return value;
+    }
     if (isNaN(value)){
         return value;
     } else{
@@ -18,11 +21,11 @@ export function replaceWithPElement(dataset, value, element){
     const p = document.createElement('p');
     p.dataset.field = dataset;
     p.classList.add('card-info', dataset.replace('_', '-'));
-    p.textContent = appendEuroSign(value);
+    p.textContent = appendEuroSign(value, dataset);
     element.replaceWith(p);
 }
 
-export function getInputValueAndPatch(value, element, dataset, cardId){
+function getInputValueAndPatch(value, element, dataset, cardId){
     if (!Boolean(value)){
         return null;
     }
