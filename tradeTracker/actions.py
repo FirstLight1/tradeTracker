@@ -3,9 +3,13 @@ from tradeTracker.db import get_db
 
 bp = Blueprint('actions', __name__)
 
-@bp.route('/addForm')
-def addForm():
+@bp.route('/addAuction')
+def addAuction():
     return render_template("add-auction.html")
+
+@bp.route('/addSingles')
+def addSingles():
+    return render_template("add-singles.html")
 
 @bp.route('/collection')
 def renderCollection():
@@ -138,4 +142,27 @@ def updateCollection(card_id):
         db.execute(f'UPDATE collection SET {field} = ? WHERE id = ?', (value, card_id))
         db.commit()
     return jsonify({'status': 'success'}),200
+
+@bp.route('/addToSingles', methods=('POST', 'GET'))
+def addToSingles():
+    if request.method == 'POST':
+        auction_id = 1
+        data = request.get_json()
+        db = get_db()
+        for card in data:
+            db.execute('INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, profit, auction_id)'
+                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    (
+                        card.get('cardName'),
+                        card.get('condition'),
+                        card.get('buyPrice'),
+                        card.get('marketValue'),
+                        card.get('sellPrice'),
+                        card.get('checkbox'),
+                        card.get('profit'),
+                        auction_id
+                    )
+            )
+        db.commit()
+    return jsonify({'status': 'success'}), 201
 

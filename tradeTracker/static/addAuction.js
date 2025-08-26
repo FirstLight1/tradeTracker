@@ -1,4 +1,4 @@
-function createNewCard(newCard){
+export function createNewCard(newCard){
      newCard.querySelectorAll('input').forEach(el =>{
             if (el.type == 'checkbox') {
                 el.checked = false;
@@ -19,19 +19,19 @@ function createNewCard(newCard){
 }
 
 
-function handleCardInput(input){
+window.handleCardInput = function (input){
     const container = document.querySelector(".cards-container")
     const cards = document.querySelectorAll(".card")
     const currentCard = input.closest('.card');
     const lastCard = cards[cards.length - 1];
 
-    if(currentCard ==lastCard && input.value.trim() !== ''){
+    if(currentCard == lastCard && input.value.trim() !== ''){
         const newCard = createNewCard(lastCard.cloneNode(true));
         container.appendChild(newCard)
     }
 }
 
- class struct{
+export class struct{
     constructor(){
         this.cardName = null;
         this.condition = null;
@@ -41,7 +41,7 @@ function handleCardInput(input){
         this.checkbox = null;
         this.profit = null;
     }
- }
+}
 
 const cardsArr = [];
 const saveButton = document.querySelector('.save-btn')

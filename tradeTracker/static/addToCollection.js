@@ -18,7 +18,7 @@ function createNewCard(newCard){
         return newCard;
 }
 
-function handleCardInput(input){
+ window.handleCardInput = function(input){
     const container = document.querySelector(".cards-container")
     const cards = document.querySelectorAll(".card")
     const currentCard = input.closest('.card');

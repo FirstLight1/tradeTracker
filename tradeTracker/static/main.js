@@ -92,6 +92,10 @@ function removeCard(id, div){
     });
 }
 
+function isEmpty(obj) {
+    return Object.keys(obj).length === 0;
+}
+
 async function loadAuctions() {
     const auctionContainer = document.querySelector('.auction-container');
     try {
@@ -100,6 +104,9 @@ async function loadAuctions() {
         data.forEach(auction => {
             const auctionDiv = document.createElement('div');
             auctionDiv.classList.add('auction-tab');
+            if(auction.auction_name === 'Singles'){
+                auctionDiv.classList.add('singles');
+            }
             auctionDiv.setAttribute('data-id', auction.id);
             let auctionName = auction.auction_name || "Auction " + (auction.id - 1); // Fallback for name
             let auctionPrice = auction.auction_price || ""; // Fallback for buy price  
@@ -133,6 +140,9 @@ async function loadAuctions() {
                         const cards = await response.json();
                         cardsContainer.style.display = 'block';
                         button.textContent = 'Hide';
+                        if(isEmpty(cards)){
+                            cardsContainer.innerHTML = '<div><p>Empty</p></div>';
+                        }else{
 
                         cardsContainer.innerHTML = ""; // Clear previous cards
                         cards.forEach(card => {
@@ -289,6 +299,7 @@ async function loadAuctions() {
                                 }
                             });
                         });
+                    }
                     } else{
                         cardsContainer.style.display = 'none';
                         button.textContent = 'View';
@@ -302,9 +313,11 @@ async function loadAuctions() {
         deleteButton.forEach(button => {
             button.addEventListener('click', () =>{
                 const auctionId = button.getAttribute('data-id');
-                const auctionDiv = button.closest('.auction-tab');
-                deleteAuction(auctionId, auctionDiv);
-            })
+                if(auctionId != 1){
+                    const auctionDiv = button.closest('.auction-tab');  
+                    deleteAuction(auctionId, auctionDiv);
+                }
+            });
         });
     } catch (error) {
         console.error('Error loading auctions:', error);

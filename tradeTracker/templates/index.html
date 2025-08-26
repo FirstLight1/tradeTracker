@@ -9,7 +9,8 @@
 <body>
     <main>
         <h1>Trade Tracker</h1>
-        <button class="add"><a href="{{ url_for('actions.addForm') }}">Add auction</a></button>
+        <button class="addAuction"><a href="{{ url_for('actions.addAuction') }}">Add auction</a></button>
+        <button class="addSingles"><a href="{{ url_for('actions.addSingles') }}">Add Singles</a></button>
         <button class="collection"><a href="{{ url_for('actions.renderCollection')}}">Collection</a></button>
         <dir class="auction-container">
             
