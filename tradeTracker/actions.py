@@ -126,3 +126,16 @@ def deleteFromCollection(card_id):
     db.commit()
     return jsonify({'status': 'success'}), 200
 
+@bp.route('/updateCollection/<int:card_id>', methods=('PATCH',))
+def updateCollection(card_id):
+    db = get_db()
+    data = request.get_json()
+    field = data.get("field")
+    value = data.get("value")
+    allowed_fields = {"card_name", "card_num", "condition", "buy_price","market_value"}
+
+    if field in allowed_fields:
+        db.execute(f'UPDATE collection SET {field} = ? WHERE id = ?', (value, card_id))
+        db.commit()
+    return jsonify({'status': 'success'}),200
+

@@ -40,7 +40,7 @@ function updateSoldStatus(cardId, isChecked) {
     });
 }
 
-export function patchValue(id, value, dataset){
+function patchValue(id, value, dataset){
     value = String(value);
     value = value.replace('€', '');
     fetch(`/update/${id}`, {
@@ -152,10 +152,8 @@ async function loadAuctions() {
 
                         cardsContainer.addEventListener('dblclick', (event) => {
                             if (event.target.closest('.card') && !(event.target.tagName === "DIV") && !(event.target.classList.contains('profit'))) {
-                                //console.log('Card double-clicked:', event.target);
                                 const cardDiv = event.target.closest('.card');
                                 const cardId = cardDiv.querySelector('.card-id').textContent;
-                                //console.log('Card ID:', cardId);
                                 if (event.target.classList.contains('condition')) {
                                     const value = event.target.textContent;
                                     const select = document.createElement('select');
