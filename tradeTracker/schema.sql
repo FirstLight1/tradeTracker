@@ -1,6 +1,13 @@
+DROP TABLE IF EXISTS info;
 DROP TABLE IF EXISTS auctions;
 DROP TABLE IF EXISTS cards;
 DROP TABLE IF EXISTS collection;
+
+CREATE TABLE info (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    inventory_value TEXT,
+    total_profit TEXT
+);
 
 CREATE TABLE auctions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

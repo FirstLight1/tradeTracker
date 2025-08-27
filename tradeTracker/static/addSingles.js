@@ -4,6 +4,13 @@ const cardsArr = [];
 const saveButton = document.querySelector('.save-btn')
 
 saveButton.addEventListener('click', () => {
+    let auction = {
+        profit: null,
+    };
+    if(cardsArr.length === 0){
+        cardsArr.push(auction);
+    }
+
     const cards = document.querySelectorAll('.card');
         cards.forEach(ell =>{
             let card = new struct();
@@ -29,6 +36,12 @@ saveButton.addEventListener('click', () => {
                 cardsArr.push(card);
             }
         });
+
+        let profit = 0;
+        for(let i = 1; i < cardsArr.length; i++){
+            profit += cardsArr[i].profit || 0;
+        }
+        cardsArr[0].profit = profit;
 
         if (cardsArr.length !== 1){
             const jsonbody = JSON.stringify(cardsArr);

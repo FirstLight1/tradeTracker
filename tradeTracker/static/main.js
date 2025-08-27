@@ -156,7 +156,7 @@ async function loadAuctions() {
                                 ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
                                 ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
                                 <input type="checkbox" class='card-info-checkbox' ${card.sold ? 'checked' : ''}>
-                                ${renderField(card.profit ? card.profit + '€' : ' ', 'text', ['card-info', 'profit'], 'Profit', 'profit')}
+                                ${renderField(card.profit != null ? card.profit + '€' : ' ', 'text', ['card-info', 'profit'], 'Profit', 'profit')}
                                 <span hidden class = "card-id">${card.id}</span>
                                 <button class=delete-card data-id="${card.id}">Delete</button>
                             `;
@@ -295,7 +295,9 @@ async function loadAuctions() {
                                 if (cardsContainer.childElementCount === 1){
                                     const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
                                     const auctionDiv = cardsContainer.closest('.auction-tab');
-                                    deleteAuction(auctionId, auctionDiv);
+                                    if(!(auctionDiv.classList.contains('singles'))){
+                                        deleteAuction(auctionId, auctionDiv);
+                                    }
                                 }
                             });
                         });

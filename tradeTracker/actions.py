@@ -146,10 +146,15 @@ def updateCollection(card_id):
 @bp.route('/addToSingles', methods=('POST', 'GET'))
 def addToSingles():
     if request.method == 'POST':
+        db = get_db()
         auction_id = 1
         data = request.get_json()
-        db = get_db()
-        for card in data:
+        profit = {
+            'profit': data[0]['profit'] if 'profit' in data[0] else None,
+        }
+
+        db.execute('UPDATE auctions SET auction_profit = ? WHERE id = 1',(profit['profit'],))
+        for card in data[1:]:
             db.execute('INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, profit, auction_id)'
                     'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                     (
