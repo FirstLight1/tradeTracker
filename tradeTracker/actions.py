@@ -153,7 +153,7 @@ def addToSingles():
             'profit': data[0]['profit'] if 'profit' in data[0] else None,
         }
 
-        db.execute('UPDATE auctions SET auction_profit = ? WHERE id = 1',(profit['profit'],))
+        db.execute('UPDATE auctions SET auction_profit = auction_profit + ? WHERE id = 1',(profit['profit'],))
         for card in data[1:]:
             db.execute('INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, profit, auction_id)'
                     'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -171,3 +171,11 @@ def addToSingles():
         db.commit()
     return jsonify({'status': 'success'}), 201
 
+@bp.route('/updateAuctionProfit/<int:auction_id>', methods=('PATCH',))
+def updateAuctionProfit(auction_id):
+    db = get_db()
+    data = request.get_json()
+    profit = data.get('value')
+    db.execute('UPDATE auctions SET auction_profit = ? WHERE id = ?', (profit, auction_id))
+    db.commit()
+    return jsonify({'status': 'success'}), 200

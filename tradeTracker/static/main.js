@@ -92,6 +92,33 @@ function removeCard(id, div){
     });
 }
 
+function updateAuctionProfit(auction, id){
+    const cards = auction.querySelectorAll('.card');
+    const profitField = auction.querySelector('.auction-profit');
+    let profit = 0;
+    cards.forEach(card =>{
+        const cardProfit = card.querySelector('.profit').textContent.replace('€', '');
+        profit += Number(cardProfit);
+    })
+    fetch(`/updateAuctionProfit/${id}`,{
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({value: profit})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === 'success'){
+            profitField.textContent = profit + '€';
+        }
+    })
+    .catch(error =>{
+        console.error(error);
+    })
+}
+
+
 function isEmpty(obj) {
     return Object.keys(obj).length === 0;
 }
@@ -109,12 +136,12 @@ async function loadAuctions() {
             }
             auctionDiv.setAttribute('data-id', auction.id);
             let auctionName = auction.auction_name || "Auction " + (auction.id - 1); // Fallback for name
-            let auctionPrice = auction.auction_price || ""; // Fallback for buy price  
-            let auctionProfit = auction.auction_profit || ""; // Fallback for profit
+            let auctionPrice = auction.auction_price || null; // Fallback for buy price  
+            let auctionProfit = auction.auction_profit || null; // Fallback for profit
             auctionDiv.innerHTML = `
-                <p>${auctionName}</p>
-                <p>${auctionPrice}</p>
-                <p>${auctionProfit}</p>
+                <p class="auction-name">${auctionName}</p>
+                <p class="auction-price">${auctionPrice != null ? auctionPrice + '€' : ""}</p>
+                <p class="auction-profit">${auctionProfit != null ? auctionProfit + '€' : ""}</p>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
                 <div class="cards-container">
@@ -228,6 +255,9 @@ async function loadAuctions() {
                                                     const profitDataSet = profitElement.dataset.field;
                                                     replaceWithPElement(profitDataSet, profit, profitElement);
                                                     patchValue(cardId, profit, profitDataSet);
+                                                    const auction = cardDiv.closest('.auction-tab');
+                                                    const auctionId = auction.getAttribute('data-id')
+                                                    updateAuctionProfit(auction, auctionId);
                                                 }
                                             }
                                         }
@@ -287,9 +317,8 @@ async function loadAuctions() {
                         deleteCard.forEach((button) => {
                             button.addEventListener('click', () => {
                                 const cardId = button.getAttribute('data-id');
-                                //console.log(cardId);
                                 const cardDiv = button.closest('.card');
-                                //console.log(cardDiv);
+                                //recalculate profit
                                 removeCard(cardId, cardDiv);
                                 const cardsContainer = button.closest('.cards-container');
                                 if (cardsContainer.childElementCount === 1){

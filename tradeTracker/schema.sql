@@ -17,7 +17,7 @@ CREATE TABLE auctions (
     date_created TEXT
 );
 
-INSERT INTO auctions (auction_name) VALUES ('Singles');
+INSERT INTO auctions (auction_name, auction_profit) VALUES ('Singles', 0);
 
 CREATE TABLE cards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
