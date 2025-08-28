@@ -6,6 +6,15 @@ export function renderField(value, inputType, classList, placeholder, datafield)
     }
 }
 
+function allTrue(checkboxes){
+    for(let i = 0; i < checkboxes.length; i++){
+        if(!checkboxes[i].checked){
+            return false;
+        }
+    }
+    return true;
+}
+
 function appendEuroSign(value, dataset){
     if (dataset === 'card_num'){
         return value;
@@ -274,34 +283,48 @@ async function loadAuctions() {
                         });
 
                         const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox');
-                        checkboxes.forEach((checkbox) => {
-                            checkbox.addEventListener('click', (event) => {
-                                const isChecked = event.target.checked;
-                                let profitElement = event.target.closest('.card').querySelector('.profit');
-                                const target = event.target;
-                                
-                                if (!Boolean(profitElement.textContent) || !isChecked === true){
-                                    event.preventDefault();
-                                }else{
-                                    const cardBuyElement = target.closest('.card').querySelector('.card-price').textContent.replace('€', '');
-                                    const cardSellElement = target.closest('.card').querySelector('.sell-price').textContent.replace('€', '');
-                                    const cardId = target.closest('.card').querySelector('.card-id').textContent;
-                                    const auctionElement = target.closest('.auction-tab');
-                                    const auctionId = auctionElement.getAttribute('data-id');
-                                    if (!Boolean(cardBuyElement) || !Boolean(cardSellElement)){
+                        const auctionTab = checkboxes[0].closest('.auction-tab')
+                        const auctionPrice = Number(auctionTab.querySelector('.auction-price').textContent.replace('€', ''));
+                        const auctionProfit = auctionTab.querySelector('.auction-profit');
+                        if(!auctionTab.classList.contains('singles') && Boolean(auctionPrice)){
+                            let profit = 0;
+                            if (allTrue(checkboxes)){
+                                checkboxes.forEach((box) =>{
+                                    const profitElement = box.closest('.card').querySelector('.profit').textContent.replace('€','');
+                                    profit += Number(profitElement);
+                                })
+                                auctionProfit.textContent = profit + '€'+ 'test';
+                            }
+                        }else{
+                            checkboxes.forEach((checkbox) => {
+                                checkbox.addEventListener('click', (event) => {
+                                    const isChecked = event.target.checked;
+                                    let profitElement = event.target.closest('.card').querySelector('.profit');
+                                    const target = event.target;
+                                    
+                                    if (!Boolean(profitElement.textContent) || !isChecked === true){
                                         event.preventDefault();
-                                    } else{
-                                        let profit = cardSellElement - cardBuyElement;
-                                        profit = appendEuroSign(profit);
-                                        profitElement.textContent = profit;
-                                        checkbox.checked = true; // Keep checkbox checked
-                                        updateSoldStatus(cardId, isChecked);
-                                        patchValue(cardId, profit, profitElement.dataset.field);
-                                        updateAuctionProfit(auctionElement, auctionId);
+                                    }else{
+                                        const cardBuyElement = target.closest('.card').querySelector('.card-price').textContent.replace('€', '');
+                                        const cardSellElement = target.closest('.card').querySelector('.sell-price').textContent.replace('€', '');
+                                        const cardId = target.closest('.card').querySelector('.card-id').textContent;
+                                        const auctionElement = target.closest('.auction-tab');
+                                        const auctionId = auctionElement.getAttribute('data-id');
+                                        if (!Boolean(cardBuyElement) || !Boolean(cardSellElement)){
+                                            event.preventDefault();
+                                        } else{
+                                            let profit = cardSellElement - cardBuyElement;
+                                            profit = appendEuroSign(profit);
+                                            profitElement.textContent = profit;
+                                            checkbox.checked = true; // Keep checkbox checked
+                                            updateSoldStatus(cardId, isChecked);
+                                            patchValue(cardId, profit, profitElement.dataset.field);
+                                            updateAuctionProfit(auctionElement, auctionId);
+                                        }
                                     }
-                                }
-                            }, false);
-                        });
+                                }, false);
+                            });
+                        }
 
                         const inputFields = cardsContainer.querySelectorAll('input[type="text"]');
                         inputFields.forEach((input) => {
