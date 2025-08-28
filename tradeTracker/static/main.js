@@ -74,22 +74,24 @@ function deleteAuction(id, div){
     });
 }
 
-function removeCard(id, div){
-    fetch(`/deleteCard/${id}`,{
-        method: 'DELETE',
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.status === 'success'){
-            div.remove()
-        }else{
-            console.error('Error deleting card:', data);
+async function removeCard(id, div) {
+    try {
+        const response = await fetch(`/deleteCard/${id}`, {
+            method: 'DELETE',
+        });
+        const data = await response.json();
 
+        if (data.status === 'success') {
+            div.remove(); // remove the card from DOM
+            return true;
+        } else {
+            console.error('Error deleting card:', data);
+            return false;
         }
-    })
-        .catch(error => {
+    } catch (error) {
         console.error('Error deleting card:', error);
-    });
+        return false;
+    }
 }
 
 function updateAuctionProfit(auction, id){
@@ -276,13 +278,16 @@ async function loadAuctions() {
                             checkbox.addEventListener('click', (event) => {
                                 const isChecked = event.target.checked;
                                 let profitElement = event.target.closest('.card').querySelector('.profit');
+                                const target = event.target;
                                 
                                 if (!Boolean(profitElement.textContent) || !isChecked === true){
                                     event.preventDefault();
                                 }else{
-                                    const cardBuyElement = event.target.closest('.card').querySelector('.card-price').textContent.replace('€', '');
-                                    const cardSellElement = event.target.closest('.card').querySelector('.sell-price').textContent.replace('€', '');
-                                    const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
+                                    const cardBuyElement = target.closest('.card').querySelector('.card-price').textContent.replace('€', '');
+                                    const cardSellElement = target.closest('.card').querySelector('.sell-price').textContent.replace('€', '');
+                                    const cardId = target.closest('.card').querySelector('.card-id').textContent;
+                                    const auctionElement = target.closest('.auction-tab');
+                                    const auctionId = auctionElement.getAttribute('data-id');
                                     if (!Boolean(cardBuyElement) || !Boolean(cardSellElement)){
                                         event.preventDefault();
                                     } else{
@@ -292,6 +297,7 @@ async function loadAuctions() {
                                         checkbox.checked = true; // Keep checkbox checked
                                         updateSoldStatus(cardId, isChecked);
                                         patchValue(cardId, profit, profitElement.dataset.field);
+                                        updateAuctionProfit(auctionElement, auctionId);
                                     }
                                 }
                             }, false);
@@ -315,15 +321,17 @@ async function loadAuctions() {
 
                         const deleteCard = document.querySelectorAll('.delete-card');
                         deleteCard.forEach((button) => {
-                            button.addEventListener('click', () => {
+                            button.addEventListener('click', async () => {
                                 const cardId = button.getAttribute('data-id');
                                 const cardDiv = button.closest('.card');
-                                //recalculate profit
-                                removeCard(cardId, cardDiv);
                                 const cardsContainer = button.closest('.cards-container');
-                                if (cardsContainer.childElementCount === 1){
-                                    const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
-                                    const auctionDiv = cardsContainer.closest('.auction-tab');
+                                const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
+                                const auctionDiv = cardsContainer.closest('.auction-tab');
+                                const deleted = await removeCard(cardId, cardDiv);
+                                if(!deleted) return;
+                                //recalculate profit
+                                updateAuctionProfit(auctionDiv, auctionId)
+                                if (cardsContainer.childElementCount === 0){
                                     if(!(auctionDiv.classList.contains('singles'))){
                                         deleteAuction(auctionId, auctionDiv);
                                     }
