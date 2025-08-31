@@ -42,7 +42,7 @@ def add():
         auction_id = cursor.lastrowid
         for card in cardsArr[1:]:
             db.execute(
-                'INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, profit, auction_id) '
+                'INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id) '
                 'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                 (
                     card.get('cardName'),
@@ -50,7 +50,8 @@ def add():
                     card.get('buyPrice'),
                     card.get('marketValue'),
                     card.get('sellPrice'),
-                    card.get('checkbox'),
+                    card.get('checkbox', 0),
+                    card.get('checkbox_cm', 0),
                     card.get('profit'),
                     auction_id
                 )
@@ -91,7 +92,7 @@ def update(card_id):
     data = request.get_json()
     field = data.get("field")
     value = data.get("value")
-    allowed_fields = {"card_name", "condition", "card_price", "market_value", "sell_price", "sold", "profit"}
+    allowed_fields = {"card_name", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit"}
 
     if field in allowed_fields:
         db.execute(f'UPDATE cards SET {field} = ? WHERE id = ?', (value, card_id))
@@ -156,7 +157,7 @@ def addToSingles():
 
         db.execute('UPDATE auctions SET auction_profit = auction_profit + ? WHERE id = 1',(profit['profit'],))
         for card in data[1:]:
-            db.execute('INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, profit, auction_id)'
+            db.execute('INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id)'
                     'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                     (
                         card.get('cardName'),
@@ -164,7 +165,8 @@ def addToSingles():
                         card.get('buyPrice'),
                         card.get('marketValue'),
                         card.get('sellPrice'),
-                        card.get('checkbox'),
+                        card.get('checkbox', 0),
+                        card.get('checkbox_cm', 0),
                         card.get('profit'),
                         auction_id
                     )
@@ -180,6 +182,16 @@ def updateAuctionProfit(auction_id):
     db.execute('UPDATE auctions SET auction_profit = ? WHERE id = ?', (profit, auction_id))
     db.commit()
     return jsonify({'status': 'success'}), 200
+
+@bp.route('/updateAuction/<int:auction_id>', methods=('PATCH',))
+def updateAuction(auction_id):
+    db = get_db()
+    data = request.get_json()
+    profit = data.get('value')
+    db.execute('UPDATE auctions SET auction_profit = ? WHERE id = ?', (profit, auction_id))
+    db.commit()
+    return jsonify({'status': 'success'}), 200
+
 
 @bp.route('/CardMarketTable', methods=('GET', 'POST'))
 def cardMarketTable():

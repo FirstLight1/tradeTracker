@@ -39,6 +39,7 @@ export class struct{
         this.marketValue = null;
         this.sellPrice = null;
         this.checkbox = null;
+        this.checkbox_cm = null;
         this.profit = null;
     }
 }
@@ -77,8 +78,12 @@ saveButton.addEventListener('click', () =>{
         card.marketValue = inputNumber('input[name=marketValue]');
         card.sellPrice = inputNumber('input[name=sellPrice]');
         card.checkbox = ell.querySelector('input[name=sold]').checked;
+        card.checkbox_cm = ell.querySelector('input[name=sold_cm]').checked;
         card.profit = inputNumber('input[name=profit]');
-        if(card.checkbox === true && card.sellPrice !== null && card.buyPrice !==null){
+        if(card.sellPrice === null){
+            card.sellPrice = card.marketValue;
+        }
+        if((card.checkbox === true || card.checkbox_cm === true) && card.sellPrice !== null && card.buyPrice !==null){
             card.profit = card.sellPrice - card.buyPrice;
         }
         if(card.cardName !== null && card.marketValue !== null){

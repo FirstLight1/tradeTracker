@@ -28,6 +28,7 @@ CREATE TABLE cards (
     market_value REAL,
     sell_price REAL,
     sold INTEGER DEFAULT 0, -- boolean (0 = false, 1 = true)
+    sold_cm INTEGER DEFAULT 0, -- boolean (0 = false, 1 = true)
     profit REAL,
     FOREIGN KEY (auction_id) REFERENCES auctions (id)
 );
