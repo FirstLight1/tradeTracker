@@ -181,39 +181,40 @@ def updateAuctionProfit(auction_id):
     db.commit()
     return jsonify({'status': 'success'}), 200
 
-@bp.route('/CardMarketTable')
+@bp.route('/CardMarketTable', methods=('GET', 'POST'))
 def cardMarketTable():
-    db = get_db()
-    cards = request.get_json()
-    date = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    date = date + "Z"
-    auction = {
-        'name' : None,
-        'buy' : None,
-        'profit' : None,
-        'date' : date
-    }
-    cursor = db.execute(
-            'INSERT INTO auctions (auction_name, auction_price, auction_profit, date_created) VALUES (?, ?, ?, ?)',
-            (auction['name'], auction['buy'], auction['profit'], auction['date'])
+    if request.method == 'POST':
+        db = get_db()
+        cards = request.get_json()
+        date = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        date = date + "Z"
+        auction = {
+            'name' : None,
+            'buy' : None,
+            'profit' : None,
+            'date' : date
+        }
+        cursor = db.execute(
+                'INSERT INTO auctions (auction_name, auction_price, auction_profit, date_created) VALUES (?, ?, ?, ?)',
+                (auction['name'], auction['buy'], auction['profit'], auction['date'])
+            )
+        auction_id = cursor.lastrowid
+        cardsToInsert = []
+        for card in cards:
+            count = card.get('count', 1)
+            for _ in range(count):
+                cardsToInsert.append((
+                card.get('name', None),       # default to None if missing
+                card.get('condition', None),  # default to None if missing
+                card.get('price', None),      # default to None if missing
+                auction_id
+            ))
+                
+        db.executemany(
+        'INSERT INTO cards (card_name, condition, market_value, auction_id) VALUES (?, ?, ?, ?)',
+        cardsToInsert
         )
-    auction_id = cursor.lastrowid
-    cardsToInsert = []
-    for card in cards:
-        count = card.get('count', 1)
-        for _ in range(count):
-            cardsToInsert.append((
-            card.get('name', None),       # default to None if missing
-            card.get('condition', None),  # default to None if missing
-            card.get('price', None),      # default to None if missing
-            auction_id
-        ))
-            
-    db.executemany(
-    'INSERT INTO cards (card_name, condition, sell_price, auction_id) VALUES (?, ?, ?, ?)',
-    cardsToInsert
-    )
 
-    db.commit()
-    
+        db.commit()
+
     return jsonify({'status': 'success', 'auction_id': auction_id}), 201

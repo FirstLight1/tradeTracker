@@ -208,7 +208,7 @@ async function loadAuctions() {
                                 if (event.target.classList.contains('condition')) {
                                     const value = event.target.textContent;
                                     const select = document.createElement('select');
-                                    const options = [' ', 'Mint', 'Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'];
+                                    const options = ['Mint', 'Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'];
                                     const dataset = event.target.dataset.field;
                                     options.forEach(option => {
                                         const opt = document.createElement('option');
