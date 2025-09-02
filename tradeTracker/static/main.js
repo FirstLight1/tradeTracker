@@ -43,6 +43,7 @@ function getInputValueAndPatch(value, element, dataset, cardId){
 }
 
 function updateSoldStatus(cardId, isChecked, field) {
+    //console.log(cardId, isChecked, field);
     fetch(`/update/${cardId}`, {
         method: 'PATCH',
         headers: {
@@ -306,7 +307,7 @@ async function loadAuctions() {
                         const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox');
                         const auctionTab = checkboxes[0].closest('.auction-tab')
                         const auctionPrice = Number(auctionTab.querySelector('.auction-price').textContent.replace('€', ''));
-                        const auctionProfit = auctionTab.querySelector('.auction-profit');
+                        let auctionProfit = auctionTab.querySelector('.auction-profit').textContent.replace('€', '') || 0;
                         console.log(Boolean(auctionPrice));
                         //this needs changing
 
@@ -315,53 +316,48 @@ async function loadAuctions() {
                                 const isChecked = event.target.checked;
                                 let profitElement = event.target.closest('.card').querySelector('.profit');
                                 const target = event.target;
-                                let soldCmCheckbox = null;
-                                let soldCheckbox = null;
-                                if(target.classList.contains('sold')){
-                                    soldCmCheckbox = target.closest('.card').querySelector('.sold-cm');
-                                    if(isChecked){
-                                        soldCmCheckbox.checked = false;
-                                    }
-                                } else{
-                                    soldCheckbox = target.closest('.card').querySelector('.sold');
-                                    if(isChecked){
-                                        soldCheckbox.checked = false;
-                                    }
-                                }
-
                                 
                                 if (!Boolean(profitElement.textContent) || !isChecked){
                                     event.preventDefault();
-                                    soldCmCheckbox !== null ? soldCmCheckbox.checked = false : soldCheckbox.checked = false;
                                 }else{
+
+                                    //check if auction or singles
+
                                     const cardBuyElement = target.closest('.card').querySelector('.card-price').textContent.replace('€', '');
                                     const cardSellElement = target.closest('.card').querySelector('.sell-price').textContent.replace('€', '');
                                     const cardId = target.closest('.card').querySelector('.card-id').textContent;
                                     const auctionElement = target.closest('.auction-tab');
                                     const auctionId = auctionElement.getAttribute('data-id');
                                     const auctionPrice = Number(auctionElement.querySelector('.auction-price').textContent.replace('€', ''));
-                                    const auctionProfit = auctionElement.querySelector('.auction-profit').textContent.replace('€', '') ;
                                     if ((!Boolean(cardBuyElement) || !Boolean(auctionPrice)) || !Boolean(cardSellElement)){
                                         event.preventDefault();
                                     } else{
                                         let profit = 0;
 
                                         //this probably doesnt even work
+                                        //I need to know if its singles or auction
+                                        //ahhhhhhhhhhhhhhhhhhhhhhhh
 
-                                        if(soldCmCheckbox !== null && soldCmCheckbox.checked){
-                                            profit = (auctionPrice - cardBuyElement) * 0.95;
-                                            auctionProfit += profit;
-                                            auctionProfit = appendEuroSign(auctionProfit);
+                                        if(target.classList.contains('sold-cm') && Boolean(auctionPrice)){
+                                            const soldCheckbox = target.closest('.card').querySelector('.sold');
+                                            profit = auctionPrice - (cardSellElement * 0.95);
+                                            console.log(profit);
+                                            let auctionProfitNum = Number(auctionProfit);
+                                            auctionProfitNum += profit;
+                                            auctionProfit = appendEuroSign(auctionProfitNum);
                                             checkbox.checked = true; // Keep checkbox checked
-                                            updateSoldStatus(cardId, isChecked, 'sold_cm');
+                                            soldCheckbox.checked = false;
+                                            updateSoldStatus(cardId, isChecked, "sold_cm");
                                             // this update auction profit, but the technical dept was too big, so I made new function might change later
                                             updateAuction(auctionId, auctionProfit.replace('€', ''));
                                         } else{
+                                            const soldCheckbox = target.closest('.card').querySelector('.sold-cm');
                                             profit = cardSellElement - cardBuyElement;
                                             profit = appendEuroSign(profit);
                                             profitElement.textContent = profit;
                                             checkbox.checked = true; // Keep checkbox checked
-                                            updateSoldStatus(cardId, isChecked, 'sold');
+                                            soldCheckbox.checked = false;
+                                            updateSoldStatus(cardId, isChecked, "sold");
                                             patchValue(cardId, profit, profitElement.dataset.field);
                                             updateAuctionProfit(auctionElement, auctionId);
                                         }
