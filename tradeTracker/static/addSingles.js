@@ -37,7 +37,7 @@ saveButton.addEventListener('click', () => {
                 card.profit = card.sellPrice - card.buyPrice;
             }
             if(card.checkbox_cm === true && card.sellPrice !== null && card.buyPrice !==null){
-                card.profit = (card.sellPrice - card.buyPrice) * 0.95;
+                card.profit = (card.sellPrice * 0.95) - card.buyPrice;
             }
             if(card.cardName !== null && card.marketValue !== null){
                 cardsArr.push(card);

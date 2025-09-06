@@ -6,15 +6,23 @@ export function renderField(value, inputType, classList, placeholder, datafield)
     }
 }
 
-function allTrue(checkboxes){
-    for(let i = 0; i < checkboxes.length; i++){
-        if(!checkboxes[i].checked){
+export function allTrue(checkboxes){
+    const grouped = groupCheckboxes(checkboxes);    
+    for (let i = 0; i < grouped.length; i++){
+        if(!grouped[i][0].checked && !grouped[i][1].checked){
             return false;
         }
     }
     return true;
 }
 
+function groupCheckboxes(checkboxes) {
+    const grouped = [];
+    for (let i = 0; i < checkboxes.length; i += 2) {
+        grouped.push([checkboxes[i], checkboxes[i + 1]]);
+    }
+    return grouped;
+}
 function appendEuroSign(value, dataset){
     if (dataset === 'card_num'){
         return value;
@@ -57,8 +65,14 @@ function updateSoldStatus(cardId, isChecked, field) {
 //These two are the same
 
 function patchValue(id, value, dataset){
-    value = String(value);
-    value = value.replace('€', '');
+    if(value === " "){
+        value = null;
+    }
+    if(!value === null || !value === undefined){
+        value = String(value);
+        value = value.replace('€', '');
+
+    }
     fetch(`/update/${id}`, {
         method: 'PATCH',
         headers: {
@@ -93,11 +107,11 @@ function checkboxSwitching(target, buyPrice, sellPrice, profitElement, id){
         target.closest('.card').querySelector('.sold-cm').checked = false;
         updateSoldStatus(id, true, 'sold');
     } else if (target.classList.contains('sold-cm')) {
-        profitElement.textContent = appendEuroSign((sellPrice - buyPrice) * 0.95, 'profit');
+        profitElement.textContent = appendEuroSign((sellPrice * 0.95) - buyPrice, 'profit');
         target.closest('.card').querySelector('.sold').checked = false;
         updateSoldStatus(id, true, 'sold_cm');
     }
-    return profitElement.textContent;
+    return Number(profitElement.textContent);
 }
 
 function calculateSinglesProfit(card, target) {
@@ -108,6 +122,36 @@ function calculateSinglesProfit(card, target) {
 
     const profit = checkboxSwitching(target, buyPrice, sellPrice, profitElement, cardId);
     patchValue(cardId, profit, 'profit');
+}
+
+function calculateAuctionProfit(auction, target){
+    const auctionPrice = Number(auction.querySelector('.auction-price').textContent.replace('€', '').trim());
+    const auctionProfitElement = auction.querySelector('.auction-profit');
+    const auctionId = auction.getAttribute('data-id');
+    const cards = auction.querySelectorAll('.card');
+    let totalSellValue = 0;
+
+    if(target.classList.contains('sold')){
+        target.closest('.card').querySelector('.sold-cm').checked = false;
+        updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
+    }else if(target.classList.contains('sold-cm')){
+        target.closest('.card').querySelector('.sold').checked = false;
+        updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
+    }
+
+    cards.forEach(card =>{
+        const sellPrice = Number(card.querySelector('.sell-price').textContent.replace('€', '').trim());
+        const soldCheckbox = card.querySelector('.sold');
+        const soldCmCheckbox = card.querySelector('.sold-cm');
+        if(soldCheckbox.checked){
+            totalSellValue += sellPrice;
+        }else if(soldCmCheckbox.checked){
+            totalSellValue += sellPrice * 0.95;
+        }
+    });
+    const profit = (totalSellValue - auctionPrice).toFixed(2);
+    auctionProfitElement.textContent = appendEuroSign(profit, 'auction-profit');
+    updateAuction(auctionId, profit);
 }
 
 async function removeCard(id, div) {
@@ -332,8 +376,8 @@ async function loadAuctions() {
 
                         const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox');
                         const auctionTab = checkboxes[0].closest('.auction-tab')
-                        const auctionPrice = Number(auctionTab.querySelector('.auction-price').textContent.replace('€', ''));
-                        let auctionProfit = auctionTab.querySelector('.auction-profit').textContent.replace('€', '');
+                        //const auctionPrice = Number(auctionTab.querySelector('.auction-price').textContent.replace('€', ''));
+                        //let auctionProfit = auctionTab.querySelector('.auction-profit').textContent.replace('€', '');
                         //console.log(Boolean(auctionPrice));
                         //this needs changing
 
@@ -346,7 +390,9 @@ async function loadAuctions() {
                                     //console.log('singles');
                                     calculateSinglesProfit(card, target);
                                 } else{
-                                    console.log(null);
+                                    if(allTrue(checkboxes)){
+                                        calculateAuctionProfit(auctionTab, target);
+                                    }
                                 }
                             }, false);
                         });
@@ -411,5 +457,6 @@ async function loadAuctions() {
 
 }
 
-
-loadAuctions();
+if(document.title === "Trade Tracker"){
+    loadAuctions();
+}
