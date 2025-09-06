@@ -1,5 +1,17 @@
 import {allTrue} from "./main.js";
 
+function handleCheckboxes(checkboxes) {
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('click', (event) => {
+            if(event.target.name === 'sold_cm'){
+                event.target.previousElementSibling.checked = false;
+            }else if(event.target.name === 'sold'){
+                event.target.nextElementSibling.checked = false;
+            }
+        });
+    });
+}
+
 export function createNewCard(newCard){
      newCard.querySelectorAll('input').forEach(el =>{
             if (el.type == 'checkbox') {
@@ -17,6 +29,8 @@ export function createNewCard(newCard){
         newCardName.oninput = function () {
         handleCardInput(this);
         }
+        const checkboxes = newCard.querySelectorAll('input[type=checkbox]');
+        handleCheckboxes(checkboxes);
         return newCard;
 }
 
@@ -46,6 +60,8 @@ export class struct{
     }
 }
 
+const checkboxes = document.querySelectorAll('input[type=checkbox]');
+handleCheckboxes(checkboxes);
 const cardsArr = [];
 const saveButton = document.querySelector('.save-btn')
 //add typechecks
