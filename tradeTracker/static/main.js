@@ -111,7 +111,7 @@ function checkboxSwitching(target, buyPrice, sellPrice, profitElement, id){
         target.closest('.card').querySelector('.sold').checked = false;
         updateSoldStatus(id, true, 'sold_cm');
     }
-    return Number(profitElement.textContent);
+    return Number(profitElement.textContent.replace('€', '').trim());
 }
 
 function calculateSinglesProfit(card, target) {
@@ -119,9 +119,19 @@ function calculateSinglesProfit(card, target) {
     const sellPrice = Number(card.querySelector('.sell-price').textContent.replace('€', '').trim());
     const profitElement = card.querySelector('.profit');
     const cardId = card.querySelector('.card-id').textContent.trim();
-
     const profit = checkboxSwitching(target, buyPrice, sellPrice, profitElement, cardId);
+    
     patchValue(cardId, profit, 'profit');
+}
+
+//calculates singles profit after checkbox change
+function SinglesProfit(cards){
+    let totalProfit = 0;
+    cards.forEach(card => {
+        const profit = Number(card.querySelector('.profit').textContent.replace('€', '').trim());
+        totalProfit += profit;
+    });
+    return totalProfit.toFixed(2);
 }
 
 function calculateAuctionProfit(auction, target){
@@ -334,34 +344,53 @@ async function loadAuctions() {
                                     input.focus();
                                     input.addEventListener('blur', (blurEvent) => {
                                         const newValue = blurEvent.target.value;
+                                        const auctionTab = blurEvent.target.closest('.auction-tab');
 
                                         getInputValueAndPatch(newValue || value, input, dataset, cardId);
                                         if (blurEvent.target.classList.contains('card-price') || blurEvent.target.classList.contains('sell-price')) {
+                                            if (auctionTab.classList.contains('singles')){
                                             // Recalculate profit
-                                            if (cardDiv) {
-                                                const buyInput = cardDiv.querySelector('.card-price');
-                                                const sellInput = cardDiv.querySelector('.sell-price');
-                                                const profitElement = cardDiv.querySelector('.profit');
+                                                if (cardDiv) {
+                                                    const buyInput = cardDiv.querySelector('.card-price');
+                                                    const sellInput = cardDiv.querySelector('.sell-price');
+                                                    const profitElement = cardDiv.querySelector('.profit');
+                                                    const checkbox = cardDiv.querySelector('.sold');
+                                                    const checkboxCm = cardDiv.querySelector('.sold-cm');
+                                                    let profit;
 
-                                                // Determine updated buy/sell values
-                                                let buyValue = buyInput ? buyInput.textContent.replace('€', '').trim() : '';
-                                                let sellValue = sellInput ? sellInput.textContent.replace('€', '').trim() : '';
+                                                    // Determine updated buy/sell values
+                                                    let buyValue = buyInput ? buyInput.textContent.replace('€', '').trim() : '';
+                                                    let sellValue = sellInput ? sellInput.textContent.replace('€', '').trim() : '';
 
-                                                if (blurEvent.target.classList.contains('card-price')) {
-                                                    buyValue = blurEvent.target.value.replace('€', '').trim();
+                                                    if (blurEvent.target.classList.contains('card-price')) {
+                                                        buyValue = blurEvent.target.value.replace('€', '').trim();
+                                                    }
+                                                    if (blurEvent.target.classList.contains('sell-price')) {
+                                                        sellValue = blurEvent.target.value.replace('€', '').trim();
+                                                    }
+
+                                                    if (checkbox.checked){
+                                                        profit = Number(sellValue) - Number(buyValue);
+                                                        checkboxCm.checked = false;
+                                                        updateSoldStatus(cardId, true,"sold");
+                                                    } else if(checkboxCm.checked){
+                                                        profit = (Number(sellValue) * 0.95) - Number(buyValue);
+                                                        updateSoldStatus(cardId, true,"sold_cm");
+
+                                                    }
+
+                                                    if (profitElement) {
+                                                        const profitDataSet = profitElement.dataset.field;
+                                                        replaceWithPElement(profitDataSet, profit, profitElement);
+                                                        console.log(profit);
+                                                        patchValue(cardId, profit, profitDataSet);
+                                                        const auction = cardDiv.closest('.auction-tab');
+                                                        const auctionId = auction.getAttribute('data-id')
+                                                        updateAuctionProfit(auction, auctionId);
+                                                    }
                                                 }
-                                                if (blurEvent.target.classList.contains('sell-price')) {
-                                                    sellValue = blurEvent.target.value.replace('€', '').trim();
-                                                }
-                                                const profit = Number(sellValue) - Number(buyValue);
-                                                if (profitElement) {
-                                                    const profitDataSet = profitElement.dataset.field;
-                                                    replaceWithPElement(profitDataSet, profit, profitElement);
-                                                    patchValue(cardId, profit, profitDataSet);
-                                                    const auction = cardDiv.closest('.auction-tab');
-                                                    const auctionId = auction.getAttribute('data-id')
-                                                    updateAuctionProfit(auction, auctionId);
-                                                }
+                                            }else{
+
                                             }
                                         }
                                     });
@@ -386,9 +415,11 @@ async function loadAuctions() {
                                 const isChecked = event.target.checked;
                                 const target = event.target;
                                 const card = target.closest('.card');
+                                const cards = auctionTab.querySelectorAll('.card');
                                 if(auctionTab.classList.contains('singles')){
-                                    //console.log('singles');
                                     calculateSinglesProfit(card, target);
+                                    const newAuctionProfit = SinglesProfit(cards);
+                                    auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                                 } else{
                                     if(allTrue(checkboxes)){
                                         calculateAuctionProfit(auctionTab, target);
