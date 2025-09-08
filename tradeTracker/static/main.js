@@ -141,12 +141,14 @@ function calculateAuctionProfit(auction, target){
     const cards = auction.querySelectorAll('.card');
     let totalSellValue = 0;
 
-    if(target.classList.contains('sold')){
-        target.closest('.card').querySelector('.sold-cm').checked = false;
-        updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
-    }else if(target.classList.contains('sold-cm')){
-        target.closest('.card').querySelector('.sold').checked = false;
-        updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
+    if (target != null) {
+        if(target.classList.contains('sold')){
+            target.closest('.card').querySelector('.sold-cm').checked = false;
+            updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
+        }else if(target.classList.contains('sold-cm')){
+            target.closest('.card').querySelector('.sold').checked = false;
+            updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
+        }
     }
 
     cards.forEach(card =>{
@@ -194,9 +196,7 @@ async function updateAuction(auctionId, value){
             body: JSON.stringify({ value: value })
         });
         const data = await response.json();
-        if (data.status === 'success') {
-            console.log('Auction updated successfully');
-        } else {
+        if (!(data.status === 'success')) {
             console.error('Error updating auction:', data);
         }
     } catch (error) {
@@ -248,8 +248,8 @@ async function loadAuctions() {
             }
             auctionDiv.setAttribute('data-id', auction.id);
             let auctionName = auction.auction_name || "Auction " + (auction.id - 1); // Fallback for name
-            let auctionPrice = auction.auction_price || null; // Fallback for buy price  
-            let auctionProfit = auction.auction_profit || null; // Fallback for profit
+            let auctionPrice = auction.auction_price || null; // Fallback for buy price
+            let auctionProfit = auction.auction_profit !== null ? auction.auction_profit : null; // Fallback for profit
             auctionDiv.innerHTML = `
                 <p class="auction-name">${auctionName}</p>
                 <p class="auction-price">${auctionPrice != null ? auctionPrice + '€' : ""}</p>
@@ -382,11 +382,12 @@ async function loadAuctions() {
                                                     if (profitElement) {
                                                         const profitDataSet = profitElement.dataset.field;
                                                         replaceWithPElement(profitDataSet, profit, profitElement);
-                                                        console.log(profit);
                                                         patchValue(cardId, profit, profitDataSet);
                                                         const auction = cardDiv.closest('.auction-tab');
                                                         const auctionId = auction.getAttribute('data-id')
-                                                        updateAuctionProfit(auction, auctionId);
+                                                        const newAuctionProfit = SinglesProfit(auction.querySelectorAll('.card'));
+                                                        updateAuction(auctionId, newAuctionProfit);
+                                                        auction.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                                                     }
                                                 }
                                             }else{
@@ -420,6 +421,8 @@ async function loadAuctions() {
                                     calculateSinglesProfit(card, target);
                                     const newAuctionProfit = SinglesProfit(cards);
                                     auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+                                    const auctionId = auctionTab.getAttribute('data-id');
+                                    updateAuction(auctionId, newAuctionProfit);
                                 } else{
                                     if(allTrue(checkboxes)){
                                         calculateAuctionProfit(auctionTab, target);
@@ -452,9 +455,18 @@ async function loadAuctions() {
                                 const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
                                 const auctionDiv = cardsContainer.closest('.auction-tab');
                                 const deleted = await removeCard(cardId, cardDiv);
+                                const cards = cardsContainer.querySelectorAll('.card');
                                 if(!deleted) return;
                                 //recalculate profit
-                                updateAuctionProfit(auctionDiv, auctionId)
+                                if(auctionDiv.classList.contains('singles')){
+                                    const newAuctionProfit = SinglesProfit(cards);
+                                    auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+                                    updateAuction(auctionId, newAuctionProfit);
+                                }else{
+                                    calculateAuctionProfit(auctionDiv, null);
+                                }
+
+                                //updateAuctionProfit(auctionDiv, auctionId)
                                 if (cardsContainer.childElementCount === 0){
                                     if(!(auctionDiv.classList.contains('singles'))){
                                         deleteAuction(auctionId, auctionDiv);

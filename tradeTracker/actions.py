@@ -181,6 +181,7 @@ def addToSingles():
         db.commit()
     return jsonify({'status': 'success'}), 201
 
+#deprecated
 @bp.route('/updateAuctionProfit/<int:auction_id>', methods=('PATCH',))
 def updateAuctionProfit(auction_id):
     db = get_db()
