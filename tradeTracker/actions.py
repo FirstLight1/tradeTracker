@@ -1,6 +1,7 @@
 from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify
 from tradeTracker.db import get_db
 import datetime
+import csv
 
 bp = Blueprint('actions', __name__)
 
@@ -238,3 +239,15 @@ def cardMarketTable():
         db.commit()
 
     return jsonify({'status': 'success', 'auction_id': auction_id}), 201
+
+@bp.route('/importSoldCSV', methods=('POST',))
+def importSoldCSV():
+    if request.method == 'POST':
+        if 'csv-upload' not in request.files:
+            print("No file part")
+        file = request.files['csv-upload']
+        if file.filename == '':
+            print('no name')
+        else:
+            print(file)
+    return jsonify({'status': 'success'}), 201

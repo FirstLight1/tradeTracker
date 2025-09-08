@@ -204,36 +204,31 @@ async function updateAuction(auctionId, value){
     }
 }
 
-function updateAuctionProfit(auction, id){
-    const cards = auction.querySelectorAll('.card');
-    const profitField = auction.querySelector('.auction-profit');
-    let profit = 0;
-    cards.forEach(card =>{
-        const cardProfit = card.querySelector('.profit').textContent.replace('€', '');
-        profit += Number(cardProfit);
-    })
-    fetch(`/updateAuctionProfit/${id}`,{
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({value: profit})
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.status === 'success'){
-            profitField.textContent = profit + '€';
-        }
-    })
-    .catch(error =>{
-        console.error(error);
-    })
-}
-
-
 function isEmpty(obj) {
     return Object.keys(obj).length === 0;
 }
+
+function importCSV(){
+    const input = document.querySelector('.import-sold-csv');
+    //input.style.opacity = 0;
+    console.log(input);
+    input.addEventListener('change', async (event) =>{
+        const file = event.target.files;
+        if(file && file.length === 1){
+            const formData = new FormData();
+            formData.append("csv-upload", file[0]);
+            //console.log(formData.get("csv-upload"));
+            //console.log(file[0]);
+            const response = await fetch('/importSoldCSV', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            console.log(data);
+        }
+    })
+}
+
 
 async function loadAuctions() {
     const auctionContainer = document.querySelector('.auction-container');
@@ -502,4 +497,5 @@ async function loadAuctions() {
 
 if(document.title === "Trade Tracker"){
     loadAuctions();
+    importCSV();
 }

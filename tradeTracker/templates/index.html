@@ -12,9 +12,12 @@
         <button class="addAuction"><a href="{{ url_for('actions.addAuction') }}">Add auction</a></button>
         <button class="addSingles"><a href="{{ url_for('actions.addSingles') }}">Add Singles</a></button>
         <button class="collection"><a href="{{ url_for('actions.renderCollection')}}">Collection</a></button>
-        <dir class="auction-container">
-            
-        </dir>
+        <label for="csv-upload" class="import-sold-csv-label">
+            <button class="import-sold-csv"><input type="file" accept=".csv" name="csv-upload"></button>
+        </label>
+        <div class="auction-container">
+
+        </div>
     </main>
     <script type="module" src="../static/main.js"></script>
 </body>
