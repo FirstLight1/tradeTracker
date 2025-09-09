@@ -23,7 +23,7 @@ saveButton.addEventListener('click', () => {
                 return parseFloat(val.replace(',', '.'));
             };
             card.cardName = input('input[name=cardName]');
-            card.carNum = input('input[name=cardNum]');
+            card.cardNum = input('input[name=cardNum]');
             card.condition = input('select[name=condition]');
             card.buyPrice = inputNumber('input[name=buyPrice]');
             card.marketValue = inputNumber('input[name=marketValue]');

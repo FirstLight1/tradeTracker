@@ -2,8 +2,227 @@ from flask import url_for, Flask, request, g, render_template, Blueprint, jsonif
 from tradeTracker.db import get_db
 import datetime
 import csv
+from werkzeug.utils import secure_filename
+import os
 
 bp = Blueprint('actions', __name__)
+
+dictKeys = ['Product ID', 'Name', 'Condition', 'Price', 'Card Number']
+li = []
+dataList = []
+
+conditionDict = {
+    "MT" : "Mint",
+    "NM" : "Near Mint",
+    "EX" : "Excellent",
+    "GD" : "Good",
+    "LP" : "Light Played",
+    "PL" : "Played",
+    "PO" : "Poor"
+}
+
+pokemon_sets = {
+    # --- Mainline Expansion Sets ---
+    # Original (Wizards)
+    "Base Set": "BS",
+    "Jungle": "JU",
+    "Fossil": "FO",
+    "Base Set 2": "B2",
+    "Team Rocket": "TR",
+    "Gym Heroes": "G1",
+    "Gym Challenge": "G2",
+
+    # Southern Islands & Neo Series
+    "Southern Islands": "SI",
+    "Neo Genesis": "N1",
+    "Neo Discovery": "N2",
+    "Neo Revelation": "N3",
+    "Neo Destiny": "N4",
+    "Legendary Collection": "LC",
+
+    # e-Card Series
+    "Expedition Base Set": "EX",
+    "Aquapolis": "AQ",
+    "Skyridge": "SK",
+
+    # EX Series (Post-Wizards)
+    "EX Ruby & Sapphire": "RS",
+    "EX Sandstorm": "SS",
+    "EX Dragon": "DR",
+    "EX Team Magma vs Team Aqua": "MA",
+    "EX Hidden Legends": "HL",
+    "EX FireRed & LeafGreen": "FRLG",
+    "EX Team Rocket Returns": "TRR",
+    "EX Deoxys": "DX",
+    "EX Emerald": "EM",
+    "EX Unseen Forces": "UF",
+    "EX Delta Species": "DS",
+    "EX Legend Maker": "LM",
+    "EX Holon Phantoms": "HP",
+    "EX Crystal Guardians": "CG",
+    "EX Dragon Frontiers": "DF",
+    "EX Power Keepers": "PK",
+
+    # Diamond & Pearl Series
+    "Diamond & Pearl": "DP",
+    "Mysterious Treasures": "MT",
+    "Secret Wonders": "SW",
+    "Great Encounters": "GE",
+    "Majestic Dawn": "MD",
+    "Legends Awakened": "LA",
+    "Stormfront": "SF",
+
+    # Platinum Series
+    "Platinum": "PL",
+    "Rising Rivals": "RR",
+    "Supreme Victors": "SV",
+    "Arceus": "AR",
+
+    # HeartGold & SoulSilver Series
+    "HeartGold & SoulSilver": "HS",
+    "Unleashed": "UL",
+    "Undaunted": "UD",
+    "Triumphant": "TM",
+
+    # Call of Legends
+    "Call of Legends": "CL",
+
+    # Black & White Series
+    "Black & White": "BLW",
+    "Emerging Powers": "EPO",
+    "Noble Victories": "NVI",
+    "Next Destinies": "NXD",
+    "Dark Explorers": "DEX",
+    "Dragons Exalted": "DRX",
+    "Dragon Vault": "DRV",
+    "Boundaries Crossed": "BCR",
+    "Plasma Storm": "PLS",
+    "Plasma Freeze": "PLF",
+    "Plasma Blast": "PLB",
+    "Legendary Treasures": "LTR",
+
+    # XY Series
+    "XY": "XY",
+    "Flashfire": "FLF",
+    "Furious Fists": "FFI",
+    "Phantom Forces": "PHF",
+    "Primal Clash": "PRC",
+    "Double Crisis": "DCR",
+    "Roaring Skies": "ROS",
+    "Ancient Origins": "AOR",
+    "BREAKthrough": "BKT",
+    "BREAKpoint": "BKP",
+    "Generations": "GEN",
+    "Fates Collide": "FCO",
+    "Steam Siege": "STS",
+    "Evolutions": "EVO",
+
+    # Sun & Moon Series
+    "Sun & Moon": "SM",
+    "Burning Shadows": "BUS",
+    "Shining Legends": "SLG",
+    "Crimson Invasion": "CIN",
+    "Ultra Prism": "UPR",
+    "Forbidden Light": "FLI",
+    "Celestial Storm": "CES",
+    "Dragon Majesty": "DRM",
+    "Lost Thunder": "LOT",
+    "Team Up": "TEU",
+    "Detective Pikachu": "DET",
+    "Unbroken Bonds": "UNB",
+    "Unified Minds": "UNM",
+    "Hidden Fates": "HIF",
+    "Cosmic Eclipse": "CEC",
+
+    # Sword & Shield Series
+    "Sword & Shield": "SSH",
+    "Rebel Clash": "RCL",
+    "Darkness Ablaze": "DAA",
+    "Champion’s Path": "CPA",
+    "Vivid Voltage": "VIV",
+    "Shining Fates": "SHF",
+    "Battle Styles": "BST",
+    "Chilling Reign": "CRE",
+    "Evolving Skies": "EVS",
+    "Celebrations": "CEL",
+    "Fusion Strike": "FST",
+    "Brilliant Stars": "BRS",
+    "Astral Radiance": "ASR",
+    "Pokémon GO": "PGO",
+    "Lost Origin": "LOR",
+    "Silver Tempest": "SIT",
+    "Crown Zenith": "CRZ",
+
+    # Scarlet & Violet Series (through August 2025)
+    "Scarlet & Violet": "SVI",
+    "Scarlet & Violet Promos": "SVP",
+    "Scarlet & Violet Energy": "SVE",
+    "Paldea Evolved": "PAL",
+    "Obsidian Flames": "OBF",
+    "151 (Mew)": "MEW",
+    "Paradox Rift": "PAR",
+    "Paldean Fates": "PAF",
+    "Temporal Forces": "TEF",
+    "Twilight Masquerade": "TWM",
+    "Shrouded Fable": "SFA",
+    "Stellar Crown": "SCR",
+    "Surging Sparks": "SSP",
+    "Journey Together": "JTG",
+    "Destined Rivals": "DRI",
+    "Black Bolt & White Flare": "BLK/WHT",
+    "Black Bolt" : "BLK",
+    "White Flare": "WHT",
+
+    # --- Promos, Seasonal, Regional & Digital Collections ---
+    # Black Star Promos (by era)
+    "Nintendo Black Star Promos": "NBSP",
+    "DP Black Star Promos": "DP Promo",
+    "HGSS Black Star Promos": "HGSS Promo",
+    "BW Black Star Promos": "BW Promo",
+    "XY Black Star Promos": "XY Promo",
+    "SM Black Star Promos": "SM Promo",
+    "SWSH Black Star Promos": "SWSH Promo",
+    "SVP Black Star Promos": "SVP Promo",
+
+    # POP Series
+    "POP Series 1": "POP1",
+    "POP Series 2": "POP2",
+    "POP Series 3": "POP3",
+    "POP Series 4": "POP4",
+    "POP Series 5": "POP5",
+    "POP Series 6": "POP6",
+    "POP Series 7": "POP7",
+    "POP Series 8": "POP8",
+    "POP Series 9": "POP9",
+
+    # Miscellaneous, event-based exclusives
+    "Miscellaneous Promotional Cards": "Misc Promo",
+    "World Championships Promos": "WC Promo",
+    "Paldea Collection Promos": "Paldea Promo",
+    "Build & Battle Box Promos": "B&B Promo",
+
+    # Unnumbered or early promos
+    "Unnumbered Promotional Cards": "Unnumbered Promo",
+
+    # Digital Promo Sets / Packs
+    "Sword & Shield Chilling Reign Promo Set": "SWSH CR Promo",
+    "Sword & Shield Evolving Skies Promo Set": "SWSH ES Promo",
+    "Sword & Shield Fusion Strike Promo Set": "SWSH FS Promo",
+    "Sword & Shield Brilliant Stars Promo Set": "SWSH BS Promo",
+    "Sword & Shield Astral Radiance Promo Set": "SWSH AR Promo",
+    "Sword & Shield Silver Tempest Promo Set": "SWSH ST Promo",
+    "Sword & Shield Crown Zenith Promo Set": "SWSH CZ Promo",
+    "Scarlet & Violet Promo Set": "SV Promo",
+    "Scarlet & Violet Paldea Evolved Promo Set": "SV PE Promo",
+    "Pokémon GO Promo Pack": "GO Promo",
+
+    # Regional / Asian promos
+    "SV-P Promotional Cards (Traditional Chinese)": "SV-P",
+    "SM-P Promotional Cards (Simplified Chinese)": "SM-P",
+
+    # TCG Pocket (digital platform)
+    "TCG Pocket Promo-A Series": "Promo-A",
+}
 
 @bp.route('/addAuction')
 def addAuction():
@@ -44,7 +263,7 @@ def add():
         for card in cardsArr[1:]:
             db.execute(
                 'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id) '
-                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 (
                     card.get('cardName'),
                     card.get('cardNum'),
@@ -166,6 +385,7 @@ def addToSingles():
 
         db.execute('UPDATE auctions SET auction_profit = auction_profit + ? WHERE id = 1',(profit['profit'],))
         for card in data[1:]:
+            print(card)
             db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id)'
                     'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     (
@@ -228,13 +448,14 @@ def cardMarketTable():
             for _ in range(count):
                 cardsToInsert.append((
                 card.get('name', None),       # default to None if missing
+                card.get('num', None),
                 card.get('condition', None),  # default to None if missing
                 card.get('price', None),      # default to None if missing
                 auction_id
             ))
                 
         db.executemany(
-        'INSERT INTO cards (card_name, condition, market_value, auction_id) VALUES (?, ?, ?, ?)',
+        'INSERT INTO cards (card_name, card_nun, condition, market_value, auction_id) VALUES (?, ?, ?, ?)',
         cardsToInsert
         )
 
@@ -245,11 +466,87 @@ def cardMarketTable():
 @bp.route('/importSoldCSV', methods=('POST',))
 def importSoldCSV():
     if request.method == 'POST':
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        UPLOADS_FOLDER = os.path.join(BASE_DIR, 'data', 'uploads')
+        os.makedirs(UPLOADS_FOLDER, exist_ok=True)
+
         if 'csv-upload' not in request.files:
             print("No file part")
+            return 'No file part', 400
+        
         file = request.files['csv-upload']
         if file.filename == '':
             print('no name')
+            return "No selected file", 400
+        
+        checkPath = os.path.join(UPLOADS_FOLDER, 'checkFile.csv')
+        tempFileName = "temp.csv"
+        tempPath = os.path.join(UPLOADS_FOLDER, tempFileName)
+        file.save(tempPath)
+        if os.path.exists(checkPath):
+            li = []
+            with open(checkPath, 'r', encoding='UTF-8') as checkFile:
+                checkSet = set([row.split(';')[1].strip().upper() for row in checkFile])
+                checkSet.remove('PRODUCT ID')
+
+            with open(tempPath, 'r', encoding='utf-8') as tempFile:
+                for line in tempFile:
+                    if line.strip() == "":
+                        continue
+                    if line.split(';')[1].strip().upper() not in checkSet:
+                        li.append(line)
+            if len(li) == 1:
+                os.remove(checkPath)
+                os.rename(tempPath,checkPath)
+                return "Same file", 400
+            
+            zipped = list(zip(*[line.split(';') for line in li]))
+            dictsNum = len(zipped[0]) - 1
+            dicts = [{} for _ in range(dictsNum)]
+
+            for row in zipped:
+                key = row[0].strip()
+                for i in range(dictsNum):
+                    dicts[i][key] = row[i + 1].strip()
+            #print(len(zipped))
+            #print(dictsNum)
+            #print(dicts)
+            #print(dicts[0].keys())
+            columns = {name: key for key, name in enumerate(dicts[0].keys())}
+
+            dataList = []            
+            for d in dicts:
+                product_id = list(d.values())[columns['Product ID']]
+                name = list(d.values())[columns['Product ID'] + 2]
+                number = list(d.values())[columns['Collector Number']]
+                condition = list(d.values())[columns['Condition']]
+                condition = conditionDict.get(condition)
+                price = float(list(d.values())[columns['Expansion'] + 1])
+                expansion = list(d.values())[columns['Expansion']]
+                expansion = pokemon_sets.get(expansion)
+                if expansion != None and number != None:
+                    card_num = expansion +" "+ number
+                elif expansion == None:
+                    card_num = number
+                else:
+                    card_num = expansion
+                filteredRow = [product_id, name, condition, price, card_num]
+                temp = zip(dictKeys, filteredRow)
+                dataList.append(dict(temp))
+            
+            db = get_db()
+            card = db.execute("UPDATE cards SET sold_cm = ? WHERE card_num = ? AND card_name = ? RETURNING auction_id, card_price, sell_price",
+            (1, 'JTG 094', 'Paldean Clodsire ex')).fetchone()
+            card = dict(card)
+            print(card)
+            #if(card.get('auction_id') == 1):
+            #    db.execute("UPDATE cards SET profit")
+            os.remove(checkPath)
+            os.rename(tempPath,checkPath)
         else:
-            print(file)
+            os.rename(tempPath, checkPath)
+            #calls function to modify db
+
     return jsonify({'status': 'success'}), 201
+
+
