@@ -50,6 +50,7 @@ window.handleCardInput = function (input){
 export class struct{
     constructor(){
         this.cardName = null;
+        this.carNum = null;
         this.condition = null;
         this.buyPrice = null;
         this.marketValue = null;
@@ -91,6 +92,7 @@ saveButton.addEventListener('click', () =>{
             return parseFloat(val.replace(',', '.'));
         };
         card.cardName = input('input[name=cardName]');
+        card.carNum = input('input[name=cardNum]');
         card.condition = input('select[name=condition]');
         card.buyPrice = inputNumber('input[name=buyPrice]');
         card.marketValue = inputNumber('input[name=marketValue]');

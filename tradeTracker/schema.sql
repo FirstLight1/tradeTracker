@@ -23,6 +23,7 @@ CREATE TABLE cards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     auction_id INTEGER NOT NULL,
     card_name TEXT NOT NULL,
+    card_num TEXT,
     condition TEXT,
     card_price REAL,
     market_value REAL,

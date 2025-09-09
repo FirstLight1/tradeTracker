@@ -43,10 +43,11 @@ def add():
         auction_id = cursor.lastrowid
         for card in cardsArr[1:]:
             db.execute(
-                'INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id) '
+                'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id) '
                 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 (
                     card.get('cardName'),
+                    card.get('cardNum'),
                     card.get('condition'),
                     card.get('buyPrice'),
                     card.get('marketValue'),
@@ -93,7 +94,7 @@ def update(card_id):
     data = request.get_json()
     field = data.get("field")
     value = data.get("value")
-    allowed_fields = {"card_name", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit"}
+    allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit"}
     print(field, value)
     
     if field == "sold" and value == True:
@@ -165,10 +166,11 @@ def addToSingles():
 
         db.execute('UPDATE auctions SET auction_profit = auction_profit + ? WHERE id = 1',(profit['profit'],))
         for card in data[1:]:
-            db.execute('INSERT INTO cards (card_name, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id)'
-                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id)'
+                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     (
                         card.get('cardName'),
+                        card.get('cardNum'),
                         card.get('condition'),
                         card.get('buyPrice'),
                         card.get('marketValue'),
