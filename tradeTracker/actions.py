@@ -533,14 +533,24 @@ def importSoldCSV():
                 filteredRow = [product_id, name, condition, price, card_num]
                 temp = zip(dictKeys, filteredRow)
                 dataList.append(dict(temp))
-            
+            print(dataList)
             db = get_db()
-            card = db.execute("UPDATE cards SET sold_cm = ? WHERE card_num = ? AND card_name = ? RETURNING auction_id, card_price, sell_price",
-            (1, 'JTG 094', 'Paldean Clodsire ex')).fetchone()
-            card = dict(card)
-            print(card)
+            for item in dataList:
+                cards = []
+                card = db.execute("UPDATE cards SET sold_cm = ? "
+                                    "WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 1 "
+                                    "LIMIT 1 "
+                                    "RETURNING auction_id, id, card_price, sell_price",
+                (1, item.get('Name'), item.get('Card Number'))).fetchone()
+                if card != None:
+                    card = dict(card)
+                    cards.append(card)
+                else:
+                    print('none')
             #if(card.get('auction_id') == 1):
             #    db.execute("UPDATE cards SET profit")
+            print(cards)
+            db.commit()
             os.remove(checkPath)
             os.rename(tempPath,checkPath)
         else:
