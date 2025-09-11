@@ -4,6 +4,7 @@ import datetime
 import csv
 from werkzeug.utils import secure_filename
 import os
+import sqlite3
 
 bp = Blueprint('actions', __name__)
 
@@ -463,6 +464,28 @@ def cardMarketTable():
 
     return jsonify({'status': 'success', 'auction_id': auction_id}), 201
 
+
+def updateOneCard(db, name, num, sellPrice):
+    cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 1 LIMIT 1", (name, num)).fetchone()
+    print(cardId['id'])
+    if cardId:
+        db.execute("UPDATE cards SET sell_price = ?, sold_cm = ? WHERE id = ?", (sellPrice, 0, cardId['id']))
+        card = db.execute("SELECT auction_id," \
+                    "CASE WHEN auction_id = 1 THEN card_price END AS price," \
+                    "sold," \
+                    "sold_cm FROM cards WHERE id = ?", (cardId['id'],)).fetchone()
+        if(card['auction_id']) == 1:
+            profit = (sellPrice * 0.95) - card['price']
+            profit = round(profit, 2)
+            
+            db.execute("UPDATE cards SET profit = ? WHERE id = ?"(profit, cardId['id']))
+
+        db.commit()
+        return None
+        #return card
+    else:
+        return None
+
 @bp.route('/importSoldCSV', methods=('POST',))
 def importSoldCSV():
     if request.method == 'POST':
@@ -533,24 +556,18 @@ def importSoldCSV():
                 filteredRow = [product_id, name, condition, price, card_num]
                 temp = zip(dictKeys, filteredRow)
                 dataList.append(dict(temp))
-            print(dataList)
             db = get_db()
+            cards = []
             for item in dataList:
-                cards = []
-                card = db.execute("UPDATE cards SET sold_cm = ? "
-                                    "WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 1 "
-                                    "LIMIT 1 "
-                                    "RETURNING auction_id, id, card_price, sell_price",
-                (1, item.get('Name'), item.get('Card Number'))).fetchone()
+                card = updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
+
                 if card != None:
                     card = dict(card)
                     cards.append(card)
+                    print('appended')
                 else:
                     print('none')
-            #if(card.get('auction_id') == 1):
-            #    db.execute("UPDATE cards SET profit")
-            print(cards)
-            db.commit()
+
             os.remove(checkPath)
             os.rename(tempPath,checkPath)
         else:
