@@ -466,7 +466,7 @@ def cardMarketTable():
 
 
 def updateOneCard(db, name, num, sellPrice):
-    cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 1 LIMIT 1", (name, num)).fetchone()
+    cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 0 LIMIT 1", (name, num)).fetchone()
     if cardId:
         db.execute("UPDATE cards SET sell_price = ?, sold_cm = ? WHERE id = ?", (sellPrice, 1, cardId['id']))
         card = db.execute("SELECT auction_id," \
@@ -481,16 +481,20 @@ def updateOneCard(db, name, num, sellPrice):
             cards = db.execute(
                 "SELECT c.sell_price, c.sold, c.sold_cm, a.auction_price FROM cards c " \
             "JOIN auctions a ON c.auction_id = a.id " \
-            "WHERE a.id = ?", (card['auction_id'], ) ).fetchall()
+            "WHERE a.id = ?", (card['auction_id'], )).fetchall()
+        totalSellPrice = 0
         if all(row['sold'] == 1 or row['sold_cm'] == 1 for row in cards):
-            print("all true")
-        else:
-            print("not all true")
+            for item in cards:
+                if(item['sold_cm'] == 1):
+                    totalSellPrice += item['sell_price'] * 0.95
+                else:
+                    totalSellPrice += item['sell_price']
+            totalProfit = round(totalSellPrice - cards[0]['auction_price'], 2)
+            db.execute("UPDATE auctions SET auction_profit = ? WHERE id = ?", (totalProfit, card['auction_id']))
         db.commit()
-        return None
-        #return card
+        return
     else:
-        return None
+        return
 
 @bp.route('/importSoldCSV', methods=('POST',))
 def importSoldCSV():
@@ -537,10 +541,6 @@ def importSoldCSV():
                 key = row[0].strip()
                 for i in range(dictsNum):
                     dicts[i][key] = row[i + 1].strip()
-            #print(len(zipped))
-            #print(dictsNum)
-            #print(dicts)
-            #print(dicts[0].keys())
             columns = {name: key for key, name in enumerate(dicts[0].keys())}
 
             dataList = []            
@@ -563,22 +563,15 @@ def importSoldCSV():
                 temp = zip(dictKeys, filteredRow)
                 dataList.append(dict(temp))
             db = get_db()
-            cards = []
-            for item in dataList:
-                card = updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
 
-                if card != None:
-                    card = dict(card)
-                    cards.append(card)
-                    print('appended')
-                else:
-                    print('none')
+            for item in dataList:
+                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
 
             os.remove(checkPath)
             os.rename(tempPath,checkPath)
         else:
-            os.rename(tempPath, checkPath)
             #calls function to modify db
+            os.rename(tempPath, checkPath)
 
     return jsonify({'status': 'success'}), 201
 
