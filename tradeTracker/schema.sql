@@ -36,6 +36,7 @@ CREATE TABLE cards (
 
 CREATE INDEX idx_cards_card_name ON cards(card_name);
 -- index number row
+-- index foreign key
 
 CREATE TABLE collection (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

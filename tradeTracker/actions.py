@@ -467,9 +467,8 @@ def cardMarketTable():
 
 def updateOneCard(db, name, num, sellPrice):
     cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 1 LIMIT 1", (name, num)).fetchone()
-    print(cardId['id'])
     if cardId:
-        db.execute("UPDATE cards SET sell_price = ?, sold_cm = ? WHERE id = ?", (sellPrice, 0, cardId['id']))
+        db.execute("UPDATE cards SET sell_price = ?, sold_cm = ? WHERE id = ?", (sellPrice, 1, cardId['id']))
         card = db.execute("SELECT auction_id," \
                     "CASE WHEN auction_id = 1 THEN card_price END AS price," \
                     "sold," \
@@ -477,9 +476,16 @@ def updateOneCard(db, name, num, sellPrice):
         if(card['auction_id']) == 1:
             profit = (sellPrice * 0.95) - card['price']
             profit = round(profit, 2)
-            
-            db.execute("UPDATE cards SET profit = ? WHERE id = ?"(profit, cardId['id']))
-
+            db.execute("UPDATE cards SET profit = ? WHERE id = ?", (profit, cardId['id']))
+        else:
+            cards = db.execute(
+                "SELECT c.sell_price, c.sold, c.sold_cm, a.auction_price FROM cards c " \
+            "JOIN auctions a ON c.auction_id = a.id " \
+            "WHERE a.id = ?", (card['auction_id'], ) ).fetchall()
+        if all(row['sold'] == 1 or row['sold_cm'] == 1 for row in cards):
+            print("all true")
+        else:
+            print("not all true")
         db.commit()
         return None
         #return card
