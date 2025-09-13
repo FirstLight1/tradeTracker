@@ -531,18 +531,21 @@ def updateOneCard(db, name, num, sellPrice):
         return
     else:
         return
+    
+def allowedFile(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in "csv"
 
 @bp.route('/importSoldCSV', methods=('POST',))
 def importSoldCSV():
     if request.method == 'POST':
         if 'csv-upload' not in request.files:
-            print("No file part")
-            return 'No file part', 400
+            return jsonify({'status': 'missing'}), 400
         
         file = request.files['csv-upload']
         if file.filename == '':
-            print('no name')
-            return "No selected file", 400
+            return jsonify({'status': 'file'}), 400
+        if not allowedFile(file.filename):
+            return jsonify({'status': 'extension'}), 400
         
         lines = []
         

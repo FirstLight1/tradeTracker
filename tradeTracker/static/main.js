@@ -224,8 +224,20 @@ function importCSV(){
                 body: formData
             });
             const data = await response.json();
-            console.log(data);
-            // if data success reload page
+            switch (data.status) {
+                case "success":
+                    window.location.reload()
+                    break;
+                case "missing":
+                    alert('No file uploaded')
+                    break;
+                case "file":
+                    alert('No file selected')
+                    break;
+                case "extension":
+                    alert('Please upload valid CSV file')
+                    break;
+            }
         }
     })
 }
