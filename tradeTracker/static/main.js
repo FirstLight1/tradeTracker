@@ -225,6 +225,7 @@ function importCSV(){
             });
             const data = await response.json();
             console.log(data);
+            // if data success reload page
         }
     })
 }
@@ -339,7 +340,7 @@ async function loadAuctions() {
                                     event.target.replaceWith(input);
                                     input.focus();
                                     input.addEventListener('blur', (blurEvent) => {
-                                        const newValue = blurEvent.target.value;
+                                        const newValue = blurEvent.target.value.replace(',', '.');
                                         const auctionTab = blurEvent.target.closest('.auction-tab');
 
                                         getInputValueAndPatch(newValue || value, input, dataset, cardId);
@@ -431,7 +432,7 @@ async function loadAuctions() {
                         inputFields.forEach((input) => {
                             input.addEventListener('blur', (event) =>{
                                 const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
-                                const value = event.target.value;
+                                const value = event.target.value.replace(',', '.');
                                 const dataset = event.target.dataset;
                                 getInputValueAndPatch(value, input, dataset.field, cardId);
                             })

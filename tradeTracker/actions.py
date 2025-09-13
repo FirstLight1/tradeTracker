@@ -464,6 +464,40 @@ def cardMarketTable():
 
     return jsonify({'status': 'success', 'auction_id': auction_id}), 201
 
+def createDicts(lines):
+    zipped = list(zip(*[line.split(';') for line in lines]))
+
+    dictsNum = len(zipped[0]) - 1
+    dicts = [{} for _ in range(dictsNum)]
+
+    for row in zipped:
+        key = row[0].strip()
+        for i in range(dictsNum):
+            dicts[i][key] = row[i + 1].strip()
+
+    return dicts
+    
+def getImportantCollums(cards, columns):
+    data = []
+    for d in cards:
+        product_id = list(d.values())[columns['Product ID']]
+        name = list(d.values())[columns['Product ID'] + 2]
+        number = list(d.values())[columns['Collector Number']]
+        condition = list(d.values())[columns['Condition']]
+        condition = conditionDict.get(condition)
+        price = float(list(d.values())[columns['Expansion'] + 1])
+        expansion = list(d.values())[columns['Expansion']]
+        expansion = pokemon_sets.get(expansion)
+        if expansion != None and number != None:
+            card_num = expansion +" "+ number
+        elif expansion == None:
+            card_num = number
+        else:
+            card_num = expansion
+        filteredRow = [product_id, name, condition, price, card_num]
+        temp = zip(dictKeys, filteredRow)
+        data.append(dict(temp))
+    return data
 
 def updateOneCard(db, name, num, sellPrice):
     cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 0 LIMIT 1", (name, num)).fetchone()
@@ -517,7 +551,7 @@ def importSoldCSV():
         tempPath = os.path.join(UPLOADS_FOLDER, tempFileName)
         file.save(tempPath)
         if os.path.exists(checkPath):
-            li = []
+            lines = []
             with open(checkPath, 'r', encoding='UTF-8') as checkFile:
                 checkSet = set([row.split(';')[1].strip().upper() for row in checkFile])
                 checkSet.remove('PRODUCT ID')
@@ -527,41 +561,17 @@ def importSoldCSV():
                     if line.strip() == "":
                         continue
                     if line.split(';')[1].strip().upper() not in checkSet:
-                        li.append(line)
-            if len(li) == 1:
+                        lines.append(line)
+            if len(lines) == 1:
                 os.remove(checkPath)
                 os.rename(tempPath,checkPath)
                 return "Same file", 400
             
-            zipped = list(zip(*[line.split(';') for line in li]))
-            dictsNum = len(zipped[0]) - 1
-            dicts = [{} for _ in range(dictsNum)]
+            cards = createDicts(lines)
 
-            for row in zipped:
-                key = row[0].strip()
-                for i in range(dictsNum):
-                    dicts[i][key] = row[i + 1].strip()
-            columns = {name: key for key, name in enumerate(dicts[0].keys())}
+            columns = {name: key for key, name in enumerate(cards[0].keys())}
+            dataList = getImportantCollums(cards, columns)
 
-            dataList = []            
-            for d in dicts:
-                product_id = list(d.values())[columns['Product ID']]
-                name = list(d.values())[columns['Product ID'] + 2]
-                number = list(d.values())[columns['Collector Number']]
-                condition = list(d.values())[columns['Condition']]
-                condition = conditionDict.get(condition)
-                price = float(list(d.values())[columns['Expansion'] + 1])
-                expansion = list(d.values())[columns['Expansion']]
-                expansion = pokemon_sets.get(expansion)
-                if expansion != None and number != None:
-                    card_num = expansion +" "+ number
-                elif expansion == None:
-                    card_num = number
-                else:
-                    card_num = expansion
-                filteredRow = [product_id, name, condition, price, card_num]
-                temp = zip(dictKeys, filteredRow)
-                dataList.append(dict(temp))
             db = get_db()
 
             for item in dataList:
@@ -570,7 +580,23 @@ def importSoldCSV():
             os.remove(checkPath)
             os.rename(tempPath,checkPath)
         else:
+            lines = []
             #calls function to modify db
+            with open(tempPath, 'r', encoding='utf8') as inputFile:
+                for line in inputFile:
+                    if line.strip() == "":
+                        continue
+                    lines.append(line)
+            
+            cards = createDicts(lines)
+            columns = {name: key for key, name in enumerate(cards[0].keys())}
+
+            dataList = getImportantCollums(cards, columns)
+            db = get_db()
+            
+            for item in dataList:
+                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
+
             os.rename(tempPath, checkPath)
 
     return jsonify({'status': 'success'}), 201
