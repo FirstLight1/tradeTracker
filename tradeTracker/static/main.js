@@ -103,15 +103,16 @@ function deleteAuction(id, div){
 
 function checkboxSwitching(target, buyPrice, sellPrice, profitElement, id){
     if (target.classList.contains('sold')) {
-        profitElement.textContent = appendEuroSign(sellPrice - buyPrice, 'profit');
+        profitElement.textContent = appendEuroSign((sellPrice - buyPrice).toFixed(2), 'profit');
         target.closest('.card').querySelector('.sold-cm').checked = false;
         updateSoldStatus(id, true, 'sold');
     } else if (target.classList.contains('sold-cm')) {
-        profitElement.textContent = appendEuroSign((sellPrice * 0.95) - buyPrice, 'profit');
+        const value = ((sellPrice * 0.95) - buyPrice).toFixed(2);
+        profitElement.textContent = appendEuroSign(value, 'profit');
         target.closest('.card').querySelector('.sold').checked = false;
         updateSoldStatus(id, true, 'sold_cm');
     }
-    return Number(profitElement.textContent.replace('€', '').trim());
+    return Number(profitElement.textContent.replace('€', '').trim()).toFixed(2);
 }
 
 function calculateSinglesProfit(card, target) {
@@ -131,7 +132,8 @@ function SinglesProfit(cards){
         const profit = Number(card.querySelector('.profit').textContent.replace('€', '').trim());
         totalProfit += profit;
     });
-    return totalProfit.toFixed(2);
+    totalProfit = totalProfit.toFixed(2)
+    return totalProfit;
 }
 
 function calculateAuctionProfit(auction, target){
@@ -211,7 +213,6 @@ function isEmpty(obj) {
 function importCSV(){
     const input = document.querySelector('.import-sold-csv');
     //input.style.opacity = 0;
-    console.log(input);
     input.addEventListener('change', async (event) =>{
         const file = event.target.files;
         if(file && file.length === 1){
@@ -240,6 +241,36 @@ function importCSV(){
             }
         }
     })
+}
+
+async function getInventoryValue(){
+    try{
+        const response = await fetch('/inventoryValue');
+        const data = await response.json();
+        return data.value;
+    } catch(e){
+        console.error(e);
+    }
+}
+
+async function getTotalProfit(){
+    try{
+        const response = await fetch('/totalProfit');
+        const data = await response.json();
+        return data.value
+    } catch(e){
+        console.error(e);
+    }
+}
+
+async function updateInventoryValueAndTotalProfit() {
+        const value = await getInventoryValue();
+        const inventoryValueElement = document.querySelector('.inventory-value-value');
+        inventoryValueElement.textContent = appendEuroSign(value.toFixed(2));
+    
+        const profit = await getTotalProfit();
+        const totalProfitElement = document.querySelector('.total-profit-value');
+        totalProfitElement.textContent = appendEuroSign(profit.toFixed(2));
 }
 
 
@@ -291,7 +322,19 @@ async function loadAuctions() {
                             cardsContainer.innerHTML = '<div><p>Empty</p></div>';
                         }else{
 
-                        cardsContainer.innerHTML = ""; // Clear previous cards
+                        cardsContainer.innerHTML = `
+                            <div class="cards-header">
+                                <p>Card name</p>
+                                <p>Card number</p>
+                                <p>Condition</p>
+                                <p>Buy price</p>
+                                <p>Market value</p>
+                                <p>Sell price</p>
+                                <p>Sold</p>
+                                <p>Sold on CM</p>
+                                <p>Profit</p>
+                            </div>
+                        `; // Clear previous cards
                         cards.forEach(card => {
                             const cardDiv = document.createElement('div');
                             cardDiv.classList.add('card');
@@ -351,7 +394,7 @@ async function loadAuctions() {
                                     input.classList.add(...event.target.classList);
                                     event.target.replaceWith(input);
                                     input.focus();
-                                    input.addEventListener('blur', (blurEvent) => {
+                                    input.addEventListener('blur', async(blurEvent) => {
                                         const newValue = blurEvent.target.value.replace(',', '.');
                                         const auctionTab = blurEvent.target.closest('.auction-tab');
 
@@ -383,7 +426,7 @@ async function loadAuctions() {
                                                         checkboxCm.checked = false;
                                                         updateSoldStatus(cardId, true,"sold");
                                                     } else if(checkboxCm.checked){
-                                                        profit = (Number(sellValue) * 0.95) - Number(buyValue);
+                                                        profit = ((Number(sellValue) * 0.95) - Number(buyValue)).toFixed(2);
                                                         updateSoldStatus(cardId, true,"sold_cm");
 
                                                     }
@@ -397,9 +440,16 @@ async function loadAuctions() {
                                                         const newAuctionProfit = SinglesProfit(auction.querySelectorAll('.card'));
                                                         updateAuction(auctionId, newAuctionProfit);
                                                         auction.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+                                                        await updateInventoryValueAndTotalProfit()
                                                     }
                                                 }
                                             }else{
+                                                const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox')
+                                                const auctionTab = checkboxes[0].closest('.auction-tab')
+                                                if(allTrue(checkboxes)){
+                                                    calculateAuctionProfit(auctionTab,null);
+                                                    updateInventoryValueAndTotalProfit();
+                                                }
 
                                             }
                                         }
@@ -421,8 +471,7 @@ async function loadAuctions() {
                         //this needs changing
 
                         checkboxes.forEach((checkbox) => {
-                            checkbox.addEventListener('click', (event) => {
-                                const isChecked = event.target.checked;
+                            checkbox.addEventListener('click', async (event) => {
                                 const target = event.target;
                                 const card = target.closest('.card');
                                 const cards = auctionTab.querySelectorAll('.card');
@@ -432,21 +481,24 @@ async function loadAuctions() {
                                     auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                                     const auctionId = auctionTab.getAttribute('data-id');
                                     updateAuction(auctionId, newAuctionProfit);
+                                    await updateInventoryValueAndTotalProfit();
                                 } else{
                                     if(allTrue(checkboxes)){
                                         calculateAuctionProfit(auctionTab, target);
+                                        updateInventoryValueAndTotalProfit()
                                     }
                                 }
                             }, false);
                         });
 
                         const inputFields = cardsContainer.querySelectorAll('input[type="text"]');
-                        inputFields.forEach((input) => {
-                            input.addEventListener('blur', (event) =>{
+                        inputFields.forEach((input) =>{
+                            input.addEventListener('blur', async (event) =>{
                                 const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
                                 const value = event.target.value.replace(',', '.');
                                 const dataset = event.target.dataset;
                                 getInputValueAndPatch(value, input, dataset.field, cardId);
+                                await updateInventoryValueAndTotalProfit();
                             })
                             input.addEventListener('keydown', (event) => {
                                 if(event.key === 'Enter'){
@@ -456,7 +508,7 @@ async function loadAuctions() {
                         });
 
                         const deleteCard = document.querySelectorAll('.delete-card');
-                        deleteCard.forEach((button) => {
+                        deleteCard.forEach(async(button) => {
                             button.addEventListener('click', async () => {
                                 const cardId = button.getAttribute('data-id');
                                 const cardDiv = button.closest('.card');
@@ -471,8 +523,10 @@ async function loadAuctions() {
                                     const newAuctionProfit = SinglesProfit(cards);
                                     auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                                     updateAuction(auctionId, newAuctionProfit);
+                                    await updateInventoryValueAndTotalProfit()
                                 }else{
                                     calculateAuctionProfit(auctionDiv, null);
+                                    await updateInventoryValueAndTotalProfit()
                                 }
 
                                 //updateAuctionProfit(auctionDiv, auctionId)
@@ -500,6 +554,7 @@ async function loadAuctions() {
                 if(auctionId != 1){
                     const auctionDiv = button.closest('.auction-tab');  
                     deleteAuction(auctionId, auctionDiv);
+                    updateInventoryValueAndTotalProfit()
                 }
             });
         });
@@ -512,4 +567,7 @@ async function loadAuctions() {
 if(document.title === "Trade Tracker"){
     loadAuctions();
     importCSV();
+    document.addEventListener('DOMContentLoaded', async () => {
+        await updateInventoryValueAndTotalProfit();
+    }, false);
 }

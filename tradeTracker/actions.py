@@ -293,6 +293,22 @@ def loadCards(auction_id):
     cards = db.execute('SELECT * FROM cards WHERE auction_id = ?', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards]),200
 
+@bp.route('/inventoryValue')
+def invertoryValue():
+    db = get_db()
+    cur = db.cursor()
+    value = cur.execute('SELECT SUM(market_value) FROM cards').fetchone()[0]
+
+    return jsonify({'status': 'success','value': value}),200
+
+@bp.route('/totalProfit')
+def totalProfit():
+    db = get_db()
+    cur = db.cursor()
+    value = cur.execute('SELECT SUM(auction_profit) FROM auctions').fetchone()[0]
+
+    return jsonify({'status': 'success','value': value}),200
+
 @bp.route('/deleteCard/<int:card_id>', methods=('DELETE',))
 def deleteCard(card_id):
     db = get_db()
