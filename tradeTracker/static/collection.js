@@ -1,27 +1,36 @@
 import {renderField, replaceWithPElement} from './main.js';
 
-function removeCard(id, div){
+function appendEuroSign(value, dataset){
+    if (dataset === 'card_num' || dataset === 'card_name'){
+        return value;
+    }
+    if (isNaN(value)){
+        return value;
+    } else{
+        return value + '€';
+    }
+}
+
+async function removeCard(id, div){
     try{
-        fetch(`/deleteFromCollection/${id}`, {
+        const response = await fetch(`/deleteFromCollection/${id}`, {
             method: 'DELETE',
         })
-        .then(response => response.json())
-        .then(data => {
-            if(data.status === 'success'){
-                div.remove()
-            } else{
-                console.error('failed to remove card', data)
-            }
-        })
+        const data = await response.json();
+        if(data.status === "success"){
+            div.remove();
+        }else{
+            console.error('failed to remove card', data);
+        }
     }catch(err){
         console.error(err);
     }
 }
 
-function patchValue(id, value, dataset){
+async function patchValue(id, value, dataset){
     value = String(value);
     value = value.replace('€', '');
-    fetch(`/updateCollection/${id}`, {
+    return fetch(`/updateCollection/${id}`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
@@ -30,15 +39,33 @@ function patchValue(id, value, dataset){
     });
 }
 
-function getInputValueAndPatch(value, element, dataset, cardId){
+async function getInputValueAndPatch(value, element, dataset, cardId){
     if (!Boolean(value)){
             return null;
         }
         replaceWithPElement(dataset, value, element);
-        patchValue(cardId, value, dataset);
+        await patchValue(cardId, value, dataset);
+}
+
+async function getCollectionValue(){
+    try{
+        const response = await fetch('/collectionValue');
+        const data = await response.json();
+        return data.value;
+    } catch(e){
+        console.error(e);
+    }
 }
 
 
+async function updateCollectionValue() {
+        const value = await getCollectionValue();
+        if(value != null){
+            const inventoryValueElement = document.querySelector('.inventory-value-value');
+            inventoryValueElement.textContent = appendEuroSign(value.toFixed(2));
+        }
+    
+}
 
 async function fetchCollection(){
     const collectionContainer = document.querySelector('.collection');
@@ -64,11 +91,11 @@ async function fetchCollection(){
 
         const deleteButton = document.querySelectorAll('.delete-btn');
         deleteButton.forEach(button => {
-            button.addEventListener('click',() => {
+            button.addEventListener('click',async () => {
                 const cardId = button.getAttribute('data-id');
                 const cardDiv = button.closest('.card');
-                console.log(cardId);
-                removeCard(cardId, cardDiv);  
+                await removeCard(cardId, cardDiv);
+                await updateCollectionValue()
             });
         });
 
@@ -111,9 +138,12 @@ async function fetchCollection(){
                     input.classList.add(...event.target.classList);
                     event.target.replaceWith(input);
                     input.focus();
-                    input.addEventListener('blur', (blurEvent) => {
+                    input.addEventListener('blur', async (blurEvent) => {
                         const newValue = blurEvent.target.value;
-                        getInputValueAndPatch(newValue || value, input, dataset, cardId);
+                        await getInputValueAndPatch(newValue || value, input, dataset, cardId);
+                        if(blurEvent.target.classList.contains('market-value')){
+                            await updateCollectionValue();
+                        }
                     });
                     input.addEventListener('keydown', (event) => {
                         if (event.key === 'Enter') {
@@ -126,12 +156,15 @@ async function fetchCollection(){
 
         const inputFields = collectionContainer.querySelectorAll('input[type="text"]');
         inputFields.forEach((input) => {
-            input.addEventListener('blur', (event) =>{
+            input.addEventListener('blur', async (event) =>{
                 console.log(event.target.value);
                 const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
                 const value = event.target.value;
                 const dataset = event.target.dataset;
-                getInputValueAndPatch(value, input, dataset.field, cardId);
+                await getInputValueAndPatch(value, input, dataset.field, cardId);
+                if(event.target.classList.contains('market-value')){
+                    await updateCollectionValue();
+                }
             })
             input.addEventListener('keydown', (event) => {
                 if(event.key === 'Enter'){
@@ -148,3 +181,4 @@ async function fetchCollection(){
 }
 
 fetchCollection()
+updateCollectionValue(); 

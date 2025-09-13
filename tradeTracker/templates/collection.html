@@ -8,11 +8,21 @@
 </head>
 <body>
     <h1>Trade Tracker - COLLECTION</h1>
-    <button><a href="{{ url_for('actions.renderAuctions') }}">Auctions</a></button>
-    <button><a href="{{ url_for('actions.renderAddCardsToCollection') }}">Add Card(s)</a></button>
+    <nav>
+        <button><a href="{{ url_for('actions.renderAuctions') }}">Auctions</a></button>
+        <button><a href="{{ url_for('actions.renderAddCardsToCollection') }}">Add Card(s)</a></button>
+        <div class="inventory-value">
+            <div><p class="inventory-value-header">Inventory value</p></div>
+            <div><p class="inventory-value-value"></p></div>
+        </div>
+    </nav>
     <main>
         <div class="header">
-            <p></p>
+            <p>Card name</p>
+            <p>Card number</p>
+            <p>Condition</p>
+            <p>Buy price</p>
+            <p>Market value</p>
         </div>
         <div class="collection">
             <!-- cards go here -->

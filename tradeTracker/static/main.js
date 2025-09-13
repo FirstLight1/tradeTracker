@@ -23,6 +23,7 @@ function groupCheckboxes(checkboxes) {
     }
     return grouped;
 }
+
 function appendEuroSign(value, dataset){
     if (dataset === 'card_num' || dataset === 'card_name'){
         return value;
@@ -265,12 +266,16 @@ async function getTotalProfit(){
 
 async function updateInventoryValueAndTotalProfit() {
         const value = await getInventoryValue();
-        const inventoryValueElement = document.querySelector('.inventory-value-value');
-        inventoryValueElement.textContent = appendEuroSign(value.toFixed(2));
+        if(value != null){
+            const inventoryValueElement = document.querySelector('.inventory-value-value');
+            inventoryValueElement.textContent = appendEuroSign(value.toFixed(2));
+        }
     
         const profit = await getTotalProfit();
-        const totalProfitElement = document.querySelector('.total-profit-value');
-        totalProfitElement.textContent = appendEuroSign(profit.toFixed(2));
+        if(profit != null){
+            const totalProfitElement = document.querySelector('.total-profit-value');
+            totalProfitElement.textContent = appendEuroSign(profit.toFixed(2));
+        }
 }
 
 

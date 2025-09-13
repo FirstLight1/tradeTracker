@@ -390,6 +390,13 @@ def updateCollection(card_id):
         db.commit()
     return jsonify({'status': 'success'}),200
 
+@bp.route('/collectionValue')
+def collectionValue():
+    db = get_db()
+    cur = db.cursor()
+    value = cur.execute('SELECT SUM(market_value) FROM collection').fetchone()[0]
+    return jsonify({'status': 'success','value': value}),200
+
 @bp.route('/addToSingles', methods=('POST', 'GET'))
 def addToSingles():
     if request.method == 'POST':
