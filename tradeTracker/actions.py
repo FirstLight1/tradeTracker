@@ -481,6 +481,7 @@ def getImportantCollums(cards, columns):
     data = []
     for d in cards:
         product_id = list(d.values())[columns['Product ID']]
+        count = int(list(d.values())[columns['Product ID'] + 1])
         name = list(d.values())[columns['Product ID'] + 2]
         number = list(d.values())[columns['Collector Number']]
         condition = list(d.values())[columns['Condition']]
@@ -494,9 +495,10 @@ def getImportantCollums(cards, columns):
             card_num = number
         else:
             card_num = expansion
-        filteredRow = [product_id, name, condition, price, card_num]
-        temp = zip(dictKeys, filteredRow)
-        data.append(dict(temp))
+        for _ in range(count):
+            filteredRow = [product_id, name, condition, price, card_num]
+            temp = zip(dictKeys, filteredRow)
+            data.append(dict(temp))
     return data
 
 def updateOneCard(db, name, num, sellPrice):
@@ -533,10 +535,6 @@ def updateOneCard(db, name, num, sellPrice):
 @bp.route('/importSoldCSV', methods=('POST',))
 def importSoldCSV():
     if request.method == 'POST':
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        UPLOADS_FOLDER = os.path.join(BASE_DIR, 'data', 'uploads')
-        os.makedirs(UPLOADS_FOLDER, exist_ok=True)
-
         if 'csv-upload' not in request.files:
             print("No file part")
             return 'No file part', 400
@@ -546,58 +544,24 @@ def importSoldCSV():
             print('no name')
             return "No selected file", 400
         
-        checkPath = os.path.join(UPLOADS_FOLDER, 'checkFile.csv')
-        tempFileName = "temp.csv"
-        tempPath = os.path.join(UPLOADS_FOLDER, tempFileName)
-        file.save(tempPath)
-        if os.path.exists(checkPath):
-            lines = []
-            with open(checkPath, 'r', encoding='UTF-8') as checkFile:
-                checkSet = set([row.split(';')[1].strip().upper() for row in checkFile])
-                checkSet.remove('PRODUCT ID')
+        lines = []
+        
+        for line in file.stream:
+            decoded = line.decode("utf-8").strip()
+            if decoded == "":
+                continue
+            lines.append(decoded)
+        
+        cards = createDicts(lines)
+        columns = {name: key for key, name in enumerate(cards[0].keys())}
 
-            with open(tempPath, 'r', encoding='utf-8') as tempFile:
-                for line in tempFile:
-                    if line.strip() == "":
-                        continue
-                    if line.split(';')[1].strip().upper() not in checkSet:
-                        lines.append(line)
-            if len(lines) == 1:
-                os.remove(checkPath)
-                os.rename(tempPath,checkPath)
-                return "Same file", 400
-            
-            cards = createDicts(lines)
+        dataList = getImportantCollums(cards, columns)
 
-            columns = {name: key for key, name in enumerate(cards[0].keys())}
-            dataList = getImportantCollums(cards, columns)
+        db = get_db()
+        
+        for item in dataList:
+            updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
 
-            db = get_db()
-
-            for item in dataList:
-                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
-
-            os.remove(checkPath)
-            os.rename(tempPath,checkPath)
-        else:
-            lines = []
-            #calls function to modify db
-            with open(tempPath, 'r', encoding='utf8') as inputFile:
-                for line in inputFile:
-                    if line.strip() == "":
-                        continue
-                    lines.append(line)
-            
-            cards = createDicts(lines)
-            columns = {name: key for key, name in enumerate(cards[0].keys())}
-
-            dataList = getImportantCollums(cards, columns)
-            db = get_db()
-            
-            for item in dataList:
-                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
-
-            os.rename(tempPath, checkPath)
 
     return jsonify({'status': 'success'}), 201
 
