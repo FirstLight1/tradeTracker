@@ -336,7 +336,7 @@ async function loadAuctions() {
                                 <p>Market value</p>
                                 <p>Sell price</p>
                                 <p>Sold</p>
-                                <p>Sold on CM</p>
+                                <p>Sold CM</p>
                                 <p>Profit</p>
                             </div>
                         `; // Clear previous cards
@@ -453,7 +453,7 @@ async function loadAuctions() {
                                                 const auctionTab = checkboxes[0].closest('.auction-tab')
                                                 if(allTrue(checkboxes)){
                                                     calculateAuctionProfit(auctionTab,null);
-                                                    updateInventoryValueAndTotalProfit();
+                                                    await updateInventoryValueAndTotalProfit();
                                                 }
 
                                             }

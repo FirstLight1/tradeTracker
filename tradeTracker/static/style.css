@@ -1,10 +1,76 @@
+body{
+    padding: 0px;
+    margin: 0px;
+}
+
 p{
     display: inline;
     margin: 20px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.content-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.header-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: -960px;
+    margin-bottom: -35px;
 }
 
 .auction-tab{
     border:5px solid black;
     border-radius: 15px;
     padding: 15px;
+    display: grid;
+    grid-template-columns: repeat(3, 150px) repeat(2, 50px);
+    grid-column-gap: 50px;
+    width: 1500px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.auction-header{
+    display: grid;
+    grid-template-columns: repeat(3, 150px);
+    grid-column-gap: 50px;
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+
+.cards-header{
+    display: grid;
+    grid-template-columns: 280px 120px 150px 80px 100px 80px 50px 90px 80px 80px;
+    gap: 5px;
+    border: 5px, solid, red;
+    text-align:center;
+    padding-bottom: 5px;
+    padding-top: 10px;
+}
+
+.cards-header *{
+    border: 0px solid red;
+
+}
+
+.card{
+    display: grid;
+    grid-template-columns: 280px 120px 150px 80px 100px 80px 50px 90px 80px 80px;
+    gap: 5px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+
+}
+
+.card *{
+    border: 0px solid red;
 }
