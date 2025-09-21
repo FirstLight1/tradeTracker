@@ -1,0 +1,232 @@
+@font-face {
+  font-family: 'HollowKnightFont';
+  src: url('../fonts/hollowKnight.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Base styles */
+:root {
+  --primary-dark: #0d1117;
+  --primary-light: #1a1f2e;
+  --accent-cyan: #7fffd4;
+  --accent-purple: #9370db;
+  --text-color: #c9d1d9;
+  --glow-color: rgba(127, 255, 212, 0.2);
+  --mist-color: rgba(147, 112, 219, 0.05);
+  --primary-font: 'HollowKnightFont', serif;
+}
+
+body {
+  color: var(--text-color);
+  font-family: var(--primary-font), "Cinzel", serif;
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: linear-gradient(
+    rgba(13, 17, 23, 0.85), 
+    rgba(26, 31, 46, 0.95)
+  ),
+  url('../images/CityOfTearsBG.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+
+/* Headers */
+h1 {
+  color: var(--accent-cyan);
+  font-size: 2.8rem;
+  font-weight: normal;
+  letter-spacing: 0.15em;
+}
+
+/* Navigation */
+.nav-bar {
+  background: linear-gradient(
+    90deg, 
+    var(--primary-light) 0%,
+    rgba(26, 31, 46, 0.8) 50%,
+    var(--primary-light) 100%
+  );
+  box-shadow: 
+    0 5px 15px rgba(0, 0, 0, 0.3),
+    0 0 40px rgba(127, 255, 212, 0.1);
+  border: 1px solid rgba(127, 255, 212, 0.15);
+  backdrop-filter: blur(5px);
+}
+
+/* Buttons */
+button {
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    rgba(127, 255, 212, 0.05) 50%,
+    transparent 100%
+  );
+  color: var(--text-color);
+  border: 1px solid var(--accent-cyan);
+  font-family: var(--primary-font), serif;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover {
+  background: var(--accent-cyan);
+  color: var(--primary-dark);
+  box-shadow: 
+    0 0 20px var(--glow-color),
+    0 0 40px rgba(127, 255, 212, 0.2);
+  transform: translateY(-2px) scale(1.02);
+  letter-spacing: 0.25em;
+}
+
+button a{
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Auction tabs */
+.auction-tab {
+  background: linear-gradient(
+    135deg,
+    rgba(26, 31, 46, 0.9) 0%,
+    rgba(13, 17, 23, 0.9) 100%
+  );
+  border: 1px solid rgba(127, 255, 212, 0.1);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    0 0 50px rgba(147, 112, 219, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Cards */
+.card {
+  background: linear-gradient(
+    160deg,
+    rgba(26, 31, 46, 0.8) 0%,
+    rgba(13, 17, 23, 0.9) 100%
+  );
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(147, 112, 219, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(5px);
+}
+
+.card:hover {
+  transform: translateX(5px) translateY(-2px);
+  border-color: var(--accent-purple);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 40px rgba(147, 112, 219, 0.2);
+}
+
+/* Input fields */
+input[type="text"] {
+  background: rgba(13, 17, 23, 0.8);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-purple);
+  box-shadow: 
+    inset 0 0 10px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(147, 112, 219, 0.1);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+input[type="text"]:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 
+    inset 0 0 15px rgba(0, 0, 0, 0.3),
+    0 0 30px var(--glow-color);
+  color: var(--text-color);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent-purple);
+}
+
+/* Headers and text */
+.auction-header p,
+.cards-header p {
+  color: var(--accent-cyan);
+  letter-spacing: 0.08em;
+  text-shadow: 
+    0 0 10px var(--glow-color),
+    0 0 20px rgba(127, 255, 212, 0.1);
+  font-family: var(--primary-font), serif;
+}
+
+.total-profit,
+.inventory-value {
+  background: linear-gradient(
+    135deg,
+    rgba(127, 255, 212, 0.05) 0%,
+    rgba(147, 112, 219, 0.05) 100%
+  );
+  border: 1px solid rgba(127, 255, 212, 0.15);
+  box-shadow: 
+    0 0 25px rgba(127, 255, 212, 0.1),
+    inset 0 0 20px rgba(147, 112, 219, 0.05);
+  backdrop-filter: blur(3px);
+}
+
+/* Upload button */
+.import-sold-csv-label {
+  background: linear-gradient(
+    45deg,
+    transparent 0%,
+    rgba(127, 255, 212, 0.05) 50%,
+    transparent 100%
+  );
+  border: 1px dashed var(--accent-cyan);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.import-sold-csv-label:hover {
+  background: rgba(127, 255, 212, 0.1);
+  border-style: solid;
+  box-shadow: 
+    0 0 25px var(--glow-color),
+    inset 0 0 15px rgba(127, 255, 212, 0.1);
+  transform: scale(1.02);
+}
+
+/* Profit values */
+.profit,
+.auction-profit {
+  color: var(--accent-purple);
+  text-shadow: 
+    0 0 10px rgba(147, 112, 219, 0.4),
+    0 0 20px rgba(147, 112, 219, 0.2);
+  font-family: var(--primary-font), serif;
+  letter-spacing: 0.05em;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--primary-dark);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    var(--accent-cyan),
+    var(--accent-purple)
+  );
+  border-radius: 5px;
+  border: 2px solid var(--primary-dark);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--glow-color);
+}

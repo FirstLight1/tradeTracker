@@ -213,7 +213,7 @@ function isEmpty(obj) {
 
 function importCSV(){
     const input = document.querySelector('.import-sold-csv');
-    //input.style.opacity = 0;
+    input.style.opacity = 0;
     input.addEventListener('change', async (event) =>{
         const file = event.target.files;
         if(file && file.length === 1){
