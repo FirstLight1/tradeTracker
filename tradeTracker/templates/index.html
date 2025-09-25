@@ -9,18 +9,34 @@
 </head>
 <body>
     <main>
-        <h1>Trade Tracker</h1>
+        <h1>Trade<span class="shadow"></span> Tracker</h1>
         <header class="header">
             <nav class="nav-bar">
-                <button class="addAuction"><a href="{{ url_for('actions.addAuction') }}">Add auction</a></button>
-                <button class="addSingles"><a href="{{ url_for('actions.addSingles') }}">Add Singles</a></button>
-                <button class="collection"><a href="{{ url_for('actions.renderCollection')}}">Collection</a></button>
-                <label for="csv-upload" class="import-sold-csv-label" name="upload">
+                <div>
+                    <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+                    <button class="addAuction"><a href="{{ url_for('actions.addAuction') }}">Add auction</a></button>
+                    <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>
+                </div>
+                <div>
+                    <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+                    <button class="addSingles"><a href="{{ url_for('actions.addSingles') }}">Add Singles</a></button>
+                    <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>
+                </div>
+                <div>
+                    <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+                    <button class="collection"><a href="{{ url_for('actions.renderCollection')}}">Collection</a></button>
+                    <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>
+                </div>
+                <div class="import-sold-csv-container">
+                    <label for="csv-upload" class="import-sold-csv-label" name="upload">
+                    <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
                     <p class="upload-text">Upload CSV</p>
                     <button class="import-sold-csv"><input type="file" accept=".csv" name="csv-upload"></button>
-                </label>
+                    <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>                   
+                    </label>
+                </div>
 
-                <div class="total-profit">
+                <div class="total-profit">                   
                     <div><p class="total-profit-header">Total profit</p></div>
                     <div><p class="total-profit-value"></p></div>
                 </div>

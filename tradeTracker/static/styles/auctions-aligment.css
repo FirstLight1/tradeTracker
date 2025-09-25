@@ -16,10 +16,10 @@ p{
     margin-bottom: 50px;
 }
 
-
-.total-profit,
-.inventory-value{
-    display: inline-block;
+.nav-bar div{
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .import-sold-csv-label{
@@ -27,7 +27,11 @@ p{
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 90px;
+    width: 160px;
+}
+
+.import-sold-csv-label input[type="file"]{
+    width: 150px;
 }
 
 .upload-text{
@@ -80,11 +84,6 @@ p{
     padding-top: 10px;
 }
 
-.cards-header *{
-    border: 0px solid red;
-
-}
-
 .card{
     display: grid;
     grid-template-columns: 280px 120px 150px 80px 100px 80px 50px 90px 80px 80px;
@@ -93,8 +92,4 @@ p{
     margin-bottom: 15px;
     text-align: center;
 
-}
-
-.card *{
-    border: 0px solid red;
 }

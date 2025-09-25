@@ -379,6 +379,7 @@ async function loadAuctions() {
                                         select.appendChild(opt);
                                     });
                                     event.target.replaceWith(select);
+                                    select.classList.add(...event.target.classList, 'select-condition');
                                     select.addEventListener('change', (event) => {
                                         const selectedValue = event.target.value;
                                         const p = document.createElement('p');

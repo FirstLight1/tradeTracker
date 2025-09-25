@@ -12,7 +12,7 @@
   --accent-cyan: #7fffd4;
   --accent-purple: #9370db;
   --text-color: #c9d1d9;
-  --glow-color: rgba(127, 255, 212, 0.2);
+  --glow-color: rgb(255, 255, 255);
   --mist-color: rgba(147, 112, 219, 0.05);
   --primary-font: 'HollowKnightFont', serif;
 }
@@ -41,6 +41,14 @@ h1 {
   font-size: 2.8rem;
   font-weight: normal;
   letter-spacing: 0.15em;
+   text-shadow:
+    0 0 2px rgba(255,255,255,1),
+    0 0 6px rgba(255,250,240,0.9),
+    0 0 14px rgba(255,240,220,0.7),
+    0 0 30px rgba(200,190,255,0.25),
+    0 0 60px rgba(180,170,255,0.12);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
 /* Navigation */
@@ -58,6 +66,19 @@ h1 {
   backdrop-filter: blur(5px);
 }
 
+.arrow{
+    font-size: 24px;
+    color: var(--accent-cyan);
+    margin: 0px;
+    padding: 0px;
+    opacity: 0;
+    cursor:default;
+}
+
+.arrow img{
+    width: 24px;
+    height: 24px;
+}
 /* Buttons */
 button {
   background: linear-gradient(
@@ -66,27 +87,35 @@ button {
     rgba(127, 255, 212, 0.05) 50%,
     transparent 100%
   );
+  border: none;
+  border-radius: 25px;
   color: var(--text-color);
-  border: 1px solid var(--accent-cyan);
   font-family: var(--primary-font), serif;
+  font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow:
+    0 0 2px rgba(255,255,255,1),
+    0 0 6px rgba(255,250,240,0.9),
+    0 0 14px rgba(255,240,220,0.7),
+    0 0 30px rgba(200,190,255,0.25),
+    0 0 60px rgba(180,170,255,0.12);
 }
 
 button:hover {
-  background: var(--accent-cyan);
-  color: var(--primary-dark);
-  box-shadow: 
-    0 0 20px var(--glow-color),
-    0 0 40px rgba(127, 255, 212, 0.2);
-  transform: translateY(-2px) scale(1.02);
+  color: var(--text-color);
   letter-spacing: 0.25em;
 }
 
 button a{
     color: inherit;
     text-decoration: none;
+}
+
+.nav-bar div:hover .arrow{
+  opacity: 1;
+  transition: opacity 0.5s;
 }
 
 /* Auction tabs */
@@ -105,32 +134,22 @@ button a{
 
 /* Cards */
 .card {
-  background: linear-gradient(
-    160deg,
-    rgba(26, 31, 46, 0.8) 0%,
-    rgba(13, 17, 23, 0.9) 100%
-  );
-  border: 1px solid rgba(147, 112, 219, 0.2);
   box-shadow: 
     0 4px 15px rgba(0, 0, 0, 0.3),
     0 0 30px rgba(147, 112, 219, 0.1);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(5px);
+  align-items: center;
 }
 
-.card:hover {
-  transform: translateX(5px) translateY(-2px);
-  border-color: var(--accent-purple);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.4),
-    0 0 40px rgba(147, 112, 219, 0.2);
+.delete-card{
+    text-shadow: none;
 }
-
 /* Input fields */
 input[type="text"] {
-  background: rgba(13, 17, 23, 0.8);
-  color: var(--accent-cyan);
-  border: 1px solid var(--accent-purple);
+  background: var(--primary-light);
+  color: var(--text-color);
+  border: 1px solid var(--accent-cyan);
   box-shadow: 
     inset 0 0 10px rgba(0, 0, 0, 0.3),
     0 0 20px rgba(147, 112, 219, 0.1);
@@ -139,15 +158,24 @@ input[type="text"] {
 }
 
 input[type="text"]:focus {
-  border-color: var(--accent-cyan);
-  box-shadow: 
-    inset 0 0 15px rgba(0, 0, 0, 0.3),
-    0 0 30px var(--glow-color);
+  border: none;
   color: var(--text-color);
 }
 
 input[type="checkbox"] {
-  accent-color: var(--accent-purple);
+  accent-color: var(--accent-cyan);
+}
+
+.select-condition {
+  background: var(--primary-light);
+  color: var(--text-color);
+  border: 1px solid var(--accent-cyan);
+  box-shadow: 
+    inset 0 0 10px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(147, 112, 219, 0.1);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  font-family: var(--primary-font);
 }
 
 /* Headers and text */
@@ -163,15 +191,13 @@ input[type="checkbox"] {
 
 .total-profit,
 .inventory-value {
-  background: linear-gradient(
-    135deg,
-    rgba(127, 255, 212, 0.05) 0%,
-    rgba(147, 112, 219, 0.05) 100%
-  );
-  border: 1px solid rgba(127, 255, 212, 0.15);
-  box-shadow: 
-    0 0 25px rgba(127, 255, 212, 0.1),
-    inset 0 0 20px rgba(147, 112, 219, 0.05);
+  text-shadow:
+    0 0 2px rgba(255,255,255,1),
+    0 0 6px rgba(255,250,240,0.9),
+    0 0 14px rgba(255,240,220,0.7),
+    0 0 30px rgba(200,190,255,0.25),
+    0 0 60px rgba(180,170,255,0.12);
+  font-size: 16px;
   backdrop-filter: blur(3px);
 }
 
@@ -183,17 +209,22 @@ input[type="checkbox"] {
     rgba(127, 255, 212, 0.05) 50%,
     transparent 100%
   );
-  border: 1px dashed var(--accent-cyan);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .import-sold-csv-label:hover {
-  background: rgba(127, 255, 212, 0.1);
-  border-style: solid;
-  box-shadow: 
-    0 0 25px var(--glow-color),
-    inset 0 0 15px rgba(127, 255, 212, 0.1);
   transform: scale(1.02);
+}
+
+.upload-text {
+  margin-top: 6px;
+  font-size: 17px;
+  text-shadow:
+    0 0 2px rgba(255,255,255,1),
+    0 0 6px rgba(255,250,240,0.9),
+    0 0 14px rgba(255,240,220,0.7),
+    0 0 30px rgba(200,190,255,0.25),
+    0 0 60px rgba(180,170,255,0.12);
 }
 
 /* Profit values */
