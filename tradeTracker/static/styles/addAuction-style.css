@@ -15,11 +15,16 @@
   --glow-color: rgba(90, 209, 199, 0.25);
   --mist-color: rgba(124, 95, 163, 0.08);
   --primary-font: 'HollowKnightFont', serif;
+  --white-color: rgb(255, 255, 255);
+
 }
 
 body {
   color: var(--text-color);
   font-family: var(--primary-font), serif;
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
   background: linear-gradient(
     120deg,
     rgba(10, 13, 20, 0.96) 0%,
@@ -29,30 +34,35 @@ body {
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  min-height: 100vh;
-  overflow-x: hidden;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Removed justify-content: center to align content to top like index.html */
 }
 
-h1, h2, h3, h4, h5, h6 {
-  color: var(--accent-teal);
-  font-family: var(--primary-font), serif;
-  letter-spacing: 0.13em;
+h1{
+  color: var(--text-color);
   text-shadow:
-    0 0 6px var(--glow-color),
-    0 0 18px var(--mist-color);
+    0 0 2px rgba(255,255,255,1),
+    0 0 6px rgba(255,250,240,0.9),
+    0 0 14px rgba(255,240,220,0.7),
+    0 0 30px rgba(200,190,255,0.25),
+    0 0 60px rgba(180,170,255,0.12);
+  font-size: 2.8rem;
   font-weight: normal;
+  font-family: var(--primary-font), serif;
+  letter-spacing: 0.15em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  color: var(--accent-teal);
-  text-decoration: underline;
-  transition: color 0.3s, text-shadow 0.3s;
+  color: var(--text-color);
+  text-decoration: none;
 }
 a:hover {
-  color: #a7f6f0;
-  text-shadow: 0 0 8px var(--accent-teal), 0 0 16px var(--glow-color);
+    letter-spacing: 0.25em;
 }
 
 .nav-bar {
@@ -73,8 +83,14 @@ a:hover {
   opacity: 0;
   cursor: default;
   padding: 5px 12px;
-  transition: opacity 0.4s;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.arrow img{
+    width: 24px;
+    height: 24px;
+}
+
 .nav-bar div:hover .arrow {
   opacity: 1;
 }
@@ -85,72 +101,68 @@ button, .button {
     rgba(90, 209, 199, 0.08) 0%,
     rgba(124, 95, 163, 0.10) 100%
   );
-  border: 1px solid rgba(90, 209, 199, 0.18);
+  border: none;
   border-radius: 25px;
-  color: var(--accent-teal);
+  color: var(--text-color);
   font-family: var(--primary-font), serif;
   font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   text-shadow:
-    0 0 2px var(--accent-teal),
-    0 0 8px var(--glow-color);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    0 0 2px rgba(255,255,255,1),
+    0 0 6px rgba(255,250,240,0.9),
+    0 0 14px rgba(255,240,220,0.7),
+    0 0 30px rgba(200,190,255,0.25),
+    0 0 60px rgba(180,170,255,0.12);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 0 transparent;
+  cursor: pointer;
 }
+
 button:hover, .button:hover {
-  color: #a7f6f0;
-  box-shadow: 0 0 18px var(--glow-color), 0 0 32px var(--mist-color);
   letter-spacing: 0.22em;
 }
 
-.auction-container, .content-container, .section, .container {
+.auction-container, .content-container {
   background: linear-gradient(
-    120deg,
-    rgba(29, 38, 57, 0.92) 0%,
-    rgba(20, 27, 42, 0.97) 100%
+    135deg,
+    rgba(26, 31, 46, 0.9) 0%,
+    rgba(13, 17, 23, 0.9) 100%
   );
+  width: 1500px;
+  margin-left: auto;
+  margin-right: auto;
   border: 1px solid rgba(90, 209, 199, 0.10);
   border-radius: 14px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 0 60px var(--mist-color);
   backdrop-filter: blur(10px);
+  padding-bottom: 25px;
+  padding-top: 15px;
 }
 
-.cards-header, .auction-header {
-  background: rgba(20, 27, 42, 0.7);
-  border-bottom: 1px solid rgba(90, 209, 199, 0.10);
+.auction-info label{
+    font-family: var(--primary-font);
+    color: var(--accent-teal);
+    text-shadow: 
+    0 0 10px var(--white-color),
+    0 0 20px rgba(127, 255, 212, 0.1);
 }
+
 .cards-header p, .auction-header p {
   color: var(--accent-teal);
   font-family: var(--primary-font), serif;
   letter-spacing: 0.09em;
-  text-shadow: 0 0 2px var(--accent-teal), 0 0 8px var(--glow-color);
+  text-shadow: 0 0 2px var(--white-color), 0 0 8px var(--glow-color);
 }
 
 .card {
-  background: linear-gradient(
-    90deg,
-    rgba(10, 13, 20, 0.93) 0%,
-    rgba(29, 38, 57, 0.88) 50%,
-    rgba(10, 13, 20, 0.93) 100%
-  );
-  border: 1px solid rgba(90, 209, 199, 0.08);
   box-shadow: 0 4px 18px rgba(0,0,0,0.32), 0 0 30px var(--mist-color);
   border-radius: 10px;
   transition: box-shadow 0.3s, background 0.3s;
 }
-.card:hover {
-  background: linear-gradient(
-    90deg,
-    rgba(20, 27, 42, 0.97) 0%,
-    rgba(29, 38, 57, 0.93) 50%,
-    rgba(20, 27, 42, 0.97) 100%
-  );
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 0 60px var(--glow-color);
-}
 
 input[type="text"], select, textarea {
-  background: rgba(10, 13, 20, 0.85);
+  background: var(--waterway-dark);
   color: var(--text-color);
   border: 1px solid var(--accent-teal);
   font-family: var(--primary-font), serif;
@@ -158,9 +170,10 @@ input[type="text"], select, textarea {
   border-radius: 6px;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
+
 input[type="text"]:focus, select:focus, textarea:focus {
-  border-color: var(--accent-purple);
-  box-shadow: 0 0 18px var(--accent-purple) inset, 0 0 8px var(--glow-color);
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 18px var(--accent-teal) inset, 0 0 8px var(--glow-color);
   outline: none;
 }
 
@@ -170,10 +183,40 @@ input[type="checkbox"] {
 }
 
 .total-profit, .inventory-value {
-  color: var(--accent-teal);
+  color: var(--text-color);
   text-shadow: 0 0 2px var(--accent-teal), 0 0 8px var(--glow-color);
   font-family: var(--primary-font), serif;
   letter-spacing: 0.1em;
+  margin-right: 26px;
+  text-shadow:
+    0 0 2px rgba(255,255,255,1),
+    0 0 6px rgba(255,250,240,0.9),
+    0 0 14px rgba(255,240,220,0.7),
+    0 0 30px rgba(200,190,255,0.25),
+    0 0 60px rgba(180,170,255,0.12);
+}
+
+.inventory-value{
+    margin-left: 35px;
+}
+
+.total-profit{
+    margin-left: 35px;
+}
+
+.total-profit-value, .inventory-value-value {
+  margin-left: 7px;
+}
+
+.action-buttons{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.action-buttons:hover .arrow{
+    opacity: 1;
 }
 
 ::-webkit-scrollbar {

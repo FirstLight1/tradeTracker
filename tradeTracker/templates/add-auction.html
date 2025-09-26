@@ -14,7 +14,7 @@
         <nav class="nav-bar">
             <div>
                 <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
-                <button class="addAuction"><a href="{{ url_for('actions.renderAuctions') }}">Add auction</a></button>
+                <button class="addAuction"><a href="{{ url_for('actions.renderAuctions') }}">Auctions</a></button>
                 <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>
             </div>
             <div>
@@ -28,11 +28,11 @@
                 <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>
             </div>
             <div class="total-profit">                   
-                <div><p class="total-profit-header">Total profit</p></div>
+                <div><p class="total-profit-header">Profit</p></div>
                 <div><p class="total-profit-value"></p></div>
             </div>
             <div class="inventory-value">
-                <div><p class="inventory-value-header">Inventory value</p></div>
+                <div><p class="inventory-value-header">Inventory</p></div>
                 <div><p class="inventory-value-value"></p></div>
             </div>
         </nav>
@@ -87,8 +87,16 @@
             </dir>
         </dir>
         <dir class="buttons-container">
-            <button class="add-card">Add card</button>
-            <button class="save-btn">Save</button>
+            <dir class="add-card-container action-buttons">
+                <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+                    <button class="add-card">Add card</button>
+                <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>   
+            </dir>
+            <dir class="save-auction-container action-buttons">
+                <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+                    <button class="save-btn">Save</button>            
+                <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>
+            </dir>
         </dir>
     </main>
     <script type="module" src="../static/addAuction.js"></script>

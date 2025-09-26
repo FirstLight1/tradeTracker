@@ -2,6 +2,10 @@
     display: flex;
     justify-content: space-evenly;
     margin-bottom: 50px;
+    border: none;
+    border-radius: 15px;
+    height: 50px;
+    width: 1530px;
 }
 
 .nav-bar div{
