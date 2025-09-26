@@ -264,17 +264,17 @@ async function getTotalProfit(){
     }
 }
 
-async function updateInventoryValueAndTotalProfit() {
+export async function updateInventoryValueAndTotalProfit() {
         const value = await getInventoryValue();
         if(value != null){
             const inventoryValueElement = document.querySelector('.inventory-value-value');
-            inventoryValueElement.textContent = appendEuroSign(value.toFixed(2));
+            inventoryValueElement.textContent = "  " + appendEuroSign(value.toFixed(2));
         }
     
         const profit = await getTotalProfit();
         if(profit != null){
             const totalProfitElement = document.querySelector('.total-profit-value');
-            totalProfitElement.textContent = appendEuroSign(profit.toFixed(2));
+            totalProfitElement.textContent = " " + appendEuroSign(profit.toFixed(2));
         }
 }
 

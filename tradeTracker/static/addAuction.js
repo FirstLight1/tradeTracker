@@ -1,4 +1,4 @@
-import {allTrue} from "./main.js";
+import {allTrue, updateInventoryValueAndTotalProfit} from "./main.js";
 
 function handleCheckboxes(checkboxes) {
     checkboxes.forEach(checkbox => {
@@ -158,4 +158,6 @@ addCardButton.addEventListener('click', () =>{
 })
 
 
-
+document.addEventListener('DOMContentLoaded', async () => {
+    await updateInventoryValueAndTotalProfit();
+}, false);
