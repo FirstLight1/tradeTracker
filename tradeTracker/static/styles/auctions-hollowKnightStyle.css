@@ -32,9 +32,6 @@ body {
   background-position: center;
   background-attachment: fixed;
   background-repeat: no-repeat;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 
@@ -55,6 +52,8 @@ h1 {
   text-align: center;
 }
 
+
+
 /* Navigation */
 .nav-bar {
   background: linear-gradient(
@@ -68,7 +67,6 @@ h1 {
     0 0 40px rgba(127, 255, 212, 0.1);
   border: 1px solid rgba(127, 255, 212, 0.15);
   backdrop-filter: blur(5px);
-  
 }
 
 .arrow{
