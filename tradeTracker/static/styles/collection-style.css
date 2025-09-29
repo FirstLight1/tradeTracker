@@ -100,7 +100,6 @@ h1 {
         0 0 12px var(--shadow-primary);
     padding-bottom: 5px;
     height: 40px;
-    width: 150px;
 }
 
 .arrow {
@@ -125,10 +124,6 @@ h1 {
 
 .nav-bar button:hover {
     letter-spacing: 0.25em;
-    color: var(--text-secondary);
-    border-color: var(--border-hover);
-    background: rgba(106, 255, 160, 0.1);
-    box-shadow: 0 0 15px var(--shadow-primary), 0 0 8px var(--shadow-accent) inset;
 }
 
 .nav-bar a {
@@ -138,10 +133,8 @@ h1 {
 }
 
 .inventory-value {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
     border-radius: 8px;
-    box-shadow: 0 0 18px var(--shadow-primary) inset, 0 0 8px var(--shadow-secondary);
     padding: 0.5rem 1rem;
     color: var(--color-accent);
 }
@@ -156,13 +149,14 @@ h1 {
     color: var(--text-primary);
     font-size: 1.3rem;
     text-shadow: 0 0 16px var(--color-accent), 0 0 10px var(--color-highlight);
+    margin-left: 15px;
 }
 
 .card-header {
     background: linear-gradient(90deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     color: var(--text-accent);
     border-radius: 10px;
-    box-shadow: 0 0 24px var(--shadow-primary) inset, 0 0 12px var(--shadow-accent);
+    box-shadow: 0 0 24px var(--shadow-primary) inset, 0 0 12px var(--shadow-primary);
     font-size: 1.1rem;
     letter-spacing: 1px;
     margin-bottom: 1rem;
@@ -173,7 +167,7 @@ h1 {
 .collection {
     background: linear-gradient(120deg, var(--bg-primary) 60%, var(--bg-secondary) 100%);
     border-radius: 16px;
-    box-shadow: 0 0 48px var(--shadow-primary) inset, 0 0 32px var(--shadow-secondary), 0 0 24px var(--shadow-accent);
+    box-shadow: 0 0 48px var(--shadow-primary) inset, 0 0 32px var(--shadow-primary);
     padding: 1.5rem 0;
     backdrop-filter: blur(5px);
     border: 1px solid var(--border-primary);
@@ -197,7 +191,6 @@ h1 {
     border-color: var(--border-hover);
     box-shadow: 0 0 24px var(--shadow-primary), 0 0 12px var(--shadow-secondary), 0 0 10px var(--shadow-accent);
     color: var(--text-accent);
-    transform: translateY(-3px);
     background: var(--bg-secondary);
 }
 
@@ -245,6 +238,23 @@ select {
     backdrop-filter: blur(5px);
     padding: 8px 15px;
     font-family: 'HollowKnight', serif;
+}
+
+.delete-btn{
+    margin-left: 30px;
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
+    border-radius: 15px;
+    letter-spacing: 0.2em;
+    font-size: large;
+    cursor: pointer;
+}
+
+.delete-btn:hover{
+    letter-spacing: 0.25em;
+    scale: 1.1;
+    transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar {
