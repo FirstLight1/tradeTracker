@@ -1,3 +1,5 @@
+import { updateCollectionValue } from "./collection.js";
+
 function createNewCard(newCard){
      newCard.querySelectorAll('input').forEach(el =>{
             if (el.type == 'checkbox') {
@@ -41,7 +43,7 @@ class struct{
 }
 
 const saveButton = document.querySelector('.save-btn');
-cardsArr = []
+let cardsArr = []
 
 saveButton.addEventListener('click', () => {
     const cards = document.querySelectorAll('.card');
@@ -96,4 +98,4 @@ addCardButton.addEventListener('click', () =>{
     container.append(newCard);
 })
 
-
+updateCollectionValue();

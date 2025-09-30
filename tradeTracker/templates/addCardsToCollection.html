@@ -3,19 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/styles/header-align.css">
+    <link rel="stylesheet" href="../static/styles/collection-aling.css">
+    <link rel="stylesheet" href="../static/styles/collection-style.css">
     <title>Add to collection</title>
 </head>
 <body>
-    <dir>
-        <dir class="cards-header">
+    <h1>Trade Tracker - ADD TO COLLECTION</h1>
+    <header class="header">
+        <nav class="nav-bar">
+            <div>
+                <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+                <button class="auctions"><a href="{{ url_for('actions.renderAuctions') }}">Auctions</a></button>
+                <span class="arrow right"><img src="../static/images/rightarrow.png" alt="right arrow"></span>
+            </div>
+            <div>
+                <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+                <button class="add-to-collection"><a href="{{ url_for('actions.renderCollection') }}">Collection</a></button>
+                <span class="arrow right"><img src="../static/images/rightarrow.png" alt="right arrow"></span>
+            </div>
+
+            <div class="inventory-value">
+                <div><p class="inventory-value-header">Inventory value</p></div>
+                <div><p class="inventory-value-value"></p></div>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="card-header">
             <p>Card name</p>
             <p>Card number</p>
             <p>Condition</p>
             <p>Buy price</p>
             <p>Market price</p>
-        </dir>
-         <dir class="cards-container">
-            <dir class="card">
+        </div>
+         <div class="collection cards-container">
+            <div class="card">
                 <input type="text" name="cardName" oninput="handleCardInput(this)">
                 <input type="text" name="cardNum">
                 <select name="condition">
@@ -29,10 +52,20 @@
                 </select>
                 <input type="text" name="buyPrice">
                 <input type="text" name="marketValue" class="marketValue">
-            </dir>
-    </dir>
-    <button class="add-card">Add card</button>
-    <button class="save-btn">Save</button>
-    <script src="../static/addToCollection.js"></script>
+            </div>
+    </div>
+    <div class="button-container">
+        <div class="add-card-container">
+            <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+            <button class="add-card">Add card</button>
+            <span class="arrow right"><img src="../static/images/rightarrow.png" alt="right arrow"></span>
+        </div>
+        <div class="save-container">
+            <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
+            <button class="save-btn">Save</button>
+            <span class="arrow right"><img src="../static/images/rightarrow.png" alt="right arrow"></span>
+        </div>
+    </div>
+    <script src="../static/addToCollection.js" type="module"></script>
 </body>
 </html>

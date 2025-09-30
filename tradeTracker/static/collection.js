@@ -58,7 +58,7 @@ async function getCollectionValue(){
 }
 
 
-async function updateCollectionValue() {
+export async function updateCollectionValue() {
         const value = await getCollectionValue();
         if(value != null){
             const inventoryValueElement = document.querySelector('.inventory-value-value');
@@ -180,5 +180,8 @@ async function fetchCollection(){
 
 }
 
-fetchCollection()
-updateCollectionValue(); 
+if (document.title === "Collection"){
+    fetchCollection()
+    updateCollectionValue(); 
+
+}

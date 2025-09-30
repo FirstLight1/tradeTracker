@@ -280,3 +280,28 @@ select {
     background: var(--color-accent);
     box-shadow: 0 0 10px var(--text-accent);
 }
+
+.add-card,
+.save-btn{
+    background: transparent;
+    color: var(--color-accent);
+    font-size: 20px;
+    border: none;
+    border-radius: 15px;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    padding-bottom: 7px;
+    letter-spacing: 0.2em;
+}
+
+.add-card-container:hover .arrow,
+.save-container:hover .arrow{
+    opacity: 1;
+    transition: opacity 0.5s;
+}
+
+.add-card-container:hover .add-card,
+.save-container:hover .save-btn{
+    letter-spacing: 0.25em;
+    transition: all 0.3s ease;
+}

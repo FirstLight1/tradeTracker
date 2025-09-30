@@ -18,9 +18,18 @@ body{
     gap: 25px;
     text-align:center;
     align-items: center;
-    justify-content: center
+    justify-content: center;
 }
 
 .card-header{
     height: 75px;
+}
+
+.button-container,
+.add-card-container,
+.save-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
 }
