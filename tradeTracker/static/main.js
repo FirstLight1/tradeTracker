@@ -52,15 +52,26 @@ function getInputValueAndPatch(value, element, dataset, cardId){
 }
 
 
-function updateSoldStatus(cardId, isChecked, field) {
-    //console.log(cardId, isChecked, field);
-    fetch(`/update/${cardId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ field: field, value: isChecked })
-    });
+async function updateSoldStatus(cardId, isChecked, field) {
+    try{
+        const response = await fetch(`/update/${cardId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ field: field, value: isChecked })
+        });
+        const data = await response.json();
+        if (!(data.status === 'success')) {
+            console.error('Error updating sold status:', data);
+            return;
+        } else{
+            return
+        }
+    } catch (e){
+        console.error('Error updating sold status:', e);
+        return;
+    }
 }
 
 //These two are the same
@@ -90,8 +101,6 @@ function deleteAuction(id, div){
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            //console.log('Auction deleted successfully');
-            // Remove the auction from the UI
             div.remove();
         } else {
             console.error('Error deleting auction:', data);
@@ -137,7 +146,17 @@ function SinglesProfit(cards){
     return totalProfit;
 }
 
-function calculateAuctionProfit(auction, target){
+function changeCheckboxState(checkbox){
+    if(checkbox.classList.contains('sold')){
+        checkbox.closest('.card').querySelector('.sold-cm').checked = false;
+        return true;
+    }else if(checkbox.classList.contains('sold-cm')){
+        checkbox.closest('.card').querySelector('.sold').checked = false;
+        return false
+    }
+}
+
+async function calculateAuctionProfit(auction, target){
     const auctionPrice = Number(auction.querySelector('.auction-price').textContent.replace('€', '').trim());
     const auctionProfitElement = auction.querySelector('.auction-profit');
     const auctionId = auction.getAttribute('data-id');
@@ -145,12 +164,10 @@ function calculateAuctionProfit(auction, target){
     let totalSellValue = 0;
 
     if (target != null) {
-        if(target.classList.contains('sold')){
-            target.closest('.card').querySelector('.sold-cm').checked = false;
-            updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
-        }else if(target.classList.contains('sold-cm')){
-            target.closest('.card').querySelector('.sold').checked = false;
-            updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
+        if(changeCheckboxState(target)){
+            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
+        }else{
+            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
         }
     }
 
@@ -201,9 +218,13 @@ async function updateAuction(auctionId, value){
         const data = await response.json();
         if (!(data.status === 'success')) {
             console.error('Error updating auction:', data);
+            return;
+        } else{
+            return
         }
     } catch (error) {
         console.error('Error updating auction:', error);
+        return
     }
 }
 
@@ -367,7 +388,7 @@ async function loadAuctions() {
                                 if (event.target.classList.contains('condition')) {
                                     const value = event.target.textContent;
                                     const select = document.createElement('select');
-                                    const options = ['Mint', 'Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'];
+                                    const options = ['Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
                                     const dataset = event.target.dataset.field;
                                     options.forEach(option => {
                                         const opt = document.createElement('option');
@@ -471,10 +492,6 @@ async function loadAuctions() {
 
                         const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox');
                         const auctionTab = checkboxes[0].closest('.auction-tab')
-                        //const auctionPrice = Number(auctionTab.querySelector('.auction-price').textContent.replace('€', ''));
-                        //let auctionProfit = auctionTab.querySelector('.auction-profit').textContent.replace('€', '');
-                        //console.log(Boolean(auctionPrice));
-                        //this needs changing
 
                         checkboxes.forEach((checkbox) => {
                             checkbox.addEventListener('click', async (event) => {
@@ -486,12 +503,18 @@ async function loadAuctions() {
                                     const newAuctionProfit = SinglesProfit(cards);
                                     auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                                     const auctionId = auctionTab.getAttribute('data-id');
-                                    updateAuction(auctionId, newAuctionProfit);
+                                    await updateAuction(auctionId, newAuctionProfit);
                                     await updateInventoryValueAndTotalProfit();
                                 } else{
                                     if(allTrue(checkboxes)){
-                                        calculateAuctionProfit(auctionTab, target);
-                                        updateInventoryValueAndTotalProfit()
+                                        await calculateAuctionProfit(auctionTab, target);
+                                        await updateInventoryValueAndTotalProfit()
+                                    }else{
+                                        if(changeCheckboxState(target)){
+                                            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
+                                        }else{
+                                            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
+                                        }
                                     }
                                 }
                             }, false);
@@ -524,19 +547,21 @@ async function loadAuctions() {
                                 const deleted = await removeCard(cardId, cardDiv);
                                 const cards = cardsContainer.querySelectorAll('.card');
                                 if(!deleted) return;
-                                //recalculate profit
                                 if(auctionDiv.classList.contains('singles')){
                                     const newAuctionProfit = SinglesProfit(cards);
                                     auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
-                                    updateAuction(auctionId, newAuctionProfit);
+                                    await updateAuction(auctionId, newAuctionProfit);
                                     await updateInventoryValueAndTotalProfit()
+                                    if (cardsContainer.childElementCount === 1){
+                                        const p = document.createElement('p');
+                                        p.textContent = 'Empty';
+                                        cardsContainer.appendChild(p);
+                                    }
                                 }else{
                                     calculateAuctionProfit(auctionDiv, null);
                                     await updateInventoryValueAndTotalProfit()
                                 }
-
-                                //updateAuctionProfit(auctionDiv, auctionId)
-                                if (cardsContainer.childElementCount === 0){
+                                if (cardsContainer.childElementCount === 1){
                                     if(!(auctionDiv.classList.contains('singles'))){
                                         deleteAuction(auctionId, auctionDiv);
                                     }

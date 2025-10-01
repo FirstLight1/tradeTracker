@@ -19,11 +19,14 @@ async function removeCard(id, div){
         const data = await response.json();
         if(data.status === "success"){
             div.remove();
+            return true;
         }else{
             console.error('failed to remove card', data);
+            return false;
         }
     }catch(err){
         console.error(err);
+        return false;
     }
 }
 
@@ -60,9 +63,11 @@ async function getCollectionValue(){
 
 export async function updateCollectionValue() {
         const value = await getCollectionValue();
+        const inventoryValueElement = document.querySelector('.inventory-value-value');
         if(value != null){
-            const inventoryValueElement = document.querySelector('.inventory-value-value');
             inventoryValueElement.textContent = appendEuroSign(value.toFixed(2));
+        } else{
+            inventoryValueElement.textContent = '0€';
         }
     
 }
@@ -95,7 +100,11 @@ async function fetchCollection(){
                 const cardId = button.getAttribute('data-id');
                 const cardDiv = button.closest('.card');
                 await removeCard(cardId, cardDiv);
-                await updateCollectionValue()
+                await updateCollectionValue();
+                if (collectionContainer.childElementCount === 0){
+                    const inventoryValueElement = document.querySelector('.inventory-value-value');
+                    inventoryValueElement.textContent = '0€';
+                }
             });
         });
 
@@ -106,7 +115,7 @@ async function fetchCollection(){
                 if (event.target.classList.contains('condition')) {
                     const value = event.target.textContent;
                     const select = document.createElement('select');
-                    const options = [' ', 'Mint', 'Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'];
+                    const options = ['Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
                     const dataset = event.target.dataset.field;
                     options.forEach(option => {
                         const opt = document.createElement('option');

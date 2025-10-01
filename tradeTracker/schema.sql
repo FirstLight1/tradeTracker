@@ -29,8 +29,9 @@ CREATE TABLE cards (
 );
 
 CREATE INDEX idx_cards_card_name ON cards(card_name);
--- index number row
--- index foreign key
+CREATE INDEX idx_cards_card_num ON cards(card_num);
+CREATE INDEX idx_cards_auction_id ON cards(auction_id);
+
 
 CREATE TABLE collection (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
