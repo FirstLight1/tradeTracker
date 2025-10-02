@@ -260,6 +260,9 @@ function importCSV(){
                 case "extension":
                     alert('Please upload valid CSV file')
                     break;
+                case "duplicate":
+                    alert('File already uploaded')
+                    break;
             }
         }
     })

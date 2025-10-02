@@ -575,6 +575,7 @@ def importSoldCSV():
             return jsonify({'status': 'extension'}), 400
         
         lines = []
+        existingOrderID = set()
 
         CHECK_PATH =  os.path.join(UPLOADS_FOLDER, 'checkFile.csv')
 
@@ -588,11 +589,17 @@ def importSoldCSV():
             decoded = line.decode("utf-8").strip()
             if decoded == "":
                 continue
-            if decoded not in existingLines:
-                lines.append(decoded)
-        print(lines)
-        print(existingLines)
+            
+            orderId = decoded.split(';')[12].strip()
+            if any(orderId in existingLine for existingLine in existingLines):
+                continue
+            lines.append(decoded)
+            existingOrderID.add(orderId)
+
+        existingOrderID.remove("Order ID") if "Order ID" in existingOrderID else None
         
+        if lines == []:
+            return jsonify({'status': 'duplicate'}), 400
         cards = createDicts(lines)
         columns = {name: key for key, name in enumerate(cards[0].keys())}
 
@@ -602,6 +609,11 @@ def importSoldCSV():
         
         for item in dataList:
             updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
+
+        existingOrderID = sorted(existingOrderID, key=int)
+        with open(CHECK_PATH, 'w', encoding='utf-8') as checkFile:
+            for orderId in existingOrderID:
+                checkFile.write(orderId + '\n')
 
 
     return jsonify({'status': 'success'}), 201
