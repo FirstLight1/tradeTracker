@@ -503,7 +503,7 @@ def createDicts(lines):
 def getImportantCollums(cards, columns):
     data = []
     for d in cards:
-        product_id = list(d.values())[columns['Product ID']]
+        order_id = list(d.values())[columns['Order ID']]
         count = int(list(d.values())[columns['Product ID'] + 1])
         name = list(d.values())[columns['Product ID'] + 2]
         number = list(d.values())[columns['Collector Number']]
@@ -519,7 +519,7 @@ def getImportantCollums(cards, columns):
         else:
             card_num = expansion
         for _ in range(count):
-            filteredRow = [product_id, name, condition, price, card_num]
+            filteredRow = [order_id, name, condition, price, card_num]
             temp = zip(dictKeys, filteredRow)
             data.append(dict(temp))
     return data
@@ -561,6 +561,10 @@ def allowedFile(filename):
 @bp.route('/importSoldCSV', methods=('POST',))
 def importSoldCSV():
     if request.method == 'POST':
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        UPLOADS_FOLDER = os.path.join(BASE_DIR, 'data', 'uploads')
+        os.makedirs(UPLOADS_FOLDER, exist_ok=True)
+
         if 'csv-upload' not in request.files:
             return jsonify({'status': 'missing'}), 400
         
@@ -571,12 +575,23 @@ def importSoldCSV():
             return jsonify({'status': 'extension'}), 400
         
         lines = []
-        
+
+        CHECK_PATH =  os.path.join(UPLOADS_FOLDER, 'checkFile.csv')
+
+        if os.path.exists(CHECK_PATH):
+            with open(CHECK_PATH, 'r') as checkFile:
+                existingLines = checkFile.read().splitlines()
+        else:
+            existingLines = []
+
         for line in file.stream:
             decoded = line.decode("utf-8").strip()
             if decoded == "":
                 continue
-            lines.append(decoded)
+            if decoded not in existingLines:
+                lines.append(decoded)
+        print(lines)
+        print(existingLines)
         
         cards = createDicts(lines)
         columns = {name: key for key, name in enumerate(cards[0].keys())}
