@@ -320,7 +320,7 @@ async function loadAuctions() {
             let auctionProfit = auction.auction_profit !== null ? auction.auction_profit : null; // Fallback for profit
             auctionDiv.innerHTML = `
                 <p class="auction-name">${auctionName}</p>
-                <p class="auction-price">${auctionPrice != null ? auctionPrice + '€' : ""}</p>
+                ${renderField(auctionPrice != null ? auctionPrice + '€' : null, 'text', ['auction-price'], 'Auction Buy Price', 'auction_price')}
                 <p class="auction-profit">${auctionProfit != null ? auctionProfit + '€' : ""}</p>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>

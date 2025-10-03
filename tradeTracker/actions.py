@@ -1,4 +1,5 @@
 from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify
+from flask_cors import CORS
 from tradeTracker.db import get_db
 import datetime
 import csv
@@ -7,7 +8,7 @@ import os
 import sqlite3
 
 bp = Blueprint('actions', __name__)
-
+CORS(bp)
 dictKeys = ['Product ID', 'Name', 'Condition', 'Price', 'Card Number']
 li = []
 dataList = []
@@ -453,39 +454,44 @@ def cardMarketTable():
     if request.method == 'POST':
         db = get_db()
         cards = request.get_json()
-        date = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        date = date + "Z"
+        date = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
         auction = {
-            'name' : None,
-            'buy' : None,
-            'profit' : None,
-            'date' : date
+            'name': None,
+            'buy': None,
+            'profit': None,
+            'date': date
         }
-        cursor = db.execute(
+
+        try:
+            cursor = db.execute(
                 'INSERT INTO auctions (auction_name, auction_price, auction_profit, date_created) VALUES (?, ?, ?, ?)',
                 (auction['name'], auction['buy'], auction['profit'], auction['date'])
             )
-        auction_id = cursor.lastrowid
-        cardsToInsert = []
-        for card in cards:
-            count = card.get('count', 1)
-            for _ in range(count):
-                cardsToInsert.append((
-                card.get('name', None),       # default to None if missing
-                card.get('num', None),
-                card.get('condition', None),  # default to None if missing
-                card.get('price', None),      # default to None if missing
-                auction_id
-            ))
-                
-        db.executemany(
-        'INSERT INTO cards (card_name, card_nun, condition, market_value, auction_id) VALUES (?, ?, ?, ?)',
-        cardsToInsert
-        )
+            auction_id = cursor.lastrowid
 
-        db.commit()
+            cardsToInsert = []
+            for card in cards:
+                count = card.get('count', 1)
+                for _ in range(int(count)):
+                    cardsToInsert.append((
+                        card.get('name', None),
+                        card.get('num', None),
+                        card.get('condition', None),
+                        card.get('price', None),
+                        auction_id
+                    ))
+            
+            db.executemany(
+                'INSERT INTO cards (card_name, card_num, condition, market_value, auction_id) VALUES (?, ?, ?, ?, ?)',
+                cardsToInsert
+            )
 
-    return jsonify({'status': 'success', 'auction_id': auction_id}), 201
+            db.commit()
+            return jsonify({'status': 'success'}), 201
+
+        except Exception as e:
+            print("DB error:", e)
+            return jsonify({'status': 'error', 'message': str(e)}), 500
 
 def createDicts(lines):
     zipped = list(zip(*[line.split(';') for line in lines]))
