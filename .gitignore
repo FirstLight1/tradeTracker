@@ -14,3 +14,4 @@ build/
 *.egg-info/
 to-do.md
 data/
+run_app.spec

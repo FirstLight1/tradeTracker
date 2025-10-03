@@ -20,8 +20,56 @@ def close_db(e=None):
 def init_db():
     db = get_db()
 
-    with current_app.open_resource('schema.sql') as f:
-        db.executescript(f.read().decode('utf8'))
+    try:
+        # Schema is included directly in the code to avoid file access issues
+        schema = '''
+DROP TABLE IF EXISTS info;
+DROP TABLE IF EXISTS auctions;
+DROP TABLE IF EXISTS cards;
+DROP TABLE IF EXISTS collection;
+
+CREATE TABLE auctions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    auction_name TEXT,
+    auction_price REAL,
+    auction_profit REAL,
+    date_created TEXT
+);
+
+INSERT INTO auctions (auction_name, auction_profit) VALUES ('Singles', 0);
+
+CREATE TABLE cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    auction_id INTEGER NOT NULL,
+    card_name TEXT NOT NULL,
+    card_num TEXT,
+    condition TEXT,
+    card_price REAL,
+    market_value REAL,
+    sell_price REAL,
+    sold INTEGER DEFAULT 0,
+    sold_cm INTEGER DEFAULT 0,
+    profit REAL,
+    FOREIGN KEY (auction_id) REFERENCES auctions (id)
+);
+
+CREATE INDEX idx_cards_card_name ON cards(card_name);
+CREATE INDEX idx_cards_card_num ON cards(card_num);
+CREATE INDEX idx_cards_auction_id ON cards(auction_id);
+
+CREATE TABLE collection (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    card_name TEXT NOT NULL,
+    card_num TEXT,
+    condition TEXT,
+    buy_price REAL,
+    market_value REAL
+);
+'''
+        db.executescript(schema)
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        raise
 
 @click.command('init-db')
 def init_db_command():
