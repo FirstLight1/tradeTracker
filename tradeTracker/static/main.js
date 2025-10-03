@@ -183,7 +183,7 @@ async function calculateAuctionProfit(auction, target){
     });
     const profit = (totalSellValue - auctionPrice).toFixed(2);
     auctionProfitElement.textContent = appendEuroSign(profit, 'auction-profit');
-    updateAuction(auctionId, profit);
+    updateAuction(auctionId, profit, 'auction_profit');
 }
 
 async function removeCard(id, div) {
@@ -206,14 +206,14 @@ async function removeCard(id, div) {
     }
 }
 
-async function updateAuction(auctionId, value){
+async function updateAuction(auctionId, value, field){
     try {
         const response = await fetch(`/updateAuction/${auctionId}`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ value: value })
+            body: JSON.stringify({field: field, value: value })
         });
         const data = await response.json();
         if (!(data.status === 'success')) {
@@ -227,6 +227,8 @@ async function updateAuction(auctionId, value){
         return
     }
 }
+
+
 
 function isEmpty(obj) {
     return Object.keys(obj).length === 0;
@@ -331,6 +333,59 @@ async function loadAuctions() {
             auctionContainer.appendChild(auctionDiv);
         });
 
+        const auctionPriceInputs = document.querySelectorAll('input.auction-price');
+        auctionPriceInputs.forEach(input => {
+            input.addEventListener('blur', (event) =>{
+                const value = event.target.value.replace(',', '.');
+                const auctionDiv = event.target.closest('.auction-tab');
+                const auctionId = auctionDiv.getAttribute('data-id');
+                if (!Boolean(value)){
+                    return;
+                }
+                updateAuction(auctionId, value, 'auction_price');
+                const p = document.createElement('p');
+                p.classList.add('auction-price');
+                p.textContent = appendEuroSign(value, 'auction_price');
+                event.target.replaceWith(p);
+            })
+            input.addEventListener('keydown', (event) =>{
+                if(event.key == 'Enter'){
+                    input.blur();
+                }
+            })
+        })
+
+        const auctionPrices = document.querySelectorAll('p.auction-price');
+        auctionPrices.forEach(price => {
+            price.addEventListener('dblclick', (event) =>{
+                const value = event.target.textContent;
+                const dataset = event.target.dataset.field;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = value;
+                input.classList.add(...event.target.classList);
+                event.target.replaceWith(input);
+                input.focus();
+                input.addEventListener('blur', (blurEvent) =>{
+                    const value = blurEvent.target.value.replace(',', '.');
+                    const auctionDiv = blurEvent.target.closest('.auction-tab');
+                    const auctionId = auctionDiv.getAttribute('data-id');
+                    if (!Boolean(value)){
+                        return;
+                    }
+                    updateAuction(auctionId, value, 'auction_price');
+                    const p = document.createElement('p');
+                    p.classList.add('auction-price');
+                    p.textContent = appendEuroSign(value, 'auction_price');
+                    blurEvent.target.replaceWith(p);
+                })
+                input.addEventListener('keydown', (keyEvent)=>{
+                    if(keyEvent.key == 'Enter'){
+                        input.blur();
+                    }
+                })
+            }) 
+        })
         // Attach event listeners after auctions are loaded
         const viewButtons = document.querySelectorAll('.view-auction');
         viewButtons.forEach(button => {
@@ -468,7 +523,7 @@ async function loadAuctions() {
                                                         const auction = cardDiv.closest('.auction-tab');
                                                         const auctionId = auction.getAttribute('data-id')
                                                         const newAuctionProfit = SinglesProfit(auction.querySelectorAll('.card'));
-                                                        updateAuction(auctionId, newAuctionProfit);
+                                                        updateAuction(auctionId, newAuctionProfit, 'auction_profit');
                                                         auction.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                                                         await updateInventoryValueAndTotalProfit()
                                                     }
@@ -506,7 +561,7 @@ async function loadAuctions() {
                                     const newAuctionProfit = SinglesProfit(cards);
                                     auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                                     const auctionId = auctionTab.getAttribute('data-id');
-                                    await updateAuction(auctionId, newAuctionProfit);
+                                    await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
                                     await updateInventoryValueAndTotalProfit();
                                 } else{
                                     if(allTrue(checkboxes)){
@@ -553,7 +608,7 @@ async function loadAuctions() {
                                 if(auctionDiv.classList.contains('singles')){
                                     const newAuctionProfit = SinglesProfit(cards);
                                     auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
-                                    await updateAuction(auctionId, newAuctionProfit);
+                                    await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
                                     await updateInventoryValueAndTotalProfit()
                                     if (cardsContainer.childElementCount === 1){
                                         const p = document.createElement('p');

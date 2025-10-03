@@ -444,7 +444,9 @@ def updateAuction(auction_id):
     db = get_db()
     data = request.get_json()
     profit = data.get('value')
-    db.execute('UPDATE auctions SET auction_profit = ? WHERE id = ?', (profit, auction_id))
+    field = data.get('field')
+    print(field, profit)
+    db.execute(f'UPDATE auctions SET {field} = ? WHERE id = ?', (profit, auction_id))
     db.commit()
     return jsonify({'status': 'success'}), 200
 
