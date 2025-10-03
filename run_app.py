@@ -22,13 +22,13 @@ def is_port_in_use(port):
 
 def open_browser():
     time.sleep(1.5)  # Wait for the server to start
-    webbrowser.open('http://127.0.0.1:5000')
+    webbrowser.open('http://127.0.0.1:420')
 
 if __name__ == '__main__':
     # Check if another instance is already running
     if is_port_in_use(5000):
         # If app is already running, just open the browser
-        webbrowser.open('http://127.0.0.1:5000')
+        webbrowser.open('http://127.0.0.1:420')
         sys.exit(0)
     
     threading.Thread(target=open_browser, daemon=True).start()
@@ -40,4 +40,4 @@ if __name__ == '__main__':
     
     # Use waitress as the production server
     print("TradeTracker is running. Close this window to shut down the server.")
-    serve(app, host='127.0.0.1', port=5000, threads=4)
+    serve(app, host='127.0.0.1', port=420, threads=4)
