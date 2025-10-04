@@ -26,7 +26,7 @@ def open_browser():
 
 if __name__ == '__main__':
     # Check if another instance is already running
-    if is_port_in_use(5000):
+    if is_port_in_use(420):
         # If app is already running, just open the browser
         webbrowser.open('http://127.0.0.1:420')
         sys.exit(0)
