@@ -4,8 +4,12 @@ import webbrowser
 import threading
 import time
 import socket
+import updater
 from tradeTracker import create_app
 from waitress import serve
+
+# Run the updater check first
+updater.check_version()
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """

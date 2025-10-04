@@ -367,7 +367,10 @@ async function loadAuctions() {
                 event.target.replaceWith(input);
                 input.focus();
                 input.addEventListener('blur', (blurEvent) =>{
-                    const value = blurEvent.target.value.replace(',', '.');
+                    let value = blurEvent.target.value.replace(',', '.');
+                    if (isNaN(value)){
+                        value = value.toUpperCase();
+                    }
                     const auctionDiv = blurEvent.target.closest('.auction-tab');
                     const auctionId = auctionDiv.getAttribute('data-id');
                     if (!Boolean(value)){
@@ -470,7 +473,10 @@ async function loadAuctions() {
                                     });
                                 }
                                 if (event.target.tagName === "P") {
-                                    const value = event.target.textContent;
+                                    let value = event.target.textContent;
+                                    if(isNaN(value)){
+                                        value = value.toUpperCase();
+                                    }
                                     const dataset = event.target.dataset.field;
                                     //console.log(dataset);
                                     const input = document.createElement('input');
@@ -480,7 +486,10 @@ async function loadAuctions() {
                                     event.target.replaceWith(input);
                                     input.focus();
                                     input.addEventListener('blur', async(blurEvent) => {
-                                        const newValue = blurEvent.target.value.replace(',', '.');
+                                        let newValue = blurEvent.target.value.replace(',', '.');
+                                        if(isNaN(newValue)){
+                                            newValue = newValue.toUpperCase();
+                                        }
                                         const auctionTab = blurEvent.target.closest('.auction-tab');
 
                                         getInputValueAndPatch(newValue || value, input, dataset, cardId);

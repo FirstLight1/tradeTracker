@@ -1,4 +1,5 @@
-from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify
+import sys
+from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify, current_app
 from flask_cors import CORS
 from tradeTracker.db import get_db
 import datetime
@@ -183,7 +184,7 @@ pokemon_sets = {
     "BW Black Star Promos": "BW Promo",
     "XY Black Star Promos": "XY Promo",
     "SM Black Star Promos": "SM Promo",
-    "SWSH Black Star Promos": "SWSH Promo",
+    "SWSH Black Star Promos": "SWSH",
     "SVP Black Star Promos": "SVP Promo",
 
     # POP Series
@@ -511,10 +512,10 @@ def createDicts(lines):
 def getImportantCollums(cards, columns):
     data = []
     for d in cards:
-        order_id = list(d.values())[columns['Order ID']]
+        order_id = list(d.values())[columns['Order ID']].upper()
         count = int(list(d.values())[columns['Product ID'] + 1])
-        name = list(d.values())[columns['Product ID'] + 2]
-        number = list(d.values())[columns['Collector Number']]
+        name = list(d.values())[columns['Product ID'] + 2].upper()
+        number = list(d.values())[columns['Collector Number']].upper()
         condition = list(d.values())[columns['Condition']]
         condition = conditionDict.get(condition)
         price = float(list(d.values())[columns['Expansion'] + 1])
@@ -549,18 +550,19 @@ def updateOneCard(db, name, num, sellPrice):
                 "SELECT c.sell_price, c.sold, c.sold_cm, a.auction_price FROM cards c " \
             "JOIN auctions a ON c.auction_id = a.id " \
             "WHERE a.id = ?", (card['auction_id'], )).fetchall()
-        totalSellPrice = 0
-        if all(row['sold'] == 1 or row['sold_cm'] == 1 for row in cards):
-            for item in cards:
-                if(item['sold_cm'] == 1):
-                    totalSellPrice += item['sell_price'] * 0.95
-                else:
-                    totalSellPrice += item['sell_price']
-            totalProfit = round(totalSellPrice - cards[0]['auction_price'], 2)
-            db.execute("UPDATE auctions SET auction_profit = ? WHERE id = ?", (totalProfit, card['auction_id']))
+            totalSellPrice = 0
+            if all(row['sold'] == 1 or row['sold_cm'] == 1 for row in cards):
+                for item in cards:
+                    if(item['sold_cm'] == 1):
+                        totalSellPrice += item['sell_price'] * 0.95
+                    else:
+                        totalSellPrice += item['sell_price']
+                totalProfit = round(totalSellPrice - cards[0]['auction_price'], 2)
+                db.execute("UPDATE auctions SET auction_profit = ? WHERE id = ?", (totalProfit, card['auction_id']))
         db.commit()
         return
     else:
+        db.commit()
         return
     
 def allowedFile(filename):
@@ -569,10 +571,17 @@ def allowedFile(filename):
 @bp.route('/importSoldCSV', methods=('POST',))
 def importSoldCSV():
     if request.method == 'POST':
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        UPLOADS_FOLDER = os.path.join(BASE_DIR, 'data', 'uploads')
-        os.makedirs(UPLOADS_FOLDER, exist_ok=True)
-
+        # Use the same folder as the database
+        if getattr(sys, 'frozen', False):
+            # Running as compiled exe
+            app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker')
+            os.makedirs(app_data_dir, exist_ok=True)
+            check_file_path = os.path.join(app_data_dir, 'checkFile.csv')
+        else:
+            # Running in development
+            check_file_path = os.path.join(current_app.instance_path, 'checkFile.csv')
+            os.makedirs(os.path.dirname(check_file_path), exist_ok=True)
+        
         if 'csv-upload' not in request.files:
             return jsonify({'status': 'missing'}), 400
         
@@ -585,43 +594,68 @@ def importSoldCSV():
         lines = []
         existingOrderID = set()
 
-        CHECK_PATH =  os.path.join(UPLOADS_FOLDER, 'checkFile.csv')
+        CHECK_PATH = check_file_path
+        print(CHECK_PATH)
+        try:
+            # Read existing order IDs
+            if os.path.exists(CHECK_PATH):
+                with open(CHECK_PATH, 'r', encoding='utf-8') as checkFile:
+                    existingLines = checkFile.read().splitlines()
+            else:
+                existingLines = []
 
-        if os.path.exists(CHECK_PATH):
-            with open(CHECK_PATH, 'r') as checkFile:
-                existingLines = checkFile.read().splitlines()
-        else:
-            existingLines = []
+            # Process new file
+            for line in file.stream:
+                try:
+                    decoded = line.decode("utf-8").strip()
+                    if decoded == "":
+                        continue
+                    
+                    # Ensure we have enough columns
+                    columns = decoded.split(';')
+                    if len(columns) <= 12:
+                        continue
+                        
+                    orderId = columns[12].strip()
+                    if any(orderId in existingLine for existingLine in existingLines):
+                        continue
+                    lines.append(decoded)
+                    existingOrderID.add(orderId)
+                except UnicodeDecodeError:
+                    print(f"Warning: Skipping line due to encoding issues")
+                    continue
 
-        for line in file.stream:
-            decoded = line.decode("utf-8").strip()
-            if decoded == "":
-                continue
+            # Remove header if present
+            if "Order ID" in existingOrderID:
+                existingOrderID.remove("Order ID")
             
-            orderId = decoded.split(';')[12].strip()
-            if any(orderId in existingLine for existingLine in existingLines):
-                continue
-            lines.append(decoded)
-            existingOrderID.add(orderId)
+            if not lines:
+                return jsonify({'status': 'duplicate'}), 400
 
-        existingOrderID.remove("Order ID") if "Order ID" in existingOrderID else None
-        
-        if lines == []:
-            return jsonify({'status': 'duplicate'}), 400
-        cards = createDicts(lines)
-        columns = {name: key for key, name in enumerate(cards[0].keys())}
+            # Process cards
+            cards = createDicts(lines)
+            try:
+                columns = {name: key for key, name in enumerate(cards[0].keys())}
+            except (IndexError, KeyError) as e:
+                print(f"Error processing CSV structure: {e}")
+                return jsonify({'status': 'invalid_format'}), 400
 
-        dataList = getImportantCollums(cards, columns)
+            dataList = getImportantCollums(cards, columns)
 
-        db = get_db()
-        
-        for item in dataList:
-            updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
+            # Update database
+            db = get_db()
+            for item in dataList:
+                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
 
-        existingOrderID = sorted(existingOrderID, key=int)
-        with open(CHECK_PATH, 'w', encoding='utf-8') as checkFile:
-            for orderId in existingOrderID:
-                checkFile.write(orderId + '\n')
+            # Save updated check file
+            existingOrderID = sorted(existingOrderID, key=int)
+            with open(CHECK_PATH, 'w', encoding='utf-8') as checkFile:
+                for orderId in existingOrderID:
+                    checkFile.write(orderId + '\n')
+
+        except Exception as e:
+            print(f"Error processing CSV file: {e}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
     return jsonify({'status': 'success'}), 201

@@ -138,7 +138,10 @@ async function fetchCollection(){
                     });
                 }
                 if (event.target.tagName === "P") {
-                    const value = event.target.textContent;
+                    let value = event.target.textContent;
+                    if(isNaN(value)){
+                        value = value.toUpperCase();
+                    }
                     const dataset = event.target.dataset.field;
                     //console.log(dataset);
                     const input = document.createElement('input');
@@ -148,7 +151,10 @@ async function fetchCollection(){
                     event.target.replaceWith(input);
                     input.focus();
                     input.addEventListener('blur', async (blurEvent) => {
-                        const newValue = blurEvent.target.value;
+                        let newValue = blurEvent.target.value;
+                        if(isNaN(newValue)){
+                            newValue = newValue.toUpperCase();
+                        }
                         await getInputValueAndPatch(newValue || value, input, dataset, cardId);
                         if(blurEvent.target.classList.contains('market-value')){
                             await updateCollectionValue();

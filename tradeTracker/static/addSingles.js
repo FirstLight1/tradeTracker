@@ -14,7 +14,7 @@ saveButton.addEventListener('click', () => {
     const cards = document.querySelectorAll('.card');
         cards.forEach(ell =>{
             let card = new struct();
-            const input = (selector) => ell.querySelector(selector)?.value.trim() || null;
+            const input = (selector) => ell.querySelector(selector)?.value.trim().toUpperCase() || null;
             const inputNumber = (selector) => {
                 const val = ell.querySelector(selector)?.value.trim();
                     if(!val){
