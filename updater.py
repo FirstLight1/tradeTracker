@@ -6,10 +6,12 @@ REPO = 'FirstLight1/tradeTracker'
 URL = f"https://api.github.com/repos/{REPO}/releases/latest"
 response = requests.get(URL).json()
 assets = response.get('assets', [])
+
 if assets:
     DOWNLOAD_URL = assets[0]["browser_download_url"]
 else:
     raise ValueError("No assets found in release response")
+
 APP_NAME = 'run_app.exe'
 def check_version():
     with open("version.txt", "r") as versionFile:
@@ -53,4 +55,4 @@ del "%~f0"
     subprocess.Popen(["cmd", "/c", cmd_path])
     sys.exit()
 
-#check_version()
+check_version()
