@@ -9,12 +9,12 @@
     <title>Add Singles</title>
 </head>
 <body>
-    <h1>Trade<span class="shadow"></span> Tracker</h1>
+    <h1>Trade<span class="shadow"></span> Tracker - Add Singles</h1>
     <header class="header">
         <nav class="nav-bar">
             <div>
                 <span class="arrow left"><img src="../static/images/leftarrow.png" alt="left arrow"></span>
-                <button class="addAuction"><a href="{{ url_for('actions.renderAuctions') }}">Auctions</a></button>
+                <button class="addAuction"><a href="{{ url_for('actions.renderAuctions') }}">Sales</a></button>
                 <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>
             </div>
             <div>
@@ -52,8 +52,8 @@
             </dir>
             <dir class="cards-container">
                 <dir class="card">
-                    <input type="text" name="cardName">
-                    <input type="text" name="cardNum">
+                    <input type="text" name="cardName" autocomplete="off">
+                    <input type="text" name="cardNum" autocomplete="off">
                     <select name="condition">
                         <option value="Mint">Mint</option>
                         <option value="Near Mint">Near Mint</option>
@@ -63,12 +63,12 @@
                         <option value="Played">Played</option>
                         <option value="Poor">Poor</option>
                     </select>
-                    <input type="text" name="buyPrice">
-                    <input type="text" name="marketValue" class="marketValue" oninput="handleCardInput(this)">
-                    <input type="text" name="sellPrice">
-                    <input type="checkbox" name="sold">
-                    <input type="checkbox" name="sold_cm">
-                    <input type="text" name="profit">
+                    <input type="text" name="buyPrice" autocomplete="off">
+                    <input type="text" name="marketValue" class="marketValue" oninput="handleCardInput(this)" autocomplete="off">
+                    <input type="text" name="sellPrice" autocomplete="off">
+                    <input type="checkbox" name="sold" autocomplete="off">
+                    <input type="checkbox" name="sold_cm" autocomplete="off">
+                    <input type="text" name="profit" autocomplete="off">
                 </dir>
             </dir>
         </dir>

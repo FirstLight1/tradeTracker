@@ -1,6 +1,6 @@
 export function renderField(value, inputType, classList, placeholder, datafield) {
     if (value === null) {
-        return `<input type="${inputType}" class="${classList.join(' ')}" placeholder="${placeholder}" data-field="${datafield}">`;
+        return `<input type="${inputType}" class="${classList.join(' ')}" placeholder="${placeholder}" data-field="${datafield}" autocomplete="off">`;
     } else {
         return `<p class=" ${classList.join(' ')}" data-field="${datafield}">${value}</p>`;
     }
@@ -242,8 +242,6 @@ function importCSV(){
         if(file && file.length === 1){
             const formData = new FormData();
             formData.append("csv-upload", file[0]);
-            //console.log(formData.get("csv-upload"));
-            //console.log(file[0]);
             const response = await fetch('/importSoldCSV', {
                 method: 'POST',
                 body: formData
@@ -393,12 +391,10 @@ async function loadAuctions() {
         const viewButtons = document.querySelectorAll('.view-auction');
         viewButtons.forEach(button => {
             button.addEventListener('click', async () => {
-                //console.log('View auction button clicked for ID:', button.getAttribute('data-id'));
                 const auctionId = button.getAttribute('data-id');
                 const cardsUrl = '/loadCards/' + auctionId;
                 const auctionDiv = button.closest('.auction-tab');
                 const cardsContainer = auctionDiv.querySelector('.cards-container');
-                //console.log(cardsContainer.childElementCount);
                 try {
                     if (cardsContainer.childElementCount === 0 || cardsContainer.style.display === 'none'){
                         const response = await fetch(cardsUrl);
@@ -468,17 +464,15 @@ async function loadAuctions() {
                                         p.classList.add('card-info', 'condition');
                                         p.textContent = selectedValue || value;
                                         select.replaceWith(p);
-                                        //console.log('Updating card:', cardId, dataset, p.textContent);
                                         patchValue(cardId, p.textContent, dataset);
                                     });
                                 }
                                 if (event.target.tagName === "P") {
-                                    let value = event.target.textContent;
+                                    let value = event.target.textContent.replace('€','');
                                     if(isNaN(value)){
                                         value = value.toUpperCase();
                                     }
                                     const dataset = event.target.dataset.field;
-                                    //console.log(dataset);
                                     const input = document.createElement('input');
                                     input.type = 'text';
                                     input.value = value;

@@ -333,7 +333,6 @@ def update(card_id):
     field = data.get("field")
     value = data.get("value")
     allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit"}
-    print(field, value)
     
     if field == "sold" and value == True:
         db.execute('UPDATE cards SET sold_cm = 0 WHERE id = ?', (card_id,))
@@ -350,7 +349,6 @@ def update(card_id):
 def addToCollection():
     if request.method == 'POST':
         cards = request.get_json()
-        #print(cards)
         db = get_db()
         for card in cards:
             db.execute('INSERT INTO collection (card_name, card_num, condition, buy_price, market_value)'
@@ -411,7 +409,6 @@ def addToSingles():
 
         db.execute('UPDATE auctions SET auction_profit = auction_profit + ? WHERE id = 1',(profit['profit'],))
         for card in data[1:]:
-            print(card)
             db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id)'
                     'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     (
@@ -446,7 +443,6 @@ def updateAuction(auction_id):
     data = request.get_json()
     profit = data.get('value')
     field = data.get('field')
-    print(field, profit)
     db.execute(f'UPDATE auctions SET {field} = ? WHERE id = ?', (profit, auction_id))
     db.commit()
     return jsonify({'status': 'success'}), 200
@@ -494,7 +490,7 @@ def cardMarketTable():
 
         except Exception as e:
             print("DB error:", e)
-            return jsonify({'status': 'error', 'message': str(e)}), 500
+            return jsonify({'status': 'error'}), 500
 
 def createDicts(lines):
     zipped = list(zip(*[line.split(';') for line in lines]))
@@ -595,7 +591,6 @@ def importSoldCSV():
         existingOrderID = set()
 
         CHECK_PATH = check_file_path
-        print(CHECK_PATH)
         try:
             # Read existing order IDs
             if os.path.exists(CHECK_PATH):

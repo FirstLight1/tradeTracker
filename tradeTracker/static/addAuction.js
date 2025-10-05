@@ -113,7 +113,6 @@ saveButton.addEventListener('click', () =>{
     validCheckboxes.pop();
     validCheckboxes.pop();
     if(allTrue(validCheckboxes)){
-        console.log('All cards sold');
         let totalSellValue = 0;
         const auctionBuyPrice = cardsArr[0].buy;
         for(let i = 1; i < cardsArr.length; i++){

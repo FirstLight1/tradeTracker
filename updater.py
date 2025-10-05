@@ -53,7 +53,7 @@ def check_version():
                 
             print(f"Current version: {LOCAL_VERSION.strip()}")
             print(f"Latest version: {version.strip()}")
-            
+
             if v.parse(version.strip()) > v.parse(LOCAL_VERSION.strip()):
                 print('New update found! Downloading...')
                 download_url = get_download_url()

@@ -133,17 +133,15 @@ async function fetchCollection(){
                         p.classList.add('card-info', 'condition');
                         p.textContent = selectedValue || value;
                         select.replaceWith(p);
-                        //console.log('Updating card:', cardId, dataset, p.textContent);
                         patchValue(cardId, p.textContent, dataset);
                     });
                 }
                 if (event.target.tagName === "P") {
-                    let value = event.target.textContent;
+                    let value = event.target.textContent.replace('€','');
                     if(isNaN(value)){
                         value = value.toUpperCase();
                     }
                     const dataset = event.target.dataset.field;
-                    //console.log(dataset);
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.value = value;
@@ -172,7 +170,6 @@ async function fetchCollection(){
         const inputFields = collectionContainer.querySelectorAll('input[type="text"]');
         inputFields.forEach((input) => {
             input.addEventListener('blur', async (event) =>{
-                console.log(event.target.value);
                 const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
                 const value = event.target.value;
                 const dataset = event.target.dataset;

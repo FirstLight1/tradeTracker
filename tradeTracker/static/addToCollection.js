@@ -68,7 +68,6 @@ saveButton.addEventListener('click', () => {
         }
     });
     const body = JSON.stringify(cardsArr);
-    console.log(body);
 
     fetch('/addToCollecton', {
         method : 'POST',
