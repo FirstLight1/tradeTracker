@@ -6,6 +6,10 @@ REPO = 'FirstLight1/tradeTracker'
 URL = f"https://api.github.com/repos/{REPO}/releases/latest"
 APP_NAME = 'run_app.exe'
 
+#update database
+#check name in releases and then compare version
+
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -30,18 +34,10 @@ def get_download_url():
     except requests.exceptions.RequestException as e:
         print(f"Failed to fetch release info: {e}")
         return None
+    
 def check_version():
     try:
-        # Get the directory where the script is located
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        version_path = os.path.join(script_dir, "version.txt")
-        
-        with open(version_path, "r") as versionFile:
-            fileContent = versionFile.read()
-            text, sep, LOCAL_VERSION = fileContent.partition(':')
-            if not LOCAL_VERSION:
-                print("Invalid version.txt format")
-                return False
+        LOCAL_VERSION = 1
 
         try:
             response = requests.get(GITHUB_URL, timeout=10)
