@@ -324,8 +324,15 @@ async function loadAuctions() {
                 <p class="auction-profit">${auctionProfit != null ? auctionProfit + '€' : ""}</p>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
-                <div class="cards-container">
-                    <!-- Cards will be loaded here -->
+                <div class="cards-wrapper">
+                    <div class="cards-container">
+                        <!-- Cards will be loaded here -->
+                        
+                    </div>
+                    <div class="button-container">
+                        <button class="add-cards-auction">Add cards</button>
+                        <button class="save-added-cards hidden="">Save</button>
+                    </div>
                 </div>
             `;
             auctionContainer.appendChild(auctionDiv);
