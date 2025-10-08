@@ -34,6 +34,9 @@ saveButton.addEventListener('click', () => {
             if(card.sellPrice === null){
             card.sellPrice = card.marketValue;
             }
+            if(card.buyPrice === null){
+                card.buyPrice = card.marketValue * 0.85;
+            }
             if(card.checkbox === true && card.sellPrice !== null && card.buyPrice !==null){
                 card.profit = card.sellPrice - card.buyPrice;
             }

@@ -534,11 +534,8 @@ async function loadAuctions() {
                                             }else{
                                                 const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox')
                                                 const auctionTab = checkboxes[0].closest('.auction-tab')
-                                                if(allTrue(checkboxes)){
-                                                    calculateAuctionProfit(auctionTab,null);
-                                                    await updateInventoryValueAndTotalProfit();
-                                                }
-
+                                                calculateAuctionProfit(auctionTab,null);
+                                                await updateInventoryValueAndTotalProfit();
                                             }
                                         }
                                     });
@@ -567,15 +564,12 @@ async function loadAuctions() {
                                     await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
                                     await updateInventoryValueAndTotalProfit();
                                 } else{
-                                    if(allTrue(checkboxes)){
-                                        await calculateAuctionProfit(auctionTab, target);
-                                        await updateInventoryValueAndTotalProfit()
+                                    await calculateAuctionProfit(auctionTab, target);
+                                    await updateInventoryValueAndTotalProfit();
+                                    if(changeCheckboxState(target)){
+                                        await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
                                     }else{
-                                        if(changeCheckboxState(target)){
-                                            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
-                                        }else{
-                                            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
-                                        }
+                                        await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
                                     }
                                 }
                             }, false);
