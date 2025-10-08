@@ -76,7 +76,7 @@ async function updateSoldStatus(cardId, isChecked, field) {
 
 //These two are the same
 
-function patchValue(id, value, dataset){
+async function patchValue(id, value, dataset){
     if(value === " "){
         value = null;
     }
@@ -85,13 +85,24 @@ function patchValue(id, value, dataset){
         value = value.replace('€', '');
 
     }
-    fetch(`/update/${id}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ field: dataset, value: value })
-    });
+    try{
+        const response = await fetch(`/update/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ field: dataset, value: value })
+        });
+        const data = await response.json();
+        if(!(data.status === 'success')){
+            console.error('failed to update:', dataset)
+            return;
+        }else{
+            return
+        }
+    }catch(e){
+        console.error('Error updating value:', e);
+    }
 }
 
 function deleteAuction(id, div){
@@ -516,7 +527,6 @@ async function loadAuctions() {
                                                     } else if(checkboxCm.checked){
                                                         profit = ((Number(sellValue) * 0.95) - Number(buyValue)).toFixed(2);
                                                         updateSoldStatus(cardId, true,"sold_cm");
-
                                                     }
 
                                                     if (profitElement) {
@@ -555,6 +565,7 @@ async function loadAuctions() {
                             checkbox.addEventListener('click', async (event) => {
                                 const target = event.target;
                                 const card = target.closest('.card');
+                                const cardId = card.querySelector('.card-id').textContent;
                                 const cards = auctionTab.querySelectorAll('.card');
                                 if(auctionTab.classList.contains('singles')){
                                     calculateSinglesProfit(card, target);
@@ -563,6 +574,7 @@ async function loadAuctions() {
                                     const auctionId = auctionTab.getAttribute('data-id');
                                     await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
                                     await updateInventoryValueAndTotalProfit();
+                                    await patchValue(cardId, new Date().toISOString(), "sold_date")
                                 } else{
                                     await calculateAuctionProfit(auctionTab, target);
                                     await updateInventoryValueAndTotalProfit();
@@ -571,6 +583,7 @@ async function loadAuctions() {
                                     }else{
                                         await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
                                     }
+                                    await patchValue(cardId, new Date().toISOString(), "sold_date");
                                 }
                             }, false);
                         });

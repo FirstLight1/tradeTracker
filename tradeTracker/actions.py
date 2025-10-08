@@ -332,7 +332,7 @@ def update(card_id):
     data = request.get_json()
     field = data.get("field")
     value = data.get("value")
-    allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit"}
+    allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit", "sold_date"}
     
     if field == "sold" and value == True:
         db.execute('UPDATE cards SET sold_cm = 0 WHERE id = ?', (card_id,))
