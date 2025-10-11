@@ -1,3 +1,17 @@
+class struct{
+    constructor(){
+        this.cardName = null;
+        this.cardNum = null;
+        this.condition = null;
+        this.buyPrice = null;
+        this.marketValue = null;
+        this.sellPrice = null;
+        this.checkbox = null;
+        this.checkbox_cm = null;
+        this.profit = null;
+    }
+}
+
 export function renderField(value, inputType, classList, placeholder, datafield) {
     if (value === null) {
         return `<input type="${inputType}" class="${classList.join(' ')}" placeholder="${placeholder}" data-field="${datafield}" autocomplete="off">`;
@@ -5,6 +19,7 @@ export function renderField(value, inputType, classList, placeholder, datafield)
         return `<p class=" ${classList.join(' ')}" data-field="${datafield}">${value}</p>`;
     }
 }
+
 
 export function allTrue(checkboxes){
     const grouped = groupCheckboxes(checkboxes);    
@@ -24,6 +39,22 @@ function groupCheckboxes(checkboxes) {
     return grouped;
 }
 
+function handleCheckboxes(checkboxes){
+    const grouped = groupCheckboxes(checkboxes);
+    grouped.forEach(pair => {
+        pair[0].addEventListener('click', (event) =>{
+            if(event.target.checked){
+                pair[1].checked = false;
+            }
+        });
+        pair[1].addEventListener('click', (event) =>{
+            if(event.target.checked){
+                pair[0].checked = false;
+            }
+        });
+    });
+}
+
 function appendEuroSign(value, dataset){
     if (dataset === 'card_num' || dataset === 'card_name'){
         return value;
@@ -36,6 +67,9 @@ function appendEuroSign(value, dataset){
 }
 
 export function replaceWithPElement(dataset, value, element){
+    if (dataset === undefined){
+        return;
+    }
     const p = document.createElement('p');
     p.dataset.field = dataset;
     p.classList.add('card-info', dataset.replace('_', '-'));
@@ -173,7 +207,6 @@ async function calculateAuctionProfit(auction, target){
     const auctionId = auction.getAttribute('data-id');
     const cards = auction.querySelectorAll('.card');
     let totalSellValue = 0;
-
     if (target != null) {
         if(changeCheckboxState(target)){
             await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
@@ -335,16 +368,10 @@ async function loadAuctions() {
                 <p class="auction-profit">${auctionProfit != null ? auctionProfit + '€' : ""}</p>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
-                <div class="cards-wrapper">
                     <div class="cards-container">
                         <!-- Cards will be loaded here -->
                         
                     </div>
-                    <div class="button-container">
-                        <button class="add-cards-auction">Add cards</button>
-                        <button class="save-added-cards hidden="">Save</button>
-                    </div>
-                </div>
             `;
             auctionContainer.appendChild(auctionDiv);
         });
@@ -435,7 +462,7 @@ async function loadAuctions() {
                                 <p>Sold CM</p>
                                 <p>Profit</p>
                             </div>
-                        `; // Clear previous cards
+                        `;
                         cards.forEach(card => {
                             const cardDiv = document.createElement('div');
                             cardDiv.classList.add('card');
@@ -455,6 +482,15 @@ async function loadAuctions() {
                             `;
                             cardsContainer.appendChild(cardDiv);
                         });
+                        const buttonDiv = document.createElement('div');
+                        buttonDiv.classList.add('button-container');
+                        buttonDiv.innerHTML = `
+                                <div><button class="add-cards-auction">Add cards</button></div>
+                                <div><button class="save-added-cards">Save</button></div>
+                        `;
+                        cardsContainer.appendChild(buttonDiv);
+                        cardsContainer.querySelector('.save-added-cards').hidden = true;
+
 
                         cardsContainer.addEventListener('dblclick', (event) => {
                             if (event.target.closest('.card') && !(event.target.tagName === "DIV") && !(event.target.classList.contains('profit'))) {
@@ -648,6 +684,111 @@ async function loadAuctions() {
                         cardsContainer.style.display = 'none';
                         button.textContent = 'View';
                     }
+
+                    const addCardButton = cardsContainer.querySelector('.add-cards-auction');
+                    addCardButton.addEventListener('click', () => {
+                        cardsContainer.querySelector('.save-added-cards').hidden = false;
+                        const newCard = document.createElement('div');
+                        newCard.classList.add('card', 'new-card');
+                        newCard.innerHTML = `
+                            ${renderField(null, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
+                            ${renderField(null, 'text', ['card-info', 'card-num'], 'Card Number', 'card_num')}
+                            <select class="card-info condition select-condition" data-field="condition">
+                                <option value="Mint">Mint</option>
+                                <option value="Near Mint">Near Mint</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Light Played">Light Played</option>
+                                <option value="Played">Played</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                            ${renderField(null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
+                            ${renderField(null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
+                            ${renderField(null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
+                            <input type="checkbox" class='card-info-checkbox sold'>
+                            <input type="checkbox" class='card-info-checkbox sold-cm'>
+                            ${renderField(null, 'text', ['card-info', 'profit'], 'Profit', 'profit')}`
+
+                        const checkboxFields = newCard.querySelectorAll('input[type="checkbox"]');
+                        handleCheckboxes(checkboxFields);
+                        cardsContainer.insertBefore(newCard, cardsContainer.querySelector('.button-container'));
+                    });
+
+                    const saveAddedCardButton = cardsContainer.querySelector('.save-added-cards');
+                    saveAddedCardButton.addEventListener('click',async () => {
+                        saveAddedCardButton.hidden = true;
+                        const auctionId = auctionDiv.getAttribute('data-id');
+                        let cardsArray = [];
+                        const newCards = cardsContainer.querySelectorAll('.new-card');
+                        try{
+                            newCards.forEach(async (card) => {
+                                let cardObj = new struct();
+                                cardObj.cardName = card.querySelector('input.card-name').value.trim().toUpperCase() || null;
+                                cardObj.cardNum = card.querySelector('input.card-num').value.trim().toUpperCase() || null;
+                                cardObj.condition = card.querySelector('select.condition').value || null;
+                                cardObj.buyPrice = card.querySelector('input.card-price').value.replace(',', '.').trim() || null;
+                                cardObj.marketValue = card.querySelector('input.market-value').value.replace(',', '.').trim() || null;
+                                cardObj.sellPrice = card.querySelector('input.sell-price').value.replace(',', '.').trim() || null;
+                                cardObj.checkbox = card.querySelector('input.sold').checked;
+                                cardObj.checkbox_cm = card.querySelector('input.sold-cm').checked;
+                                cardObj.profit = card.querySelector('input.profit').value.replace(',', '.').trim();
+
+                                if(cardObj.profit === '') cardObj.profit = null;
+                                if(cardObj.buyPrice === '') cardObj.buyPrice = cardObj.marketValue * 0.85;
+                                if(cardObj.sellPrice ===  '') cardObj.sellPrice = cardObj.marketValue;
+                                if(cardObj.cardName !== '' && cardObj.marketValue !== ''){
+                                    cardsArray.push(cardObj);
+                                }
+                            });
+                            
+                            if (cardsArray.length === 0) return;
+                            
+                            const auctionSingles =  auctionDiv.classList.contains('singles') ? true : false;
+                            if(auctionSingles){
+                                for(let i = 1; i < cardsArray.length; i++){
+                                    if(cardsArray[i].checkbox === true && cardsArray[i].sellPrice !== null && cardsArray[i].buyPrice !==null){
+                                        cardsArray[i].profit = cardsArray[i].sellPrice - cardsArray[i].buyPrice;
+                                    }else if(cardsArray[i].checkbox_cm === true && cardsArray[i].sellPrice !== null && cardsArray[i].buyPrice !==null){
+                                        cardsArray[i].profit = (cardsArray[i].sellPrice * 0.95) - cardsArray[i].buyPrice;
+                                    }
+                                }
+                            }
+                            // Replace inputs with p elements, not working
+                            for(let i = 0; i < cardsArray.length; i++){
+                                for (const [key, value] of Object.entries(cardsArray[i])){
+                                    const cardElement = newCards[i].children;
+                                    for (let j = 0; j < cardElement.length; j++){
+                                        replaceWithPElement(cardElement[j].dataset.field, cardsArray[i].value, cardElement[j]);
+                                    }
+                                }
+                            }
+
+                            const jsonbody = JSON.stringify(cardsArray);
+                            const response = await fetch(`/addToExistingAuction/${auctionId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: jsonbody
+                            });
+                            const data = await response.json();
+                            if (!(data.status === 'success')) {
+                                console.error('Error saving new cards:', data);
+                                return;
+                            }
+                            if (auctionSingles){
+
+                            }else{
+                                const auctionTab = cardsContainer.closest('.auction-tab');
+                                await calculateAuctionProfit(auctionTab, null);
+                            }
+
+                        }catch(error){
+                            console.error('Error saving new cards:', error);
+                            return;
+                        }
+                    });
+
                 } catch (error) {
                     console.error('Error loading cards:', error);
                 }

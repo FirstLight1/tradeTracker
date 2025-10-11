@@ -345,6 +345,31 @@ def update(card_id):
         db.commit()
     return jsonify({'status': 'success'}),200
 
+@bp.route('/addToExistingAuction/<int:auction_id>', methods=('POST',))
+def addToExistingAuction(auction_id):
+    if request.method == 'POST':
+        cards = request.get_json()
+        print(cards)
+        db = get_db()
+        for card in cards:
+            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id)'
+            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (
+                card.get('cardName'),
+                card.get('cardNum'),
+                card.get('condition'),
+                card.get('buyPrice'),
+                card.get('marketValue'),
+                card.get('sellPrice'),
+                card.get('checkbox', 0),
+                card.get('checkbox_cm', 0),
+                card.get('profit'),
+                auction_id
+            )
+        )
+        db.commit()
+        return jsonify({'status': 'success'}), 201
+
 @bp.route('/addToCollecton', methods=('GET','POST'))
 def addToCollection():
     if request.method == 'POST':

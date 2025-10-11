@@ -258,6 +258,10 @@ input[type="text"]:focus, select:focus, textarea:focus {
   letter-spacing: 0.05em;
 }
 
+.save-added-cards,
+.add-cards-auction{
+  cursor: pointer;
+}
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 10px;

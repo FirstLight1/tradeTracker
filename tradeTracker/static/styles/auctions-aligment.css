@@ -58,6 +58,17 @@ p{
     padding-top: 10px;
 }
 
+.button-container{
+  display: flex;
+
+}
+
+.add-cards-auction{
+    padding-left: 30px;
+    width: 200px;
+    margin-right: 100px;
+}
+
 .card{
     display: grid;
     grid-template-columns: 280px 120px 150px 80px 100px 80px 90px 90px 100px 80px;
@@ -65,5 +76,4 @@ p{
     margin-top: 15px;
     margin-bottom: 15px;
     text-align: center;
-
 }

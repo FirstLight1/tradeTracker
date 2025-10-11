@@ -108,35 +108,19 @@ saveButton.addEventListener('click', () =>{
         if(card.buyPrice === null){
             card.buyPrice = card.marketValue * 0.85;
         }
-        if(card.cardName !== null && card.marketValue !== null){
-            cardsArr.push(card);
-        }
         if(card.checkbox){
             totalSellValue += card.sellPrice;
         } else if(card.checkbox_cm){
             totalSellValue += (card.sellPrice * 0.95)
         }
+        if(card.cardName !== null && card.marketValue !== null){
+            cardsArr.push(card);
+        }
     });
 
     const currentAuctionProfit = totalSellValue - cardsArr[0].buy;
     cardsArr[0].profit = parseFloat(currentAuctionProfit.toFixed(2));
-    /*const checkboxes = document.querySelectorAll('input[type=checkbox]');
-    let validCheckboxes = Array.from(checkboxes);
-    validCheckboxes.pop();
-    validCheckboxes.pop();
-    if(allTrue(validCheckboxes)){
-        let totalSellValue = 0;
-        const auctionBuyPrice = cardsArr[0].buy;
-        for(let i = 1; i < cardsArr.length; i++){
-            if(cardsArr[i].checkbox){
-                totalSellValue += cardsArr[i].sellPrice || 0;
-            }else if(cardsArr[i].checkbox_cm){
-                totalSellValue += (cardsArr[i].sellPrice * 0.95) || 0;
-            }
-        }
-        const profit = totalSellValue - auctionBuyPrice;
-        cardsArr[0].profit = parseFloat(profit.toFixed(2));
-    }*/
+
     if (cardsArr.length !== 1){
         const jsonbody = JSON.stringify(cardsArr);
         fetch('/add', {
