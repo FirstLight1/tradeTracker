@@ -37,7 +37,17 @@ def get_download_url():
     
 def check_version():
     try:
-        LOCAL_VERSION = 1
+        # Read local version from version.txt file
+        try:
+            version_file_path = resource_path('version.txt')
+            with open(version_file_path, 'r') as f:
+                version_content = f.read()
+            text, sep, LOCAL_VERSION = version_content.partition(':')
+            if not LOCAL_VERSION:
+                LOCAL_VERSION = "1"  # fallback version
+            LOCAL_VERSION = LOCAL_VERSION.strip()
+        except (FileNotFoundError, IOError):
+            LOCAL_VERSION = "1"  # fallback version
 
         try:
             response = requests.get(GITHUB_URL, timeout=10)
@@ -47,10 +57,10 @@ def check_version():
                 print("Invalid version format from remote")
                 return False
                 
-            print(f"Current version: {LOCAL_VERSION.strip()}")
+            print(f"Current version: {LOCAL_VERSION}")
             print(f"Latest version: {version.strip()}")
 
-            if v.parse(version.strip()) > v.parse(LOCAL_VERSION.strip()):
+            if v.parse(version.strip()) > v.parse(LOCAL_VERSION):
                 print('New update found! Downloading...')
                 download_url = get_download_url()
                 if download_url:

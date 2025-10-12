@@ -70,6 +70,13 @@ export function replaceWithPElement(dataset, value, element){
     if (dataset === undefined){
         return;
     }
+    if(value === null){
+        const p = document.createElement('p');
+        p.dataset.field = dataset;
+        p.classList.add('card-info', dataset.replace('_', '-'));    
+        element.replaceWith(p);
+        return
+    }
     const p = document.createElement('p');
     p.dataset.field = dataset;
     p.classList.add('card-info', dataset.replace('_', '-'));
@@ -731,12 +738,11 @@ async function loadAuctions() {
                                 cardObj.sellPrice = card.querySelector('input.sell-price').value.replace(',', '.').trim() || null;
                                 cardObj.checkbox = card.querySelector('input.sold').checked;
                                 cardObj.checkbox_cm = card.querySelector('input.sold-cm').checked;
-                                cardObj.profit = card.querySelector('input.profit').value.replace(',', '.').trim();
+                                cardObj.profit = card.querySelector('input.profit').value.replace(',', '.').trim() || null;
 
-                                if(cardObj.profit === '') cardObj.profit = null;
-                                if(cardObj.buyPrice === '') cardObj.buyPrice = cardObj.marketValue * 0.85;
-                                if(cardObj.sellPrice ===  '') cardObj.sellPrice = cardObj.marketValue;
-                                if(cardObj.cardName !== '' && cardObj.marketValue !== ''){
+                                if(cardObj.buyPrice === null) cardObj.buyPrice = cardObj.marketValue * 0.85;
+                                if(cardObj.sellPrice ===  null) cardObj.sellPrice = cardObj.marketValue;
+                                if(cardObj.cardName !== null && cardObj.marketValue !== null){
                                     cardsArray.push(cardObj);
                                 }
                             });
@@ -745,21 +751,20 @@ async function loadAuctions() {
                             
                             const auctionSingles =  auctionDiv.classList.contains('singles') ? true : false;
                             if(auctionSingles){
-                                for(let i = 1; i < cardsArray.length; i++){
+                                for(let i = 0; i < cardsArray.length; i++){
                                     if(cardsArray[i].checkbox === true && cardsArray[i].sellPrice !== null && cardsArray[i].buyPrice !==null){
-                                        cardsArray[i].profit = cardsArray[i].sellPrice - cardsArray[i].buyPrice;
+                                        cardsArray[i].profit = (cardsArray[i].sellPrice - cardsArray[i].buyPrice).toFixed(2);
                                     }else if(cardsArray[i].checkbox_cm === true && cardsArray[i].sellPrice !== null && cardsArray[i].buyPrice !==null){
-                                        cardsArray[i].profit = (cardsArray[i].sellPrice * 0.95) - cardsArray[i].buyPrice;
+                                        cardsArray[i].profit = ((cardsArray[i].sellPrice * 0.95) - cardsArray[i].buyPrice).toFixed(2);
                                     }
                                 }
                             }
-                            // Replace inputs with p elements, not working
                             for(let i = 0; i < cardsArray.length; i++){
+                                let j = 0;
                                 for (const [key, value] of Object.entries(cardsArray[i])){
                                     const cardElement = newCards[i].children;
-                                    for (let j = 0; j < cardElement.length; j++){
-                                        replaceWithPElement(cardElement[j].dataset.field, cardsArray[i].value, cardElement[j]);
-                                    }
+                                    replaceWithPElement(cardElement[j].dataset.field, value, cardElement[j]);
+                                    j++;
                                 }
                             }
 
@@ -777,16 +782,22 @@ async function loadAuctions() {
                                 return;
                             }
                             if (auctionSingles){
-
+                                const newAuctionProfit = SinglesProfit(auctionDiv.querySelectorAll('.card'));
+                                auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+                                await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
+                                await updateInventoryValueAndTotalProfit()
                             }else{
                                 const auctionTab = cardsContainer.closest('.auction-tab');
                                 await calculateAuctionProfit(auctionTab, null);
+                                await updateInventoryValueAndTotalProfit();
                             }
-
+                            newCards.forEach(card => card.classList.remove('new-card'));
                         }catch(error){
                             console.error('Error saving new cards:', error);
                             return;
                         }
+                        //this could be done better by dynamically adding the cards instead of reloading the whole auction
+                        window.location,reload();
                     });
 
                 } catch (error) {

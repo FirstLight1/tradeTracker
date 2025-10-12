@@ -485,28 +485,36 @@ def cardMarketTable():
             'profit': None,
             'date': date
         }
-
         try:
             cursor = db.execute(
                 'INSERT INTO auctions (auction_name, auction_price, auction_profit, date_created) VALUES (?, ?, ?, ?)',
                 (auction['name'], auction['buy'], auction['profit'], auction['date'])
             )
             auction_id = cursor.lastrowid
-
             cardsToInsert = []
             for card in cards:
                 count = card.get('count', 1)
+                marketValue = card.get('marketValue', 0)
+                print("Market value:", type(marketValue))
+                marketValue = float(marketValue) if marketValue is not None else None
+                print("Market value:", type(marketValue))
+
+                if marketValue is not None:
+                    sellPrice = marketValue
+                    buyPrice = marketValue * 0.85
                 for _ in range(int(count)):
                     cardsToInsert.append((
                         card.get('name', None),
                         card.get('num', None),
                         card.get('condition', None),
-                        card.get('price', None),
+                        buyPrice,
+                        marketValue,
+                        sellPrice,
                         auction_id
                     ))
-            
+
             db.executemany(
-                'INSERT INTO cards (card_name, card_num, condition, market_value, auction_id) VALUES (?, ?, ?, ?, ?)',
+                'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, auction_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
                 cardsToInsert
             )
 
