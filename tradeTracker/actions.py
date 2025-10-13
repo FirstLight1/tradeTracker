@@ -350,7 +350,6 @@ def update(card_id):
 def addToExistingAuction(auction_id):
     if request.method == 'POST':
         cards = request.get_json()
-        print(cards)
         db = get_db()
         for card in cards:
             db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, sold_date, auction_id)'
@@ -498,16 +497,11 @@ def cardMarketTable():
             for card in cards:
                 count = card.get('count', 1)
                 marketValue = card.get('marketValue', 0)
-                print("Market value:", type(marketValue))
                 marketValue = float(marketValue) if marketValue is not None else None
-                print("Market value:", type(marketValue))
 
                 if marketValue:
                     sellPrice = marketValue
-                    buyPrice = round(marketValue * 0.85, 2)
-                    print("Buy price:", buyPrice)
-                    print("Sell price:", sellPrice)
-                    
+                    buyPrice = round(marketValue * 0.80, 2)
                 for _ in range(int(count)):
                     cardsToInsert.append((
                         card.get('name', None),

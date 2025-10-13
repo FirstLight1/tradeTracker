@@ -107,7 +107,7 @@ saveButton.addEventListener('click', () =>{
             card.sellPrice = card.marketValue;
         }
         if(card.buyPrice === null){
-            card.buyPrice = card.marketValue * 0.85;
+            card.buyPrice = card.marketValue * 0.80;
         }
         if(card.checkbox){
             totalSellValue += card.sellPrice;
