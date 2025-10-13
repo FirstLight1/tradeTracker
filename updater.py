@@ -1,10 +1,13 @@
 import os, sys, time, shutil, subprocess, tempfile, requests
 from packaging import version as v
 
-GITHUB_URL = r'https://raw.githubusercontent.com/FirstLight1/tradeTracker/refs/heads/master/version.txt'
 REPO = 'FirstLight1/tradeTracker'
 URL = f"https://api.github.com/repos/{REPO}/releases/latest"
 APP_NAME = 'run_app.exe'
+
+# The local version is now a variable.
+# This should be updated for each new release when you build the .exe.
+LOCAL_VERSION = "0.0.1"  # Example version, update as needed
 
 #update database
 #check name in releases and then compare version
@@ -37,31 +40,21 @@ def get_download_url():
     
 def check_version():
     try:
-        # Read local version from version.txt file
-        try:
-            version_file_path = resource_path('version.txt')
-            with open(version_file_path, 'r') as f:
-                version_content = f.read()
-            text, sep, LOCAL_VERSION = version_content.partition(':')
-            if not LOCAL_VERSION:
-                LOCAL_VERSION = "1"  # fallback version
-            LOCAL_VERSION = LOCAL_VERSION.strip()
-        except (FileNotFoundError, IOError):
-            LOCAL_VERSION = "1"  # fallback version
+        # The local version is now read from the variable
+        print(f"Current version: {LOCAL_VERSION}")
 
         try:
-            response = requests.get(GITHUB_URL, timeout=10)
+            response = requests.get(URL, timeout=10)
             response.raise_for_status()
-            text, sep, version = response.text.partition(':')
-            if not version:
-                print("Invalid version format from remote")
-                return False
-                
-            print(f"Current version: {LOCAL_VERSION}")
-            print(f"Latest version: {version.strip()}")
+            latest_version = response.json()["tag_name"]
+            print(f"Latest version from GitHub release: {latest_version}")
 
-            if v.parse(version.strip()) > v.parse(LOCAL_VERSION):
-                print('New update found! Downloading...')
+            if v.parse(latest_version) > v.parse(LOCAL_VERSION):
+                print('New update found! Do you want to update? (y/n)')
+                choice = input().strip().lower()
+                if choice != 'y':
+                    print("Update cancelled by user.")
+                    return
                 download_url = get_download_url()
                 if download_url:
                     update_with_cmd(download_update(download_url), APP_NAME)
@@ -69,13 +62,13 @@ def check_version():
                     print("Failed to get download URL. Update skipped.")
             else:
                 print("You have the latest version!")
-                return False
         except requests.exceptions.RequestException as e:
             print(f"Failed to check for updates: {e}")
-            return False
+        except (KeyError, TypeError) as e:
+            print(f"Could not find version from GitHub release: {e}")
+
     except Exception as e:
         print(f"Error during version check: {e}")
-        return False
 
 
 def download_update(download_url):

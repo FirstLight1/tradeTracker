@@ -499,9 +499,12 @@ def cardMarketTable():
                 marketValue = float(marketValue) if marketValue is not None else None
                 print("Market value:", type(marketValue))
 
-                if marketValue is not None:
+                if marketValue:
                     sellPrice = marketValue
-                    buyPrice = marketValue * 0.85
+                    buyPrice = round(marketValue * 0.85, 2)
+                    print("Buy price:", buyPrice)
+                    print("Sell price:", sellPrice)
+                    
                 for _ in range(int(count)):
                     cardsToInsert.append((
                         card.get('name', None),
