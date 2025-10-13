@@ -44,7 +44,11 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    from . import db, tracker, actions
+    from . import db, tracker, actions, migration
+    
+    # Run database migration before initializing the app
+    migration.migrate_database(app.config['DATABASE'])
+    
     db.init_app(app)
     
     # Initialize the database if it doesn't exist
