@@ -265,8 +265,8 @@ def add():
         auction_id = cursor.lastrowid
         for card in cardsArr[1:]:
             db.execute(
-                'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id) '
-                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, sold_date,auction_id) '
+                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 (
                     card.get('cardName'),
                     card.get('cardNum'),
@@ -277,6 +277,7 @@ def add():
                     card.get('checkbox', 0),
                     card.get('checkbox_cm', 0),
                     card.get('profit'),
+                    card.get('soldDate'),
                     auction_id
                 )
             )
@@ -352,8 +353,8 @@ def addToExistingAuction(auction_id):
         print(cards)
         db = get_db()
         for card in cards:
-            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id)'
-            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, sold_date, auction_id)'
+            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             (
                 card.get('cardName'),
                 card.get('cardNum'),
@@ -364,6 +365,7 @@ def addToExistingAuction(auction_id):
                 card.get('checkbox', 0),
                 card.get('checkbox_cm', 0),
                 card.get('profit'),
+                card.get('soldDate'),
                 auction_id
             )
         )
@@ -434,8 +436,8 @@ def addToSingles():
 
         db.execute('UPDATE auctions SET auction_profit = auction_profit + ? WHERE id = 1',(profit['profit'],))
         for card in data[1:]:
-            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, auction_id)'
-                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, sold_date, auction_id)'
+                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     (
                         card.get('cardName'),
                         card.get('cardNum'),
@@ -446,6 +448,7 @@ def addToSingles():
                         card.get('checkbox', 0),
                         card.get('checkbox_cm', 0),
                         card.get('profit'),
+                        card.get('soldDate'),
                         auction_id
                     )
             )
@@ -568,7 +571,8 @@ def getImportantCollums(cards, columns):
 def updateOneCard(db, name, num, sellPrice):
     cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 0 LIMIT 1", (name, num)).fetchone()
     if cardId:
-        db.execute("UPDATE cards SET sell_price = ?, sold_cm = ? WHERE id = ?", (sellPrice, 1, cardId['id']))
+        date = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
+        db.execute("UPDATE cards SET sell_price = ?, sold_cm = ?, sold_date = ? WHERE id = ?", (sellPrice, 1, date, cardId['id']))
         card = db.execute("SELECT auction_id," \
                     "CASE WHEN auction_id = 1 THEN card_price END AS price," \
                     "sold," \

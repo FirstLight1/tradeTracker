@@ -31,11 +31,12 @@ saveButton.addEventListener('click', () => {
             card.checkbox = ell.querySelector('input[name=sold]').checked;
             card.checkbox_cm = ell.querySelector('input[name=sold_cm]').checked;
             card.profit = inputNumber('input[name=profit]');
+            card.soldDate = (card.checkbox === true || card.checkbox_cm === true) ? new Date().toISOString() : null;
             if(card.sellPrice === null){
             card.sellPrice = card.marketValue;
             }
             if(card.buyPrice === null){
-                card.buyPrice = card.marketValue * 0.85;
+                card.buyPrice = (card.marketValue * 0.85).toFixed(2);
             }
             if(card.checkbox === true && card.sellPrice !== null && card.buyPrice !==null){
                 card.profit = card.sellPrice - card.buyPrice;

@@ -9,6 +9,7 @@ class struct{
         this.checkbox = null;
         this.checkbox_cm = null;
         this.profit = null;
+        this.soldDate = null;
     }
 }
 
@@ -279,8 +280,6 @@ async function updateAuction(auctionId, value, field){
     }
 }
 
-
-
 function isEmpty(obj) {
     return Object.keys(obj).length === 0;
 }
@@ -341,15 +340,19 @@ async function getTotalProfit(){
 
 export async function updateInventoryValueAndTotalProfit() {
         const value = await getInventoryValue();
+        const inventoryValueElement = document.querySelector('.inventory-value-value');
         if(value != null){
-            const inventoryValueElement = document.querySelector('.inventory-value-value');
-            inventoryValueElement.textContent = "  " + appendEuroSign(value.toFixed(2));
+            inventoryValueElement.textContent = appendEuroSign(value.toFixed(2));
+        } else{
+            inventoryValueElement.textContent = '0.00 €';
         }
     
         const profit = await getTotalProfit();
+        const totalProfitElement = document.querySelector('.total-profit-value');
         if(profit != null){
-            const totalProfitElement = document.querySelector('.total-profit-value');
-            totalProfitElement.textContent = " " + appendEuroSign(profit.toFixed(2));
+            totalProfitElement.textContent = appendEuroSign(profit.toFixed(2));
+        } else{
+            totalProfitElement.textContent = '0.00 €';
         }
 }
 
@@ -739,6 +742,7 @@ async function loadAuctions() {
                                 cardObj.checkbox = card.querySelector('input.sold').checked;
                                 cardObj.checkbox_cm = card.querySelector('input.sold-cm').checked;
                                 cardObj.profit = card.querySelector('input.profit').value.replace(',', '.').trim() || null;
+                                cardObj.soldDate = (cardObj.checkbox === true || cardObj.checkbox_cm === true) ? new Date().toISOString() : null;
 
                                 if(cardObj.buyPrice === null) cardObj.buyPrice = cardObj.marketValue * 0.85;
                                 if(cardObj.sellPrice ===  null) cardObj.sellPrice = cardObj.marketValue;
@@ -762,6 +766,7 @@ async function loadAuctions() {
                             for(let i = 0; i < cardsArray.length; i++){
                                 let j = 0;
                                 for (const [key, value] of Object.entries(cardsArray[i])){
+                                    if(key === 'soldDate') continue;
                                     const cardElement = newCards[i].children;
                                     replaceWithPElement(cardElement[j].dataset.field, value, cardElement[j]);
                                     j++;
@@ -797,7 +802,7 @@ async function loadAuctions() {
                             return;
                         }
                         //this could be done better by dynamically adding the cards instead of reloading the whole auction
-                        window.location,reload();
+                        window.location.reload();
                     });
 
                 } catch (error) {

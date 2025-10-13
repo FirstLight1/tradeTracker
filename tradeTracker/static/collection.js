@@ -67,7 +67,7 @@ export async function updateCollectionValue() {
         if(value != null){
             inventoryValueElement.textContent = appendEuroSign(value.toFixed(2));
         } else{
-            inventoryValueElement.textContent = '0€';
+            inventoryValueElement.textContent = '0.00€';
         }
     
 }

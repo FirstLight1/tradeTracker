@@ -58,6 +58,7 @@ export class struct{
         this.checkbox = null;
         this.checkbox_cm = null;
         this.profit = null;
+        this.soldDate = null;
     }
 }
 
@@ -110,8 +111,10 @@ saveButton.addEventListener('click', () =>{
         }
         if(card.checkbox){
             totalSellValue += card.sellPrice;
+            card.soldDate = date
         } else if(card.checkbox_cm){
             totalSellValue += (card.sellPrice * 0.95)
+            card.soldDate = date
         }
         if(card.cardName !== null && card.marketValue !== null){
             cardsArr.push(card);
