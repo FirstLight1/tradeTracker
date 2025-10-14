@@ -705,7 +705,7 @@ async function loadAuctions() {
                             ${renderField(null, 'text', ['card-info', 'card-num'], 'Card Number', 'card_num')}
                             <select class="card-info condition select-condition" data-field="condition">
                                 <option value="Mint">Mint</option>
-                                <option value="Near Mint">Near Mint</option>
+                                <option value="Near Mint" selected="selected">Near Mint</option>
                                 <option value="Excellent">Excellent</option>
                                 <option value="Good">Good</option>
                                 <option value="Light Played">Light Played</option>

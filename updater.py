@@ -7,7 +7,7 @@ APP_NAME = 'run_app.exe'
 
 # The local version is now a variable.
 # This should be updated for each new release when you build the .exe.
-LOCAL_VERSION = "1.0.3"  # Example version, update as needed
+LOCAL_VERSION = "1.0.4"  # Example version, update as needed
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """

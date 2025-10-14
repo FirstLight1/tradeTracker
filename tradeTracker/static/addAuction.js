@@ -22,7 +22,7 @@ export function createNewCard(newCard){
         });
 
         newCard.querySelectorAll('select').forEach(sel => {
-        sel.selectedIndex = 0;
+        sel.selectedIndex = 1;
         });
 
         const newCardName = newCard.querySelector('.marketValue');
