@@ -56,6 +56,15 @@ function handleCheckboxes(checkboxes){
     });
 }
 
+function calculateAuctionBuyPrice(cards){
+    let totalBuyPrice = 0;
+    cards.forEach(card => {
+        const buyPrice = Number(card.querySelector('.card-price').textContent.replace('€', '').trim());
+        totalBuyPrice += buyPrice;
+    });
+    return totalBuyPrice.toFixed(2);
+    }
+
 function appendEuroSign(value, dataset){
     if (dataset === 'card_num' || dataset === 'card_name'){
         return value;
@@ -719,15 +728,25 @@ async function loadAuctionContent(button) {
                     return;
                 }
                 if (auctionSingles){
-                    const newAuctionProfit = SinglesProfit(auctionDiv.querySelectorAll('.card'));
+                    const cards = cardsContainer.querySelectorAll('.card');
+                    const newAuctionProfit = SinglesProfit(cards);
                     auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                     await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
                     await updateInventoryValueAndTotalProfit()
+                    const newAuctionBuyPrice = calculateAuctionBuyPrice(cards);
+                    await updateAuction(auctionId, newAuctionBuyPrice, 'auction_price');
+                    auctionDiv.querySelector('.auction-price').textContent = appendEuroSign(newAuctionBuyPrice, 'auction-price');
+
                 }else{
                     const auctionTab = cardsContainer.closest('.auction-tab');
+                    const cards = cardsContainer.querySelectorAll('.card');
                     await calculateAuctionProfit(auctionTab, null);
                     await updateInventoryValueAndTotalProfit();
+                    const newAuctionBuyPrice = calculateAuctionBuyPrice(cards);
+                    await updateAuction(auctionId, newAuctionBuyPrice, 'auction_price');
+                    auctionDiv.querySelector('.auction-price').textContent = appendEuroSign(newAuctionBuyPrice, 'auction-price');
                 }
+
                 newCards.forEach(card => card.classList.remove('new-card'));
             }catch(error){
                 console.error('Error saving new cards:', error);
@@ -785,6 +804,8 @@ async function loadAuctions() {
                 p.classList.add('auction-price');
                 p.textContent = appendEuroSign(value, 'auction_price');
                 event.target.replaceWith(p);
+
+                
             })
             input.addEventListener('keydown', (event) =>{
                 if(event.key == 'Enter'){
@@ -793,13 +814,13 @@ async function loadAuctions() {
             })
         })
 
-        const auctionNames = document.querySelectorAll('p.auction-name');
+        const auctionNames = document.querySelectorAll('.auction-name');
         auctionNames.forEach(name => {
             if (name.textContent === 'Singles'){
                 return;
             }
             name.addEventListener('dblclick', (event) =>{
-                const value = event.target.textContent;
+                const value = event.target.textContent.replace('€','');
                 const dataset = event.target.dataset.field;
                 const input = document.createElement('input');
                 input.type = 'text';
@@ -828,10 +849,10 @@ async function loadAuctions() {
             });
         });
 
-        const auctionPrices = document.querySelectorAll('p.auction-price');
+        const auctionPrices = document.querySelectorAll('.auction-price');
         auctionPrices.forEach(price => {
             price.addEventListener('dblclick', (event) =>{
-                const value = event.target.textContent;
+                const value = event.target.textContent.replace('€','');
                 const dataset = event.target.dataset.field;
                 const input = document.createElement('input');
                 input.type = 'text';
@@ -854,6 +875,14 @@ async function loadAuctions() {
                     p.classList.add('auction-price');
                     p.textContent = appendEuroSign(value, 'auction_price');
                     blurEvent.target.replaceWith(p);
+                    if (auctionDiv.classList.contains('singles')){
+                        const cards = auctionDiv.querySelectorAll('.card');
+                        const newAuctionProfit = SinglesProfit(cards);
+                        auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+                        updateAuction(auctionId, newAuctionProfit, 'auction_profit');
+                    } else{
+                        calculateAuctionProfit(auctionDiv, null);
+                    }
                 })
                 input.addEventListener('keydown', (keyEvent)=>{
                     if(keyEvent.key == 'Enter'){

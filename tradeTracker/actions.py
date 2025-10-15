@@ -487,6 +487,9 @@ def cardMarketTable():
             'profit': None,
             'date': date
         }
+
+        auction.buy = sum(float(card.get('buyPrice', 0)) for card in cards)
+        auction.buy = round(auction.buy, 2)
         try:
             cursor = db.execute(
                 'INSERT INTO auctions (auction_name, auction_price, auction_profit, date_created) VALUES (?, ?, ?, ?)',

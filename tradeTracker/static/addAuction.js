@@ -66,6 +66,7 @@ const checkboxes = document.querySelectorAll('input[type=checkbox]');
 handleCheckboxes(checkboxes);
 const cardsArr = [];
 let totalSellValue = 0;
+let auctionValueCalculated = 0;
 const saveButton = document.querySelector('.save-btn')
 //add typechecks
 saveButton.addEventListener('click', () =>{
@@ -106,8 +107,8 @@ saveButton.addEventListener('click', () =>{
         if(card.sellPrice === null){
             card.sellPrice = card.marketValue;
         }
-        if(card.buyPrice === null){
-            card.buyPrice = (card.marketValue * 0.80).toFixed(2);
+        if(card.buyPrice === null && card.marketValue !== null){
+            card.buyPrice = parseFloat((card.marketValue * 0.80).toFixed(2));
         }
         if(card.checkbox){
             totalSellValue += card.sellPrice;
@@ -116,6 +117,7 @@ saveButton.addEventListener('click', () =>{
             totalSellValue += (card.sellPrice * 0.95)
             card.soldDate = date
         }
+        auctionValueCalculated += card.buyPrice || 0;
         if(card.cardName !== null && card.marketValue !== null){
             cardsArr.push(card);
         }
@@ -123,6 +125,9 @@ saveButton.addEventListener('click', () =>{
 
     const currentAuctionProfit = totalSellValue - cardsArr[0].buy;
     cardsArr[0].profit = parseFloat(currentAuctionProfit.toFixed(2));
+    if(!cardsArr[0].buy){
+        cardsArr[0].buy = parseFloat(auctionValueCalculated.toFixed(2));
+    }
 
     if (cardsArr.length !== 1){
         const jsonbody = JSON.stringify(cardsArr);
