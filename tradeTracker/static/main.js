@@ -814,14 +814,12 @@ async function loadAuctions() {
             })
         })
 
-        const auctionNames = document.querySelectorAll('.auction-name');
-        auctionNames.forEach(name => {
+        const attachAuctionNameListener = (name) => {
             if (name.textContent === 'Singles'){
                 return;
             }
             name.addEventListener('dblclick', (event) =>{
                 const value = event.target.textContent.replace('€','');
-                const dataset = event.target.dataset.field;
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.value = value;
@@ -840,6 +838,7 @@ async function loadAuctions() {
                     p.classList.add('auction-name');
                     p.textContent = value;
                     blurEvent.target.replaceWith(p);
+                    attachAuctionNameListener(p);
                 })
                 input.addEventListener('keydown', (keyEvent)=>{
                     if(keyEvent.key == 'Enter'){
@@ -847,13 +846,14 @@ async function loadAuctions() {
                     }
                 });
             });
-        });
-
-        const auctionPrices = document.querySelectorAll('.auction-price');
-        auctionPrices.forEach(price => {
+        };
+        
+        const auctionNames = document.querySelectorAll('.auction-name');
+        auctionNames.forEach(name => attachAuctionNameListener(name));
+        
+        const attachAuctionPriceListener = (price) => {
             price.addEventListener('dblclick', (event) =>{
                 const value = event.target.textContent.replace('€','');
-                const dataset = event.target.dataset.field;
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.value = value;
@@ -861,7 +861,7 @@ async function loadAuctions() {
                 event.target.replaceWith(input);
                 input.focus();
                 input.addEventListener('blur', (blurEvent) =>{
-                    const value = blurEvent.target.value.replace(',', '.');
+                    let value = blurEvent.target.value.replace(',', '.');
                     if (isNaN(value)){
                         value = value.toUpperCase();
                     }
@@ -875,6 +875,7 @@ async function loadAuctions() {
                     p.classList.add('auction-price');
                     p.textContent = appendEuroSign(value, 'auction_price');
                     blurEvent.target.replaceWith(p);
+                    attachAuctionPriceListener(p);
                     if (auctionDiv.classList.contains('singles')){
                         const cards = auctionDiv.querySelectorAll('.card');
                         const newAuctionProfit = SinglesProfit(cards);
@@ -889,8 +890,11 @@ async function loadAuctions() {
                         input.blur();
                     }
                 })
-            }) 
-        })
+            });
+        };
+        
+        const auctionPrices = document.querySelectorAll('.auction-price');
+        auctionPrices.forEach(price => attachAuctionPriceListener(price));
         // Attach event listeners after auctions are loaded
         const viewButtons = document.querySelectorAll('.view-auction');
         viewButtons.forEach(button => {
