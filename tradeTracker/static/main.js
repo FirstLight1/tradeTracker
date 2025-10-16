@@ -247,6 +247,30 @@ async function calculateAuctionProfit(auction, target){
     updateAuction(auctionId, profit, 'auction_profit');
 }
 
+async function checkboxHandling(cards, card, cardId, target, auctionTab, isSold){
+    if(auctionTab.classList.contains('singles')){
+        calculateSinglesProfit(card, target);
+        const newAuctionProfit = SinglesProfit(cards);
+        auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+        const auctionId = auctionTab.getAttribute('data-id');
+        await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
+        await updateInventoryValueAndTotalProfit();
+    } else{
+        await calculateAuctionProfit(auctionTab, target);
+        await updateInventoryValueAndTotalProfit();
+        if(changeCheckboxState(target)){
+            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), isSold, 'sold');
+        }else{
+            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), isSold, 'sold_cm');
+        }
+    }
+    if(isSold){
+        await patchValue(cardId, new Date().toISOString(), "sold_date");
+    }else{
+        await patchValue(cardId, null, "sold_date");
+    }
+}
+
 async function removeCard(id, div) {
     try {
         const response = await fetch(`/deleteCard/${id}`, {
@@ -541,23 +565,10 @@ async function loadAuctionContent(button) {
                     const card = target.closest('.card');
                     const cardId = card.querySelector('.card-id').textContent;
                     const cards = auctionTab.querySelectorAll('.card');
-                    if(auctionTab.classList.contains('singles')){
-                        calculateSinglesProfit(card, target);
-                        const newAuctionProfit = SinglesProfit(cards);
-                        auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
-                        const auctionId = auctionTab.getAttribute('data-id');
-                        await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
-                        await updateInventoryValueAndTotalProfit();
-                        await patchValue(cardId, new Date().toISOString(), "sold_date")
-                    } else{
-                        await calculateAuctionProfit(auctionTab, target);
-                        await updateInventoryValueAndTotalProfit();
-                        if(changeCheckboxState(target)){
-                            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
-                        }else{
-                            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
-                        }
-                        await patchValue(cardId, new Date().toISOString(), "sold_date");
+                    if(!event.target.checked){
+                        checkboxHandling(cards, card, cardId, target, auctionTab, false);
+                    }else{
+                        checkboxHandling(cards, card, cardId, target, auctionTab, true);
                     }
                 }, false);
             });

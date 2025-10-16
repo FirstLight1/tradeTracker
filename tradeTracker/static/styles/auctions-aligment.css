@@ -38,6 +38,7 @@ p{
     margin-top: 15px;
     margin-bottom: 15px;
     text-align: center;
+    cursor: pointer;
 }
 
 .auction-header{
