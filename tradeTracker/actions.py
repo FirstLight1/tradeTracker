@@ -488,7 +488,7 @@ def cardMarketTable():
             'date': date
         }
 
-        auction.buy = sum(float(card.get('buyPrice', 0)) for card in cards)
+        auction.buy = sum((float(card.get('marketValue', 0)) * 0.8) for card in cards)
         auction.buy = round(auction.buy, 2)
         try:
             cursor = db.execute(
