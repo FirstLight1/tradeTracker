@@ -186,18 +186,18 @@ function checkboxSwitching(target, buyPrice, sellPrice, profitElement, id){
     }
     return Number(profitElement.textContent.replace('€', '').trim()).toFixed(2);
 }
-
-function calculateSinglesProfit(card, target) {
+//calculates profit for single card in singles
+async function calculateSinglesProfit(card, target) {
     const buyPrice = Number(card.querySelector('.card-price').textContent.replace('€', '').trim());
     const sellPrice = Number(card.querySelector('.sell-price').textContent.replace('€', '').trim());
     const profitElement = card.querySelector('.profit');
     const cardId = card.querySelector('.card-id').textContent.trim();
     const profit = checkboxSwitching(target, buyPrice, sellPrice, profitElement, cardId);
     
-    patchValue(cardId, profit, 'profit');
+    await patchValue(cardId, profit, 'profit');
 }
 
-//calculates singles profit after checkbox change
+//calculates total singles profit after checkbox change
 function SinglesProfit(cards){
     let totalProfit = 0;
     cards.forEach(card => {
@@ -217,6 +217,15 @@ function changeCheckboxState(checkbox){
         return false
     }
 }
+
+async function setAuctionBuyPrice(cards, auctionTab){
+    const auctionBuyPriceElement = auctionTab.querySelector('.auction-price');
+    const newAuctionBuyPrice = calculateAuctionBuyPrice(cards);
+    auctionBuyPriceElement.textContent = appendEuroSign(newAuctionBuyPrice, 'auction-price');
+    const auctionId = auctionTab.getAttribute('data-id');
+    await updateAuction(auctionId, newAuctionBuyPrice, 'auction_price');
+}
+
 
 async function calculateAuctionProfit(auction, target){
     const auctionPrice = Number(auction.querySelector('.auction-price').textContent.replace('€', '').trim());
@@ -279,7 +288,7 @@ async function removeCard(id, div) {
         const data = await response.json();
 
         if (data.status === 'success') {
-            div.remove(); // remove the card from DOM
+            div.remove();
             return true;
         } else {
             console.error('Error deleting card:', data);
@@ -612,8 +621,10 @@ async function loadAuctionContent(button) {
                                 cardsContainer.appendChild(p);
                             }
                         }else{
-                            calculateAuctionProfit(auctionDiv, null);
-                            await updateInventoryValueAndTotalProfit()
+                            await setAuctionBuyPrice(cards, auctionDiv);
+                            await calculateAuctionProfit(auctionDiv, null);
+                            await updateInventoryValueAndTotalProfit();
+
                         }
                         if (cardsContainer.childElementCount === 1){
                             if(!(auctionDiv.classList.contains('singles'))){
@@ -635,8 +646,6 @@ async function loadAuctionContent(button) {
                             }
                         });
                     }
-                    /*
-                    */
                 });
             });
         }
@@ -743,19 +752,16 @@ async function loadAuctionContent(button) {
                     const newAuctionProfit = SinglesProfit(cards);
                     auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
                     await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
-                    await updateInventoryValueAndTotalProfit()
-                    const newAuctionBuyPrice = calculateAuctionBuyPrice(cards);
-                    await updateAuction(auctionId, newAuctionBuyPrice, 'auction_price');
-                    auctionDiv.querySelector('.auction-price').textContent = appendEuroSign(newAuctionBuyPrice, 'auction-price');
-
+                    await updateInventoryValueAndTotalProfit();
                 }else{
                     const auctionTab = cardsContainer.closest('.auction-tab');
                     const cards = cardsContainer.querySelectorAll('.card');
+                    await setAuctionBuyPrice(cards, auctionTab);
                     await calculateAuctionProfit(auctionTab, null);
                     await updateInventoryValueAndTotalProfit();
-                    const newAuctionBuyPrice = calculateAuctionBuyPrice(cards);
+                    /*const newAuctionBuyPrice = calculateAuctionBuyPrice(cards);
                     await updateAuction(auctionId, newAuctionBuyPrice, 'auction_price');
-                    auctionDiv.querySelector('.auction-price').textContent = appendEuroSign(newAuctionBuyPrice, 'auction-price');
+                    auctionDiv.querySelector('.auction-price').textContent = appendEuroSign(newAuctionBuyPrice, 'auction-price');*/
                 }
 
                 newCards.forEach(card => card.classList.remove('new-card'));
