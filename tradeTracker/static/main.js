@@ -257,26 +257,40 @@ async function calculateAuctionProfit(auction, target){
 }
 
 async function checkboxHandling(cards, card, cardId, target, auctionTab, isSold){
-    if(auctionTab.classList.contains('singles')){
-        calculateSinglesProfit(card, target);
-        const newAuctionProfit = SinglesProfit(cards);
-        auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
-        const auctionId = auctionTab.getAttribute('data-id');
-        await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
-        await updateInventoryValueAndTotalProfit();
-    } else{
-        await calculateAuctionProfit(auctionTab, target);
-        await updateInventoryValueAndTotalProfit();
+    if(isSold){
+        await patchValue(cardId, new Date().toISOString(), "sold_date");
+        if(auctionTab.classList.contains('singles')){
+            calculateSinglesProfit(card, target);
+            const newAuctionProfit = SinglesProfit(cards);
+            auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+            const auctionId = auctionTab.getAttribute('data-id');
+            await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
+            await updateInventoryValueAndTotalProfit();
+        } else{
+            await calculateAuctionProfit(auctionTab, target);
+            await updateInventoryValueAndTotalProfit();
+        }
         if(changeCheckboxState(target)){
             await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), isSold, 'sold');
         }else{
             await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), isSold, 'sold_cm');
         }
-    }
-    if(isSold){
-        await patchValue(cardId, new Date().toISOString(), "sold_date");
     }else{
         await patchValue(cardId, null, "sold_date");
+        await patchValue(cardId, 0, target.dataset.field);
+        await patchValue(cardId, null, "profit");
+        const profitElement = card.querySelector('.profit');
+        profitElement.textContent = ' ';
+        if(auctionTab.classList.contains('singles')){
+            const newAuctionProfit = SinglesProfit(cards);
+            auctionTab.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+            const auctionId = auctionTab.getAttribute('data-id');
+            await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
+            await updateInventoryValueAndTotalProfit();
+        } else{
+            await calculateAuctionProfit(auctionTab, target);
+            await updateInventoryValueAndTotalProfit();
+        }
     }
 }
 
@@ -413,246 +427,253 @@ async function loadAuctionContent(button) {
             if(isEmpty(cards)){
                 cardsContainer.innerHTML = '<div><p>Empty</p></div>';
             }else{
-
-            cardsContainer.innerHTML = `
-                <div class="cards-header">
-                    <p>Card name</p>
-                    <p>Card number</p>
-                    <p>Condition</p>
-                    <p>Buy price</p>
-                    <p>Market value</p>
-                    <p>Sell price</p>
-                    <p>Sold</p>
-                    <p>Sold CM</p>
-                    <p>Profit</p>
-                </div>
-            `;
-            cards.forEach(card => {
-                const cardDiv = document.createElement('div');
-                cardDiv.classList.add('card');
-
-                cardDiv.innerHTML = `
-                    ${renderField(card.card_name, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
-                    ${renderField(card.card_num, 'text', ['card-info', 'card-num'], 'Card Number', 'card_num')}
-                    <p class='card-info condition' data-field="condition">${card.condition ? card.condition : 'Unknown'}</p>
-                    ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
-                    ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
-                    ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
-                    <input type="checkbox" class='card-info-checkbox sold' ${card.sold ? 'checked' : ''}>
-                    <input type="checkbox" class='card-info-checkbox sold-cm' ${card.sold_cm ? 'checked' : ''}>
-                    ${renderField(card.profit != null ? card.profit + '€' : ' ', 'text', ['card-info', 'profit'], 'Profit', 'profit')}
-                    <span hidden class = "card-id">${card.id}</span>
-                    <button class=delete-card data-id="${card.id}">Delete</button>
+                cardsContainer.innerHTML = `
+                    <div class="cards-header">
+                        <p>Card name</p>
+                        <p>Card number</p>
+                        <p>Condition</p>
+                        <p>Buy price</p>
+                        <p>Market value</p>
+                        <p>Sell price</p>
+                        <p>Sold</p>
+                        <p>Sold CM</p>
+                        <p>Profit</p>
+                    </div>
                 `;
-                cardsContainer.appendChild(cardDiv);
-            });
-            const buttonDiv = document.createElement('div');
-            buttonDiv.classList.add('button-container');
-            buttonDiv.innerHTML = `
-                    <div><button class="add-cards-auction">Add cards</button></div>
-                    <div><button class="save-added-cards">Save</button></div>
-            `;
-            cardsContainer.appendChild(buttonDiv);
-            cardsContainer.querySelector('.save-added-cards').hidden = true;
+                cards.forEach(card => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.classList.add('card');
 
+                    cardDiv.innerHTML = `
+                        ${renderField(card.card_name, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
+                        ${renderField(card.card_num, 'text', ['card-info', 'card-num'], 'Card Number', 'card_num')}
+                        <p class='card-info condition' data-field="condition">${card.condition ? card.condition : 'Unknown'}</p>
+                        ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
+                        ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
+                        ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
+                        <input type="checkbox" class='card-info-checkbox sold' ${card.sold ? 'checked' : ''} data-field="sold">
+                        <input type="checkbox" class='card-info-checkbox sold-cm' ${card.sold_cm ? 'checked' : '' } data-field="sold_cm">
+                        ${renderField(card.profit != null ? card.profit + '€' : ' ', 'text', ['card-info', 'profit'], 'Profit', 'profit')}
+                        <span hidden class = "card-id">${card.id}</span>
+                        <button class=delete-card data-id="${card.id}">Delete</button>
+                    `;
+                    cardsContainer.appendChild(cardDiv);
+                });
 
-            cardsContainer.addEventListener('dblclick', (event) => {
-                if (event.target.closest('.card') && !(event.target.tagName === "DIV") && !(event.target.classList.contains('profit'))) {
-                    const cardDiv = event.target.closest('.card');
-                    const cardId = cardDiv.querySelector('.card-id').textContent;
-                    if (event.target.classList.contains('condition')) {
-                        const value = event.target.textContent;
-                        const select = document.createElement('select');
-                        const options = ['Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
-                        const dataset = event.target.dataset.field;
-                        options.forEach(option => {
-                            const opt = document.createElement('option');
-                            opt.value = option;
-                            opt.textContent = option;
-                            if (option === value) {
-                                opt.selected = true;
-                            }
-                            select.appendChild(opt);
-                        });
-                        event.target.replaceWith(select);
-                        select.classList.add(...event.target.classList, 'select-condition');
-                        select.addEventListener('change', (event) => {
-                            const selectedValue = event.target.value;
-                            const p = document.createElement('p');
-                            p.classList.add('card-info', 'condition');
-                            p.textContent = selectedValue || value;
-                            select.replaceWith(p);
-                            patchValue(cardId, p.textContent, dataset);
-                        });
-                    }
-                    if (event.target.tagName === "P") {
-                        let value = event.target.textContent.replace('€','');
-                        if(isNaN(value)){
-                            value = value.toUpperCase();
+                cardsContainer.addEventListener('dblclick', (event) => {
+                    if (event.target.closest('.card') && !(event.target.tagName === "DIV") && !(event.target.classList.contains('profit'))) {
+                        const cardDiv = event.target.closest('.card');
+                        const cardId = cardDiv.querySelector('.card-id').textContent;
+                        if (event.target.classList.contains('condition')) {
+                            const value = event.target.textContent;
+                            const select = document.createElement('select');
+                            const options = ['Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
+                            const dataset = event.target.dataset.field;
+                            options.forEach(option => {
+                                const opt = document.createElement('option');
+                                opt.value = option;
+                                opt.textContent = option;
+                                if (option === value) {
+                                    opt.selected = true;
+                                }
+                                select.appendChild(opt);
+                            });
+                            event.target.replaceWith(select);
+                            select.classList.add(...event.target.classList, 'select-condition');
+                            select.addEventListener('change', (event) => {
+                                const selectedValue = event.target.value;
+                                const p = document.createElement('p');
+                                p.classList.add('card-info', 'condition');
+                                p.textContent = selectedValue || value;
+                                select.replaceWith(p);
+                                patchValue(cardId, p.textContent, dataset);
+                            });
                         }
-                        const dataset = event.target.dataset.field;
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.value = value;
-                        input.classList.add(...event.target.classList);
-                        event.target.replaceWith(input);
-                        input.focus();
-                        input.addEventListener('blur', async(blurEvent) => {
-                            let newValue = blurEvent.target.value.replace(',', '.');
-                            if(isNaN(newValue)){
-                                newValue = newValue.toUpperCase();
+                        if (event.target.tagName === "P") {
+                            let value = event.target.textContent.replace('€','');
+                            if(isNaN(value)){
+                                value = value.toUpperCase();
                             }
-                            const auctionTab = blurEvent.target.closest('.auction-tab');
+                            const dataset = event.target.dataset.field;
+                            const input = document.createElement('input');
+                            input.type = 'text';
+                            input.value = value;
+                            input.classList.add(...event.target.classList);
+                            event.target.replaceWith(input);
+                            input.focus();
+                            input.addEventListener('blur', async(blurEvent) => {
+                                let newValue = blurEvent.target.value.replace(',', '.');
+                                if(isNaN(newValue)){
+                                    newValue = newValue.toUpperCase();
+                                }
+                                const auctionTab = blurEvent.target.closest('.auction-tab');
 
-                            getInputValueAndPatch(newValue || value, input, dataset, cardId);
-                            if (blurEvent.target.classList.contains('card-price') || blurEvent.target.classList.contains('sell-price')) {
-                                if (auctionTab.classList.contains('singles')){
-                                // Recalculate profit
-                                    if (cardDiv) {
-                                        const buyInput = cardDiv.querySelector('.card-price');
-                                        const sellInput = cardDiv.querySelector('.sell-price');
-                                        const profitElement = cardDiv.querySelector('.profit');
-                                        const checkbox = cardDiv.querySelector('.sold');
-                                        const checkboxCm = cardDiv.querySelector('.sold-cm');
-                                        let profit;
+                                getInputValueAndPatch(newValue || value, input, dataset, cardId);
+                                if (blurEvent.target.classList.contains('card-price') || blurEvent.target.classList.contains('sell-price')) {
+                                    if (auctionTab.classList.contains('singles')){
+                                    // Recalculate profit
+                                        if (cardDiv) {
+                                            const buyInput = cardDiv.querySelector('.card-price');
+                                            const sellInput = cardDiv.querySelector('.sell-price');
+                                            const profitElement = cardDiv.querySelector('.profit');
+                                            const checkbox = cardDiv.querySelector('.sold');
+                                            const checkboxCm = cardDiv.querySelector('.sold-cm');
+                                            let profit;
 
-                                        // Determine updated buy/sell values
-                                        let buyValue = buyInput ? buyInput.textContent.replace('€', '').trim() : '';
-                                        let sellValue = sellInput ? sellInput.textContent.replace('€', '').trim() : '';
+                                            // Determine updated buy/sell values
+                                            let buyValue = buyInput ? buyInput.textContent.replace('€', '').trim() : '';
+                                            let sellValue = sellInput ? sellInput.textContent.replace('€', '').trim() : '';
 
-                                        if (blurEvent.target.classList.contains('card-price')) {
-                                            buyValue = blurEvent.target.value.replace('€', '').trim();
+                                            if (blurEvent.target.classList.contains('card-price')) {
+                                                buyValue = blurEvent.target.value.replace('€', '').trim();
+                                            }
+                                            if (blurEvent.target.classList.contains('sell-price')) {
+                                                sellValue = blurEvent.target.value.replace('€', '').trim();
+                                            }
+
+                                            if (checkbox.checked){
+                                                profit = Number(sellValue) - Number(buyValue);
+                                                checkboxCm.checked = false;
+                                                updateSoldStatus(cardId, true,"sold");
+                                            } else if(checkboxCm.checked){
+                                                profit = ((Number(sellValue) * 0.95) - Number(buyValue)).toFixed(2);
+                                                updateSoldStatus(cardId, true,"sold_cm");
+                                            }
+
+                                            if (profitElement) {
+                                                const profitDataSet = profitElement.dataset.field;
+                                                replaceWithPElement(profitDataSet, profit, profitElement);
+                                                patchValue(cardId, profit, profitDataSet);
+                                                const auction = cardDiv.closest('.auction-tab');
+                                                const auctionId = auction.getAttribute('data-id')
+                                                const newAuctionProfit = SinglesProfit(auction.querySelectorAll('.card'));
+                                                updateAuction(auctionId, newAuctionProfit, 'auction_profit');
+                                                auction.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+                                                await updateInventoryValueAndTotalProfit()
+                                            }
                                         }
-                                        if (blurEvent.target.classList.contains('sell-price')) {
-                                            sellValue = blurEvent.target.value.replace('€', '').trim();
-                                        }
-
-                                        if (checkbox.checked){
-                                            profit = Number(sellValue) - Number(buyValue);
-                                            checkboxCm.checked = false;
-                                            updateSoldStatus(cardId, true,"sold");
-                                        } else if(checkboxCm.checked){
-                                            profit = ((Number(sellValue) * 0.95) - Number(buyValue)).toFixed(2);
-                                            updateSoldStatus(cardId, true,"sold_cm");
-                                        }
-
-                                        if (profitElement) {
-                                            const profitDataSet = profitElement.dataset.field;
-                                            replaceWithPElement(profitDataSet, profit, profitElement);
-                                            patchValue(cardId, profit, profitDataSet);
-                                            const auction = cardDiv.closest('.auction-tab');
-                                            const auctionId = auction.getAttribute('data-id')
-                                            const newAuctionProfit = SinglesProfit(auction.querySelectorAll('.card'));
-                                            updateAuction(auctionId, newAuctionProfit, 'auction_profit');
-                                            auction.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
-                                            await updateInventoryValueAndTotalProfit()
-                                        }
+                                    }else{
+                                        const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox')
+                                        const auctionTab = checkboxes[0].closest('.auction-tab')
+                                        calculateAuctionProfit(auctionTab,null);
+                                        await updateInventoryValueAndTotalProfit();
                                     }
-                                }else{
-                                    const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox')
-                                    const auctionTab = checkboxes[0].closest('.auction-tab')
-                                    calculateAuctionProfit(auctionTab,null);
-                                    await updateInventoryValueAndTotalProfit();
+                                }
+                            });
+                            input.addEventListener('keydown', (event) => {
+                                if (event.key === 'Enter') {
+                                    input.blur();
+                                }
+                            });
+                        }
+                    }
+                });
+
+                const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox');
+                const auctionTab = checkboxes[0].closest('.auction-tab')
+
+                checkboxes.forEach((checkbox) => {
+                    checkbox.addEventListener('click', async (event) => {
+                        const target = event.target;
+                        const card = target.closest('.card');
+                        const cardId = card.querySelector('.card-id').textContent;
+                        const cards = auctionTab.querySelectorAll('.card');
+                        if(!event.target.checked){
+                            checkboxHandling(cards, card, cardId, target, auctionTab, false);
+                        }else{
+                            //check if auction_price is set for non-singles
+                            if(!(auctionTab.classList.contains('singles'))){
+                                const auctionPriceElement = auctionTab.querySelector('.auction-price');
+                                if(auctionPriceElement.tagName === "INPUT"){
+                                    setAuctionBuyPrice(cards, auctionTab);
                                 }
                             }
-                        });
-                        input.addEventListener('keydown', (event) => {
-                            if (event.key === 'Enter') {
-                                input.blur();
-                            }
-                        });
-                    }
-                }
-            });
 
-            const checkboxes = cardsContainer.querySelectorAll('.card-info-checkbox');
-            const auctionTab = checkboxes[0].closest('.auction-tab')
-
-            checkboxes.forEach((checkbox) => {
-                checkbox.addEventListener('click', async (event) => {
-                    const target = event.target;
-                    const card = target.closest('.card');
-                    const cardId = card.querySelector('.card-id').textContent;
-                    const cards = auctionTab.querySelectorAll('.card');
-                    if(!event.target.checked){
-                        checkboxHandling(cards, card, cardId, target, auctionTab, false);
-                    }else{
-                        checkboxHandling(cards, card, cardId, target, auctionTab, true);
-                    }
-                }, false);
-            });
-
-            const inputFields = cardsContainer.querySelectorAll('input[type="text"]');
-            inputFields.forEach((input) =>{
-                input.addEventListener('blur', async (event) =>{
-                    const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
-                    const value = event.target.value.replace(',', '.');
-                    const dataset = event.target.dataset;
-                    getInputValueAndPatch(value, input, dataset.field, cardId);
-                    await updateInventoryValueAndTotalProfit();
-                })
-                input.addEventListener('keydown', (event) => {
-                    if(event.key === 'Enter'){
-                        input.blur();
-                    }
+                            checkboxHandling(cards, card, cardId, target, auctionTab, true);
+                        }
+                    }, false);
                 });
-            });
 
-            const deleteCard = document.querySelectorAll('.delete-card');
-            deleteCard.forEach((button) => {
-                button.addEventListener('click', async () => {
-                    const cardId = button.getAttribute('data-id');
-                    const cardDiv = button.closest('.card');
-                    const cardsContainer = button.closest('.cards-container');
-                    const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
-                    if(button.textContent === 'Confirm'){
-                        const auctionDiv = cardsContainer.closest('.auction-tab');
-                        const deleted = await removeCard(cardId, cardDiv);
-                        const cards = cardsContainer.querySelectorAll('.card');
-                        if(!deleted) return;
-                        if(auctionDiv.classList.contains('singles')){
-                            const newAuctionProfit = SinglesProfit(cards);
-                            auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
-                            await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
-                            await updateInventoryValueAndTotalProfit()
-                            if (cardsContainer.childElementCount === 1){
-                                const p = document.createElement('p');
-                                p.textContent = 'Empty';
-                                cardsContainer.appendChild(p);
-                            }
-                        }else{
-                            await setAuctionBuyPrice(cards, auctionDiv);
-                            await calculateAuctionProfit(auctionDiv, null);
-                            await updateInventoryValueAndTotalProfit();
+                const inputFields = cardsContainer.querySelectorAll('input[type="text"]');
+                inputFields.forEach((input) =>{
+                    input.addEventListener('blur', async (event) =>{
+                        const cardId = event.target.closest('.card').querySelector('.card-id').textContent;
+                        const value = event.target.value.replace(',', '.');
+                        const dataset = event.target.dataset;
+                        getInputValueAndPatch(value, input, dataset.field, cardId);
+                        await updateInventoryValueAndTotalProfit();
+                    })
+                    input.addEventListener('keydown', (event) => {
+                        if(event.key === 'Enter'){
+                            input.blur();
+                        }
+                    });
+                });
 
-                        }
-                        if (cardsContainer.childElementCount === 1){
-                            if(!(auctionDiv.classList.contains('singles'))){
-                                deleteAuction(auctionId, auctionDiv);
+                const deleteCard = document.querySelectorAll('.delete-card');
+                deleteCard.forEach((button) => {
+                    button.addEventListener('click', async () => {
+                        const cardId = button.getAttribute('data-id');
+                        const cardDiv = button.closest('.card');
+                        const cardsContainer = button.closest('.cards-container');
+                        console.log(cardsContainer.childElementCount);
+                        const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
+                        if(button.textContent === 'Confirm'){
+                            const auctionDiv = cardsContainer.closest('.auction-tab');
+                            const deleted = await removeCard(cardId, cardDiv);
+                            const cards = cardsContainer.querySelectorAll('.card');
+                            if(!deleted) return;
+                            if(auctionDiv.classList.contains('singles')){
+                                const newAuctionProfit = SinglesProfit(cards);
+                                auctionDiv.querySelector('.auction-profit').textContent = appendEuroSign(newAuctionProfit, 'auction-profit');
+                                await updateAuction(auctionId, newAuctionProfit, 'auction_profit');
+                                await updateInventoryValueAndTotalProfit()
+                                if (cardsContainer.childElementCount < 3){
+                                    const p = document.createElement('p');
+                                    p.textContent = 'Empty';
+                                    cardsContainer.insertBefore(p, cardsContainer.querySelector('.button-container'));
+                                }
+                            }else{
+                                await setAuctionBuyPrice(cards, auctionDiv);
+                                await calculateAuctionProfit(auctionDiv, null);
+                                await updateInventoryValueAndTotalProfit();
+
                             }
-                        }
-                    } else{
-                        // First click: ask for confirmation
-                        button.textContent = 'Confirm';
-                        const timerID = setTimeout(() => {
-                            button.textContent = 'Delete';
-                        }, 3000);
-                        // Remove confirmation if user clicks elsewhere
-                        document.addEventListener('click', function handler(e) {
-                            if (e.target !== button) {
+                            if (cardsContainer.childElementCount < 3){
+                                if(!(auctionDiv.classList.contains('singles'))){
+                                    deleteAuction(auctionId, auctionDiv);
+                                }
+                            }
+                        } else{
+                            // First click: ask for confirmation
+                            button.textContent = 'Confirm';
+                            const timerID = setTimeout(() => {
                                 button.textContent = 'Delete';
-                                document.removeEventListener('click', handler);
-                                clearTimeout(timerID);
-                            }
-                        });
-                    }
+                            }, 3000);
+                            // Remove confirmation if user clicks elsewhere
+                            document.addEventListener('click', function handler(e) {
+                                if (e.target !== button) {
+                                    button.textContent = 'Delete';
+                                    document.removeEventListener('click', handler);
+                                    clearTimeout(timerID);
+                                }
+                            });
+                        }
+                    });
                 });
-            });
-        }
+            }
         } else{
             cardsContainer.style.display = 'none';
             button.textContent = 'View';
         }
+        const buttonDiv = document.createElement('div');
+        buttonDiv.classList.add('button-container');
+        buttonDiv.innerHTML = `
+            <div><button class="add-cards-auction">Add cards</button></div>
+            <div><button class="save-added-cards">Save</button></div>
+            `;
+        cardsContainer.appendChild(buttonDiv);
+        cardsContainer.querySelector('.save-added-cards').hidden = true;
 
         const addCardButton = cardsContainer.querySelector('.add-cards-auction');
         addCardButton.addEventListener('click', () => {
@@ -759,9 +780,6 @@ async function loadAuctionContent(button) {
                     await setAuctionBuyPrice(cards, auctionTab);
                     await calculateAuctionProfit(auctionTab, null);
                     await updateInventoryValueAndTotalProfit();
-                    /*const newAuctionBuyPrice = calculateAuctionBuyPrice(cards);
-                    await updateAuction(auctionId, newAuctionBuyPrice, 'auction_price');
-                    auctionDiv.querySelector('.auction-price').textContent = appendEuroSign(newAuctionBuyPrice, 'auction-price');*/
                 }
 
                 newCards.forEach(card => card.classList.remove('new-card'));

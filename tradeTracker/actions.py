@@ -565,8 +565,8 @@ def getImportantCollums(cards, columns):
             data.append(dict(temp))
     return data
 
-def updateOneCard(db, name, num, sellPrice):
-    cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND sold = 0 AND sold_cm = 0 LIMIT 1", (name, num)).fetchone()
+def updateOneCard(db, name, num, condition, sellPrice):
+    cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND condition = ? AND sold = 0 AND sold_cm = 0 LIMIT 1", (name, num, condition)).fetchone()
     if cardId:
         date = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
         db.execute("UPDATE cards SET sell_price = ?, sold_cm = ?, sold_date = ? WHERE id = ?", (sellPrice, 1, date, cardId['id']))
@@ -584,14 +584,13 @@ def updateOneCard(db, name, num, sellPrice):
             "JOIN auctions a ON c.auction_id = a.id " \
             "WHERE a.id = ?", (card['auction_id'], )).fetchall()
             totalSellPrice = 0
-            if all(row['sold'] == 1 or row['sold_cm'] == 1 for row in cards):
-                for item in cards:
-                    if(item['sold_cm'] == 1):
-                        totalSellPrice += item['sell_price'] * 0.95
-                    else:
-                        totalSellPrice += item['sell_price']
-                totalProfit = round(totalSellPrice - cards[0]['auction_price'], 2)
-                db.execute("UPDATE auctions SET auction_profit = ? WHERE id = ?", (totalProfit, card['auction_id']))
+            for item in cards:
+                if(item['sold_cm'] == 1):
+                    totalSellPrice += item['sell_price'] * 0.95
+                else:
+                    totalSellPrice += item['sell_price']
+            totalProfit = round(totalSellPrice - cards[0]['auction_price'], 2)
+            db.execute("UPDATE auctions SET auction_profit = ? WHERE id = ?", (totalProfit, card['auction_id']))
         db.commit()
         return
     else:
@@ -677,7 +676,7 @@ def importSoldCSV():
             # Update database
             db = get_db()
             for item in dataList:
-                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get("Price"))
+                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get('condition'), item.get('Price'))
 
             # Save updated check file
             existingOrderID = sorted(existingOrderID, key=int)
