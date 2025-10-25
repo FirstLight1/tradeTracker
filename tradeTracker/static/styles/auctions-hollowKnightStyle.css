@@ -52,6 +52,16 @@ h1 {
   text-align: center;
 }
 
+.search-bar{
+  text-align: center;
+  align-items: center;
+  padding-bottom: 25px;
+}
+
+.search-field{
+  width: 50%;
+}
+
 
 
 /* Navigation */

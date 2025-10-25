@@ -412,6 +412,18 @@ export async function updateInventoryValueAndTotalProfit() {
         }
 }
 
+function searchBar(){
+    const searchInput = document.querySelector('.search-field')
+    const searchBtn = document.querySelector('.search-btn')
+    searchInput.addEventListener('keydown', (event) =>{
+        if(event.key == 'Enter'){
+            console.log(searchInput.value);
+        }
+    })
+    searchBtn.addEventListener('click', () =>{
+        console.log(searchInput.value)
+    })
+}
 
 async function loadAuctionContent(button) {
     const auctionId = button.getAttribute('data-id');
@@ -982,6 +994,7 @@ async function loadAuctions() {
 }
 
 if(document.title === "Trade Tracker"){
+    searchBar();
     loadAuctions();
     importCSV();
     document.addEventListener('DOMContentLoaded', async () => {
