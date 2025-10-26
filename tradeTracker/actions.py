@@ -691,4 +691,18 @@ def importSoldCSV():
 
     return jsonify({'status': 'success'}), 201
 
+@bp.route('/searchCard', methods=('POST',))
+def search():
+    if request.method == 'POST':
+        card = request.get_json()
+        print(card)
+        db = get_db()
+        match = db.execute('SELECT * FROM cards WHERE card_name LIKE ? OR card_num LIKE ? LIMIT 1',(f'%{card.get('value')}%',
+                                                                                                     f'%{card.get('value')}%')).fetchone()
+        if match == None:
+            return jsonify({'status': 'success','value': None}),200
+        else:
+            return jsonify({'status': 'success','value': dict(match)}),200
+
+
 

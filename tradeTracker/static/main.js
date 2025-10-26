@@ -417,12 +417,30 @@ function searchBar(){
     const searchBtn = document.querySelector('.search-btn')
     searchInput.addEventListener('keydown', (event) =>{
         if(event.key == 'Enter'){
-            console.log(searchInput.value);
+            search(searchInput.value.toUpperCase());
         }
     })
     searchBtn.addEventListener('click', () =>{
-        console.log(searchInput.value)
+        search(searchInput.value.toUpperCase());
     })
+}
+
+async function search(searchPrompt) {
+    const jsonbody = JSON.stringify({value: searchPrompt});
+    console.log(jsonbody)
+    const response = await fetch('/searchCard',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: jsonbody,
+        }
+    )
+    const data = await response.json();
+    if(data.status == "success"){
+        console.log(data.value)
+    }
 }
 
 async function loadAuctionContent(button) {
