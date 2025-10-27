@@ -695,10 +695,14 @@ def importSoldCSV():
 def search():
     if request.method == 'POST':
         card = request.get_json()
-        print(card)
         db = get_db()
-        match = db.execute('SELECT * FROM cards WHERE card_name LIKE ? OR card_num LIKE ? LIMIT 1',(f'%{card.get('value')}%',
-                                                                                                     f'%{card.get('value')}%')).fetchone()
+        if card.get('cardName') == None:
+            match = db.execute('SELECT * FROM cards WHERE card_num LIKE ? LIMIT 1',(f'{card.get('cardNum')}%',)).fetchone() 
+        elif card.get('cardNum') == None:
+            match = db.execute('SELECT * FROM cards WHERE card_num LIKE ? LIMIT 1',(f'{card.get('cardName')}%',)).fetchone() 
+        else:
+            match = db.execute('SELECT * FROM cards WHERE card_name LIKE ? OR card_num LIKE ? LIMIT 1',(f'{card.get('cardName')}%',
+                                                                                                     f'%{card.get('cardNum')}%')).fetchone()
         if match == None:
             return jsonify({'status': 'success','value': None}),200
         else:

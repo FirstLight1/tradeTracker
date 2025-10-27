@@ -421,12 +421,23 @@ function searchBar(){
         }
     })
     searchBtn.addEventListener('click', () =>{
-        search(searchInput.value.toUpperCase());
+        search(searchInput.value.toUpperCase().trim());
     })
 }
 
 async function search(searchPrompt) {
-    const jsonbody = JSON.stringify({value: searchPrompt});
+    let cardName = null;
+    let cardNum = null;
+    let splitSearchQuery = searchPrompt.split(" ")
+    cardNum = splitSearchQuery[splitSearchQuery.length - 1]
+    console.log(splitSearchQuery)
+    splitSearchQuery.pop()
+    console.log(splitSearchQuery.length)
+    //if(splitSearchQuery.length !== 0){
+        cardName = splitSearchQuery.join(" ") || null;
+    //}
+
+    const jsonbody = JSON.stringify({cardName: cardName, cardNum: cardNum});
     console.log(jsonbody)
     const response = await fetch('/searchCard',
         {
