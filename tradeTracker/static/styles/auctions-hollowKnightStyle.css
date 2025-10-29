@@ -56,14 +56,43 @@ h1 {
   text-align: center;
   align-items: center;
   padding-bottom: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .search-field{
   width: 50%;
 }
 
+.search-results {
+  width: 57%;
+  text-align: left;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+}
 
-
+.search-results div {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid rgba(127, 255, 212, 0.15);
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(26, 31, 46, 0.9) 0%,
+    rgba(13, 17, 23, 0.9) 100%
+  );
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(147, 112, 219, 0.1);
+  backdrop-filter: blur(10px);
+}
 /* Navigation */
 .nav-bar {
   background: linear-gradient(

@@ -412,17 +412,22 @@ export async function updateInventoryValueAndTotalProfit() {
         }
 }
 
+
 function searchBar(){
-    const searchInput = document.querySelector('.search-field')
-    const searchBtn = document.querySelector('.search-btn')
-    searchInput.addEventListener('keydown', (event) =>{
+    const searchInput = document.querySelector('.search-field');
+    const searchBtn = document.querySelector('.search-btn');
+    let results = null;
+    searchInput.addEventListener('keydown', async (event) =>{
         if(event.key == 'Enter'){
-            search(searchInput.value.toUpperCase());
+            results = await search(searchInput.value.toUpperCase());
+            displaySearchResults(results);
         }
     })
-    searchBtn.addEventListener('click', () =>{
-        search(searchInput.value.toUpperCase().trim());
-    })
+    searchBtn.addEventListener('click', async () =>{
+    results = await search(searchInput.value.toUpperCase().trim());
+    displaySearchResults(results);
+    });
+   
 }
 
 async function search(searchPrompt) {
@@ -430,15 +435,9 @@ async function search(searchPrompt) {
     let cardNum = null;
     let splitSearchQuery = searchPrompt.split(" ")
     cardNum = splitSearchQuery[splitSearchQuery.length - 1]
-    console.log(splitSearchQuery)
     splitSearchQuery.pop()
-    console.log(splitSearchQuery.length)
-    //if(splitSearchQuery.length !== 0){
-        cardName = splitSearchQuery.join(" ") || null;
-    //}
-
+    cardName = splitSearchQuery.join(" ") || null;
     const jsonbody = JSON.stringify({cardName: cardName, cardNum: cardNum});
-    console.log(jsonbody)
     const response = await fetch('/searchCard',
         {
             method: 'POST',
@@ -450,8 +449,37 @@ async function search(searchPrompt) {
     )
     const data = await response.json();
     if(data.status == "success"){
-        console.log(data.value)
+        console.log(data.value);
+        return data.value;
+    }else{
+        console.error('Search failed');
     }
+}
+
+function displaySearchResults(results){
+    const searchContainer = document.querySelector('.search-results');
+    searchContainer.innerHTML = ''; // Clear previous results
+    
+    if (!results || results.length === 0) {
+        searchContainer.innerHTML = '<p>No results found</p>';
+        return;
+    }
+    
+    results.forEach(result => {
+        const div = document.createElement('div');
+        div.classList.add('search-result-item');
+        
+        // Display in desired order, with proper formatting
+        div.innerHTML = `
+            <p class="result-card-name">${result.card_name || 'N/A'}</p>
+            <p class="result-card-num">${result.card_num || 'N/A'}</p>
+            <p class="result-condition">${result.condition || 'Unknown'}</p>
+            <p class="result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
+            <p class="result-auction-name">${result.auction_name || 'N/A'}</p>
+        `;
+        
+        searchContainer.appendChild(div);
+    });
 }
 
 async function loadAuctionContent(button) {
