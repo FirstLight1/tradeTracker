@@ -247,6 +247,11 @@ def renderAuctions():
 def renderAddCardsToCollection():
     return render_template("addCardsToCollection.html")
 
+
+@bp.route('/sold')
+def sold():
+    return render_template("sold.html")
+
 @bp.route('/add', methods=('GET', 'POST'))
 def add():
     if request.method == 'POST':
@@ -287,13 +292,20 @@ def add():
 @bp.route('/loadAuctions')
 def loadAuctions():
     db = get_db()
-    auctions = db.execute('SELECT * FROM auctions').fetchall()
+    auctions = db.execute(
+        'SELECT DISTINCT a.* FROM auctions a '
+        'LEFT JOIN cards c ON a.id = c.auction_id '
+        'WHERE a.id = 1 OR (c.sold = 0 AND c.sold_cm = 0)'
+    ).fetchall()
     return jsonify([dict(auction) for auction in auctions])
 
 @bp.route('/loadCards/<int:auction_id>')
 def loadCards(auction_id):
     db = get_db()
-    cards = db.execute('SELECT * FROM cards WHERE auction_id = ?', (auction_id,)).fetchall()
+    if auction_id == 1:
+        cards = db.execute('SELECT * FROM cards WHERE auction_id = 1').fetchall()
+        return jsonify([dict(card) for card in cards]),200
+    cards = db.execute('SELECT * FROM cards WHERE auction_id = ? AND sold = 0 AND sold_cm = 0', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards]),200
 
 @bp.route('/inventoryValue')
@@ -334,7 +346,7 @@ def update(card_id):
     field = data.get("field")
     value = data.get("value")
     allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit", "sold_date"}
-    
+    print(field, value)
     if field == "sold" and value == True:
         db.execute('UPDATE cards SET sold_cm = 0 WHERE id = ?', (card_id,))
     elif field == "sold_cm" and value == True:
@@ -370,6 +382,12 @@ def addToExistingAuction(auction_id):
         )
         db.commit()
         return jsonify({'status': 'success'}), 201
+    
+@bp.route('/loadSoldCards')
+def loadSoldCards():
+    db = get_db()
+    cards = db.execute('SELECT * FROM cards WHERE sold = 1 OR sold_cm = 1').fetchall()
+    return jsonify([dict(card) for card in cards])
 
 @bp.route('/addToCollecton', methods=('GET','POST'))
 def addToCollection():

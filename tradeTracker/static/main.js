@@ -235,9 +235,9 @@ async function calculateAuctionProfit(auction, target){
     let totalSellValue = 0;
     if (target != null) {
         if(changeCheckboxState(target)){
-            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold');
+            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), target.checked, 'sold');
         }else{
-            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), true, 'sold_cm');
+            await updateSoldStatus(target.closest('.card').querySelector('.card-id').textContent.trim(), target.checked, 'sold_cm');
         }
     }
 
@@ -277,7 +277,7 @@ async function checkboxHandling(cards, card, cardId, target, auctionTab, isSold)
         }
     }else{
         await patchValue(cardId, null, "sold_date");
-        await patchValue(cardId, 0, target.dataset.field);
+        await patchValue(cardId, isSold, target.dataset.field);
         await patchValue(cardId, null, "profit");
         const profitElement = card.querySelector('.profit');
         profitElement.textContent = ' ';
@@ -338,6 +338,38 @@ async function updateAuction(auctionId, value, field){
 
 function isEmpty(obj) {
     return Object.keys(obj).length === 0;
+}
+
+function soldReportBtn(){
+    const salesBtn = document.querySelector('.sales-btn');
+    salesBtn.addEventListener('click', () =>{
+        const div = document.createElement('div');
+        div.classList.add('sold-report-container');
+        div.innerHTML = `
+            <div class="sold-report-content">
+                <form class="sold-report-form" action="/generateSoldReport" method="get">
+                <div>
+                    <label for="sold-month">Month:</label>
+                    <input type="number" id="sold-month" name="sold-month" min="1" max="12" required value=${new Date().getMonth()}>
+                </div>
+                <div>
+                    <label for="sold-year">Year:</label>
+                    <input type="number" id="sold-year" name="sold-year" min="2000" max="2100" required value=${new Date().getFullYear()}>
+                </div>
+                <div class="generate-report-button">
+                    <button type="submit">Generate Report</button>
+                </div>
+                </form>
+            </div>
+    `;
+        document.body.appendChild(div);
+        div.addEventListener('click', (event) => {
+            if (event.target === div) {
+                div.remove();
+
+            }
+        });
+    });
 }
 
 function importCSV(){
@@ -449,7 +481,6 @@ async function search(searchPrompt) {
     )
     const data = await response.json();
     if(data.status == "success"){
-        console.log(data.value);
         return data.value;
     }else{
         console.error('Search failed');
@@ -710,7 +741,6 @@ async function loadAuctionContent(button) {
                         const cardId = button.getAttribute('data-id');
                         const cardDiv = button.closest('.card');
                         const cardsContainer = button.closest('.cards-container');
-                        console.log(cardsContainer.childElementCount);
                         const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
                         if(button.textContent === 'Confirm'){
                             const auctionDiv = cardsContainer.closest('.auction-tab');
@@ -1073,13 +1103,15 @@ async function loadAuctions() {
     } catch (error) {
         console.error('Error loading auctions:', error);
     }
-
 }
+
+
 
 if(document.title === "Trade Tracker"){
     searchBar();
     loadAuctions();
     importCSV();
+    soldReportBtn();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
     }, false);

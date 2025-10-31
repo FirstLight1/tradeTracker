@@ -316,6 +316,63 @@ input[type="file"] {
   cursor: pointer;
 }
 
+
+
+.sold-report-container {
+  height: 120px;
+  width: 250px;
+  position: absolute;
+  top:160px;
+  background-color: var(--primary-dark);
+  border: 1px solid rgba(127, 255, 212, 0.15);
+  padding: 20px;
+  z-index: 1000;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(147, 112, 219, 0.1);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-evenly;
+}
+
+.sold-report-container form div {
+  margin-top: 15px;
+}
+
+.sold-report-container label {
+  margin-right: 10px;
+}
+
+.sold-report-container button:hover {
+  border-radius: 15px;
+  box-shadow: 0 0 24px var(--glow-color), 0 0 12px var(--mist-color), 0 0 10px var(--mist-color);
+}
+
+.sold-report-container button {
+  padding: 5px 15px;
+  font-size: 14px;
+  transition: all 0.2s ease-in-out;
+  border: 1px solid transparent;
+}
+
+.sold-report-container input{
+  width: 60px;
+  padding: 5px;
+  border: 1px solid var(--primary-light);
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--text-color);
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(147, 112, 219, 0.1);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+
+}
+
+
 /* Profit values */
 .profit,
 .auction-profit {
