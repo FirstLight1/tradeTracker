@@ -461,7 +461,10 @@ function displaySearchResults(results){
     searchContainer.innerHTML = ''; // Clear previous results
     
     if (!results || results.length === 0) {
-        searchContainer.innerHTML = '<p>No results found</p>';
+         const div = document.createElement('div');
+        div.classList.add('search-result-item');
+        div.innerHTML = '<p>No results found</p>';
+        searchContainer.appendChild(div);
         return;
     }
     
@@ -471,16 +474,38 @@ function displaySearchResults(results){
         
         // Display in desired order, with proper formatting
         div.innerHTML = `
-            <p class="result-card-name">${result.card_name || 'N/A'}</p>
-            <p class="result-card-num">${result.card_num || 'N/A'}</p>
-            <p class="result-condition">${result.condition || 'Unknown'}</p>
-            <p class="result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
-            <p class="result-auction-name">${result.auction_name || 'N/A'}</p>
+            <p class="result result-card-name">${result.card_name || 'N/A'}</p>
+            <p class="result result-card-num">${result.card_num || 'N/A'}</p>
+            <p class="result result-condition">${result.condition || 'Unknown'}</p>
+            <p class="result result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
+            <p class="result result-auction-name">${result.auction_name || result.auction_id-1}</p>
         `;
-        
+        div.addEventListener('click', async() => {
+            const element = document.getElementById(`${result.auction_id}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+            const auctionTab = element.closest('.auction-tab');
+            if (auctionTab) {
+                const viewButton = auctionTab.querySelector('.view-auction');
+                if (viewButton && viewButton.textContent === 'View') {
+                    await loadAuctionContent(viewButton);
+                }
+                const card = auctionTab.querySelector(`.card[data-id='${result.id}']`);
+                if (card) {
+                    //card.scrollIntoView({ behavior: 'smooth' });
+                    card.classList.add('highlighted-search-result');
+                    setTimeout(() => {
+                        card.classList.remove('highlighted-search-result');
+                    }, 2000);
+                }
+            }
+            searchContainer.innerHTML = '';
+        });
         searchContainer.appendChild(div);
     });
 }
+
 
 async function loadAuctionContent(button) {
     const auctionId = button.getAttribute('data-id');
@@ -512,7 +537,7 @@ async function loadAuctionContent(button) {
                 cards.forEach(card => {
                     const cardDiv = document.createElement('div');
                     cardDiv.classList.add('card');
-
+                    cardDiv.setAttribute('data-id', card.id);
                     cardDiv.innerHTML = `
                         ${renderField(card.card_name, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
                         ${renderField(card.card_num, 'text', ['card-info', 'card-num'], 'Card Number', 'card_num')}
@@ -873,6 +898,7 @@ async function loadAuctions() {
         data.forEach(auction => {
             const auctionDiv = document.createElement('div');
             auctionDiv.classList.add('auction-tab');
+            auctionDiv.id = `${auction.id}`;
             if(auction.auction_name === 'Singles'){
                 auctionDiv.classList.add('singles');
             }
