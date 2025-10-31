@@ -421,16 +421,11 @@ def generatePDF(month, year, cards):
         app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker', 'Reports')
         os.makedirs(app_data_dir, exist_ok=True)
         pdf_path = os.path.join(app_data_dir, f'Report_{month}_{year}.pdf')
-        font_dir = os.path.join(sys._MEIPASS, 'tradeTracker', 'static', 'fonts')
     else:
         # Running in development
         reports_dir = os.path.join(current_app.instance_path, 'reports')
         os.makedirs(reports_dir, exist_ok=True)
         pdf_path = os.path.join(reports_dir, f'Report_{month}_{year}.pdf')
-        font_dir = os.path.join(current_app.root_path, 'static', 'fonts')
-
-    font_path = os.path.join(font_dir, 'DejaVuSans.ttf')
-    font_path_bold = os.path.join(font_dir, 'DejaVuSans-Bold.ttf')
     
     # Create PDF
     pdf = fpdf.FPDF()
