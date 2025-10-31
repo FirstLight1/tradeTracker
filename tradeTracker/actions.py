@@ -7,6 +7,7 @@ import csv
 from werkzeug.utils import secure_filename
 import os
 import sqlite3
+import fpdf
 
 bp = Blueprint('actions', __name__)
 CORS(bp)
@@ -122,7 +123,6 @@ pokemon_sets = {
 
     # Sun & Moon Series
     "Sun & Moon": "SM",
-    "Burning Shadows": "BUS",
     "Shining Legends": "SLG",
     "Crimson Invasion": "CIN",
     "Ultra Prism": "UPR",
@@ -308,6 +308,12 @@ def loadCards(auction_id):
     cards = db.execute('SELECT * FROM cards WHERE auction_id = ? AND sold = 0 AND sold_cm = 0', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards]),200
 
+@bp.route('/loadAllCards/<int:auction_id>')
+def loadAllCards(auction_id):
+    db = get_db()
+    cards = db.execute('SELECT * FROM cards WHERE auction_id = ?', (auction_id,)).fetchall()
+    return jsonify([dict(card) for card in cards]),200
+
 @bp.route('/inventoryValue')
 def invertoryValue():
     db = get_db()
@@ -388,6 +394,103 @@ def loadSoldCards():
     db = get_db()
     cards = db.execute('SELECT * FROM cards WHERE sold = 1 OR sold_cm = 1').fetchall()
     return jsonify([dict(card) for card in cards])
+
+@bp.route('/generateSoldReport', methods=('GET',))
+def generateSoldReport():
+    db = get_db()
+    month = request.args.get('month')
+    year = request.args.get('year')
+    print(month, year)
+    cards = db.execute('SELECT card_name, card_num, card_price, sell_price FROM cards WHERE (sold = 1 OR sold_cm = 1) AND strftime("%Y", sold_date) = ? AND strftime("%m", sold_date) = ?', (year, month)).fetchall()
+    
+    # Convert to list of dicts for easier processing
+    cards_list = [dict(card) for card in cards]
+    
+    try:
+        pdf_path = generatePDF(month, year, cards_list)
+        return jsonify({'status': 'success', 'pdf_path': pdf_path}), 200
+    except Exception as e:
+        print(f"Error generating PDF: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+def generatePDF(month, year, cards):
+    # Determine the save path based on environment
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe
+        app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker', 'Reports')
+        os.makedirs(app_data_dir, exist_ok=True)
+        pdf_path = os.path.join(app_data_dir, f'Report_{month}_{year}.pdf')
+        font_dir = os.path.join(sys._MEIPASS, 'tradeTracker', 'static', 'fonts')
+    else:
+        # Running in development
+        reports_dir = os.path.join(current_app.instance_path, 'reports')
+        os.makedirs(reports_dir, exist_ok=True)
+        pdf_path = os.path.join(reports_dir, f'Report_{month}_{year}.pdf')
+        font_dir = os.path.join(current_app.root_path, 'static', 'fonts')
+
+    font_path = os.path.join(font_dir, 'DejaVuSans.ttf')
+    font_path_bold = os.path.join(font_dir, 'DejaVuSans-Bold.ttf')
+    
+    # Create PDF
+    pdf = fpdf.FPDF()
+    pdf.add_page()
+    
+    font_family = 'Courier'  # Default font
+
+    # Set title
+    pdf.set_font(font_family, '', 16)
+    pdf.cell(0, 10, f'Sales Report - {month}/{year}', 0, 1, 'C')
+    pdf.ln(10)
+    
+    # Add summary
+    pdf.set_font(font_family, '', 12)
+    pdf.cell(0, 10, f'Total Cards Sold: {len(cards)}', 0, 1)
+    pdf.ln(5)
+    
+    # Calculate totals
+    total_buy_price = sum(card['card_price'] or 0 for card in cards)
+    total_sell_price = sum(card['sell_price'] or 0 for card in cards)
+    total_profit = total_sell_price - total_buy_price
+    
+    pdf.cell(0, 8, f'Total Buy Price: {total_buy_price:.2f}', 0, 1)
+    pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}', 0, 1)
+    pdf.cell(0, 8, f'Total Profit: {total_profit:.2f}', 0, 1)
+    pdf.ln(10)
+    
+    # Table header
+    pdf.set_font(font_family, '', 10)
+    pdf.cell(50, 10, 'Card Name', 1, 0, 'C')
+    pdf.cell(35, 10, 'Card Number', 1, 0, 'C')
+    pdf.cell(30, 10, 'Buy Price', 1, 0, 'C')
+    pdf.cell(30, 10, 'Sell Price', 1, 0, 'C')
+    pdf.cell(30, 10, 'Profit', 1, 0, 'C')
+    pdf.ln()
+    
+    # Table content
+    pdf.set_font(font_family, '', 9)
+    for card in cards:
+        card_name = card['card_name'] or 'N/A'
+        card_num = card['card_num'] or 'N/A'
+        buy_price = f"{card['card_price']:.2f}" if card['card_price'] else 'N/A'
+        sell_price = f"{card['sell_price']:.2f}" if card['sell_price'] else 'N/A'
+        card_profit = f"{(card['sell_price'] - card['card_price']):.2f}" if card['sell_price'] and card['card_price'] else 'N/A'
+        
+        # Truncate long card names to fit
+        if len(card_name) > 45:
+            card_name = card_name[:42] + '...'
+
+        pdf.cell(50, 8, card_name, 1, 0, 'L')
+        pdf.cell(35, 8, card_num, 1, 0, 'C')
+        pdf.cell(30, 8, buy_price, 1, 0, 'R')
+        pdf.cell(30, 8, sell_price, 1, 0, 'R')
+        pdf.cell(30, 8, card_profit, 1, 0, 'R')
+        pdf.ln()
+    
+    # Save PDF
+    pdf.output(pdf_path)
+    return pdf_path
+
 
 @bp.route('/addToCollecton', methods=('GET','POST'))
 def addToCollection():
@@ -516,23 +619,22 @@ def cardMarketTable():
             auction_id = cursor.lastrowid
             cardsToInsert = []
             for card in cards:
-                count = card.get('count', 1)
                 marketValue = card.get('marketValue', 0)
                 marketValue = float(marketValue) if marketValue is not None else None
 
                 if marketValue:
                     sellPrice = marketValue
                     buyPrice = round(marketValue * 0.80, 2)
-                for _ in range(int(count)):
-                    cardsToInsert.append((
-                        card.get('name', None),
-                        card.get('num', None),
-                        card.get('condition', None),
-                        buyPrice,
-                        marketValue,
-                        sellPrice,
-                        auction_id
-                    ))
+
+                cardsToInsert.append((
+                    card.get('name', None),
+                    card.get('num', None),
+                    card.get('condition', None),
+                    buyPrice,
+                    marketValue,
+                    sellPrice,
+                    auction_id
+                ))
 
             db.executemany(
                 'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, auction_id) VALUES (?, ?, ?, ?, ?, ?, ?)',

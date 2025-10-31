@@ -231,7 +231,8 @@ async function calculateAuctionProfit(auction, target){
     const auctionPrice = Number(auction.querySelector('.auction-price').textContent.replace('€', '').trim());
     const auctionProfitElement = auction.querySelector('.auction-profit');
     const auctionId = auction.getAttribute('data-id');
-    const cards = auction.querySelectorAll('.card');
+    const cards = await fetch(`/loadAllCards/${auctionId}`).then(response => response.json());
+    console.log(cards)
     let totalSellValue = 0;
     if (target != null) {
         if(changeCheckboxState(target)){
@@ -242,12 +243,12 @@ async function calculateAuctionProfit(auction, target){
     }
 
     cards.forEach(card =>{
-        const sellPrice = Number(card.querySelector('.sell-price').textContent.replace('€', '').trim());
-        const soldCheckbox = card.querySelector('.sold');
-        const soldCmCheckbox = card.querySelector('.sold-cm');
-        if(soldCheckbox.checked){
+        const sellPrice = card.sell_price;
+        const soldCheckbox = card.sold;
+        const soldCmCheckbox = card.sold_cm;
+        if(soldCheckbox){
             totalSellValue += sellPrice;
-        }else if(soldCmCheckbox.checked){
+        }else if(soldCmCheckbox){
             totalSellValue += sellPrice * 0.95;
         }
     });
@@ -347,7 +348,7 @@ function soldReportBtn(){
         div.classList.add('sold-report-container');
         div.innerHTML = `
             <div class="sold-report-content">
-                <form class="sold-report-form" action="/generateSoldReport" method="get">
+                <form class="sold-report-form" method="get">
                 <div>
                     <label for="sold-month">Month:</label>
                     <input type="number" id="sold-month" name="sold-month" min="1" max="12" required value=${new Date().getMonth()}>
@@ -363,13 +364,31 @@ function soldReportBtn(){
             </div>
     `;
         document.body.appendChild(div);
+        const form = div.querySelector('.sold-report-form');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const month = form.querySelector('#sold-month').value;
+            const year = form.querySelector('#sold-year').value;
+            generateSoldReport(month, year, div);
+        });
         div.addEventListener('click', (event) => {
             if (event.target === div) {
                 div.remove();
-
             }
         });
     });
+}
+
+async function generateSoldReport(month, year, div) {
+    const response = await fetch(`/generateSoldReport?month=${month}&year=${year}`);
+    const data = await response.json();
+    if (data.status === 'success') {
+        console.log('Sold report generated successfully');
+        div.remove();
+        // Handle successful report generation (e.g., display a success message)
+    } else {
+        // Handle errors (e.g., display an error message)
+    }
 }
 
 function importCSV(){
