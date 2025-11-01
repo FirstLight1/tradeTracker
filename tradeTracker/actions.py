@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 import os
 import sqlite3
 import fpdf
+import json
 
 bp = Blueprint('actions', __name__)
 CORS(bp)
@@ -25,207 +26,45 @@ conditionDict = {
     "PO" : "Poor"
 }
 
-pokemon_sets = {
-    # --- Mainline Expansion Sets ---
-    # Original (Wizards)
-    "Base Set": "BS",
-    "Jungle": "JU",
-    "Fossil": "FO",
-    "Base Set 2": "B2",
-    "Team Rocket": "TR",
-    "Gym Heroes": "G1",
-    "Gym Challenge": "G2",
+def loadExpansions():
+    # Load expansion sets (works for both development and .exe)
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe - use the app data directory
+        app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker')
+        en_expansions_path = os.path.join(app_data_dir, 'enExpansions.json')
+        jp_expansions_path = os.path.join(app_data_dir, 'jpExpansions.json')
+    else:
+        # Running in development - use the module directory
+        en_expansions_path = os.path.join(os.path.dirname(__file__), r'data\expansions\enExpansions.json')
+        jp_expansions_path = os.path.join(os.path.dirname(__file__), r'data\expansions\jpExpansions.json')
 
-    # Southern Islands & Neo Series
-    "Southern Islands": "SI",
-    "Neo Genesis": "N1",
-    "Neo Discovery": "N2",
-    "Neo Revelation": "N3",
-    "Neo Destiny": "N4",
-    "Legendary Collection": "LC",
+    try:
+        with open(en_expansions_path, mode='r', encoding='utf-8') as infile:
+            data = json.load(infile)
+            # Convert list of single-key dictionaries into one dictionary
+            english_pokemon_sets = {}
+            for item in data:
+                for key, value in item.items():
+                    english_pokemon_sets[key] = value
+    except FileNotFoundError:
+        print(f"Warning: Expansions file not found at {en_expansions_path}")
+        english_pokemon_sets = {}
 
-    # e-Card Series
-    "Expedition Base Set": "EX",
-    "Aquapolis": "AQ",
-    "Skyridge": "SK",
+    try:
+        with open(jp_expansions_path, mode='r', encoding='utf-8') as infile:
+            data = json.load(infile)
+            # Convert list of single-key dictionaries into one dictionary
+            japanese_pokemon_sets = {}
+            for item in data:
+                for key, value in item.items():
+                    japanese_pokemon_sets[key] = value
+    except FileNotFoundError:
+        print(f"Warning: Expansions file not found at {jp_expansions_path}")
+        japanese_pokemon_sets = {}
+    return english_pokemon_sets, japanese_pokemon_sets
 
-    # EX Series (Post-Wizards)
-    "EX Ruby & Sapphire": "RS",
-    "EX Sandstorm": "SS",
-    "EX Dragon": "DR",
-    "EX Team Magma vs Team Aqua": "MA",
-    "EX Hidden Legends": "HL",
-    "EX FireRed & LeafGreen": "FRLG",
-    "EX Team Rocket Returns": "TRR",
-    "EX Deoxys": "DX",
-    "EX Emerald": "EM",
-    "EX Unseen Forces": "UF",
-    "EX Delta Species": "DS",
-    "EX Legend Maker": "LM",
-    "EX Holon Phantoms": "HP",
-    "EX Crystal Guardians": "CG",
-    "EX Dragon Frontiers": "DF",
-    "EX Power Keepers": "PK",
-
-    # Diamond & Pearl Series
-    "Diamond & Pearl": "DP",
-    "Mysterious Treasures": "MT",
-    "Secret Wonders": "SW",
-    "Great Encounters": "GE",
-    "Majestic Dawn": "MD",
-    "Legends Awakened": "LA",
-    "Stormfront": "SF",
-
-    # Platinum Series
-    "Platinum": "PL",
-    "Rising Rivals": "RR",
-    "Supreme Victors": "SV",
-    "Arceus": "AR",
-
-    # HeartGold & SoulSilver Series
-    "HeartGold & SoulSilver": "HS",
-    "Unleashed": "UL",
-    "Undaunted": "UD",
-    "Triumphant": "TM",
-
-    # Call of Legends
-    "Call of Legends": "CL",
-
-    # Black & White Series
-    "Black & White": "BLW",
-    "Emerging Powers": "EPO",
-    "Noble Victories": "NVI",
-    "Next Destinies": "NXD",
-    "Dark Explorers": "DEX",
-    "Dragons Exalted": "DRX",
-    "Dragon Vault": "DRV",
-    "Boundaries Crossed": "BCR",
-    "Plasma Storm": "PLS",
-    "Plasma Freeze": "PLF",
-    "Plasma Blast": "PLB",
-    "Legendary Treasures": "LTR",
-
-    # XY Series
-    "XY": "XY",
-    "Flashfire": "FLF",
-    "Furious Fists": "FFI",
-    "Phantom Forces": "PHF",
-    "Primal Clash": "PRC",
-    "Double Crisis": "DCR",
-    "Roaring Skies": "ROS",
-    "Ancient Origins": "AOR",
-    "BREAKthrough": "BKT",
-    "BREAKpoint": "BKP",
-    "Generations": "GEN",
-    "Fates Collide": "FCO",
-    "Steam Siege": "STS",
-    "Evolutions": "EVO",
-
-    # Sun & Moon Series
-    "Sun & Moon": "SM",
-    "Shining Legends": "SLG",
-    "Crimson Invasion": "CIN",
-    "Ultra Prism": "UPR",
-    "Forbidden Light": "FLI",
-    "Celestial Storm": "CES",
-    "Dragon Majesty": "DRM",
-    "Lost Thunder": "LOT",
-    "Team Up": "TEU",
-    "Detective Pikachu": "DET",
-    "Unbroken Bonds": "UNB",
-    "Unified Minds": "UNM",
-    "Hidden Fates": "HIF",
-    "Cosmic Eclipse": "CEC",
-
-    # Sword & Shield Series
-    "Sword & Shield": "SSH",
-    "Rebel Clash": "RCL",
-    "Darkness Ablaze": "DAA",
-    "Champion’s Path": "CPA",
-    "Vivid Voltage": "VIV",
-    "Shining Fates": "SHF",
-    "Battle Styles": "BST",
-    "Chilling Reign": "CRE",
-    "Evolving Skies": "EVS",
-    "Celebrations": "CEL",
-    "Fusion Strike": "FST",
-    "Brilliant Stars": "BRS",
-    "Astral Radiance": "ASR",
-    "Pokémon GO": "PGO",
-    "Lost Origin": "LOR",
-    "Silver Tempest": "SIT",
-    "Crown Zenith": "CRZ",
-
-    # Scarlet & Violet Series (through August 2025)
-    "Scarlet & Violet": "SVI",
-    "Scarlet & Violet Promos": "SVP",
-    "Scarlet & Violet Energy": "SVE",
-    "Paldea Evolved": "PAL",
-    "Obsidian Flames": "OBF",
-    "151 (Mew)": "MEW",
-    "Paradox Rift": "PAR",
-    "Paldean Fates": "PAF",
-    "Temporal Forces": "TEF",
-    "Twilight Masquerade": "TWM",
-    "Shrouded Fable": "SFA",
-    "Stellar Crown": "SCR",
-    "Surging Sparks": "SSP",
-    "Journey Together": "JTG",
-    "Destined Rivals": "DRI",
-    "Black Bolt & White Flare": "BLK/WHT",
-    "Black Bolt" : "BLK",
-    "White Flare": "WHT",
-
-    # --- Promos, Seasonal, Regional & Digital Collections ---
-    # Black Star Promos (by era)
-    "Nintendo Black Star Promos": "NBSP",
-    "DP Black Star Promos": "DP Promo",
-    "HGSS Black Star Promos": "HGSS Promo",
-    "BW Black Star Promos": "BW Promo",
-    "XY Black Star Promos": "XY Promo",
-    "SM Black Star Promos": "SM Promo",
-    "SWSH Black Star Promos": "SWSH",
-    "SVP Black Star Promos": "SVP Promo",
-
-    # POP Series
-    "POP Series 1": "POP1",
-    "POP Series 2": "POP2",
-    "POP Series 3": "POP3",
-    "POP Series 4": "POP4",
-    "POP Series 5": "POP5",
-    "POP Series 6": "POP6",
-    "POP Series 7": "POP7",
-    "POP Series 8": "POP8",
-    "POP Series 9": "POP9",
-
-    # Miscellaneous, event-based exclusives
-    "Miscellaneous Promotional Cards": "Misc Promo",
-    "World Championships Promos": "WC Promo",
-    "Paldea Collection Promos": "Paldea Promo",
-    "Build & Battle Box Promos": "B&B Promo",
-
-    # Unnumbered or early promos
-    "Unnumbered Promotional Cards": "Unnumbered Promo",
-
-    # Digital Promo Sets / Packs
-    "Sword & Shield Chilling Reign Promo Set": "SWSH CR Promo",
-    "Sword & Shield Evolving Skies Promo Set": "SWSH ES Promo",
-    "Sword & Shield Fusion Strike Promo Set": "SWSH FS Promo",
-    "Sword & Shield Brilliant Stars Promo Set": "SWSH BS Promo",
-    "Sword & Shield Astral Radiance Promo Set": "SWSH AR Promo",
-    "Sword & Shield Silver Tempest Promo Set": "SWSH ST Promo",
-    "Sword & Shield Crown Zenith Promo Set": "SWSH CZ Promo",
-    "Scarlet & Violet Promo Set": "SV Promo",
-    "Scarlet & Violet Paldea Evolved Promo Set": "SV PE Promo",
-    "Pokémon GO Promo Pack": "GO Promo",
-
-    # Regional / Asian promos
-    "SV-P Promotional Cards (Traditional Chinese)": "SV-P",
-    "SM-P Promotional Cards (Simplified Chinese)": "SM-P",
-
-    # TCG Pocket (digital platform)
-    "TCG Pocket Promo-A Series": "Promo-A",
-}
+# Load the expansion sets at module import time
+english_pokemon_sets, japanese_pokemon_sets = loadExpansions()
 
 @bp.route('/addAuction')
 def addAuction():
@@ -667,7 +506,10 @@ def getImportantCollums(cards, columns):
         condition = conditionDict.get(condition)
         price = float(list(d.values())[columns['Expansion'] + 1])
         expansion = list(d.values())[columns['Expansion']]
-        expansion = pokemon_sets.get(expansion)
+        try:
+            expansion = english_pokemon_sets.get(expansion)
+        except:
+            expansion = japanese_pokemon_sets.get(expansion)
         if expansion != None and number != None:
             card_num = expansion +" "+ number
         elif expansion == None:
