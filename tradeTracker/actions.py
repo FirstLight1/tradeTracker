@@ -17,13 +17,13 @@ li = []
 dataList = []
 
 conditionDict = {
-    "MT" : "Mint",
-    "NM" : "Near Mint",
-    "EX" : "Excellent",
-    "GD" : "Good",
-    "LP" : "Light Played",
-    "PL" : "Played",
-    "PO" : "Poor"
+    'MT' : "Mint",
+    'NM' : "Near Mint",
+    'EX' : "Excellent",
+    'GD' : "Good",
+    'LP' : "Light Played",
+    'PL' : "Played",
+    'PO' : "Poor"
 }
 
 def loadExpansions():
@@ -503,13 +503,20 @@ def getImportantCollums(cards, columns):
         name = list(d.values())[columns['Product ID'] + 2].upper()
         number = list(d.values())[columns['Collector Number']].upper()
         condition = list(d.values())[columns['Condition']]
+        #print("Condition:", condition)
         condition = conditionDict.get(condition)
+        #print("Mapped Condition:", condition)
         price = float(list(d.values())[columns['Expansion'] + 1])
+        language = list(d.values())[columns['Language']]
         expansion = list(d.values())[columns['Expansion']]
-        try:
+        if language == "English":
             expansion = english_pokemon_sets.get(expansion)
-        except:
+        elif language == "Japanese":
             expansion = japanese_pokemon_sets.get(expansion)
+        else:
+            expansion = None
+        print("Expansion:", expansion)
+        print("Number:", number)
         if expansion != None and number != None:
             card_num = expansion +" "+ number
         elif expansion == None:
@@ -523,7 +530,8 @@ def getImportantCollums(cards, columns):
     return data
 
 def updateOneCard(db, name, num, condition, sellPrice):
-    cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num = ? AND condition = ? AND sold = 0 AND sold_cm = 0 LIMIT 1", (name, num, condition)).fetchone()
+    #print(name, num, condition, sellPrice)
+    cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num LIKE ? AND condition = ? AND sold = 0 AND sold_cm = 0 LIMIT 1", (name, f'%{num}', condition)).fetchone()
     if cardId:
         date = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
         db.execute("UPDATE cards SET sell_price = ?, sold_cm = ?, sold_date = ? WHERE id = ?", (sellPrice, 1, date, cardId['id']))
@@ -633,7 +641,7 @@ def importSoldCSV():
             # Update database
             db = get_db()
             for item in dataList:
-                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get('condition'), item.get('Price'))
+                updateOneCard(db, item.get('Name'), item.get('Card Number'), item.get('Condition'), item.get('Price'))
 
             # Save updated check file
             existingOrderID = sorted(existingOrderID, key=int)
