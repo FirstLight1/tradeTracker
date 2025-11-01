@@ -526,7 +526,7 @@ function displaySearchResults(results){
         div.innerHTML = `
             <p class="result result-card-name">${result.card_name || 'N/A'}</p>
             <p class="result result-card-num">${result.card_num || 'N/A'}</p>
-            <p class="result result-condition">${result.condition || 'Unknown'}</p>
+            <p class="result result-condition ${result.condition.split(' ').join('_').toLowerCase()}">${result.condition || 'Unknown'}</p>
             <p class="result result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
             <p class="result result-auction-name">${result.auction_name || result.auction_id-1}</p>
         `;
@@ -591,7 +591,7 @@ async function loadAuctionContent(button) {
                     cardDiv.innerHTML = `
                         ${renderField(card.card_name, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
                         ${renderField(card.card_num, 'text', ['card-info', 'card-num'], 'Card Number', 'card_num')}
-                        <p class='card-info condition' data-field="condition">${card.condition ? card.condition : 'Unknown'}</p>
+                        <p class='card-info condition ${card.condition.split(' ').join('_').toLowerCase()}' data-field="condition">${card.condition ? card.condition : 'Unknown'}</p>
                         ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
                         ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
                         ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
@@ -609,7 +609,7 @@ async function loadAuctionContent(button) {
                         const cardDiv = event.target.closest('.card');
                         const cardId = cardDiv.querySelector('.card-id').textContent;
                         if (event.target.classList.contains('condition')) {
-                            const value = event.target.textContent;
+                            const value = event.target.textContent.trim();
                             const select = document.createElement('select');
                             const options = ['Mint', 'Near Mint', 'Excellent', 'Good', 'Light Played', 'Played', 'Poor'];
                             const dataset = event.target.dataset.field;
@@ -627,7 +627,8 @@ async function loadAuctionContent(button) {
                             select.addEventListener('change', (event) => {
                                 const selectedValue = event.target.value;
                                 const p = document.createElement('p');
-                                p.classList.add('card-info', 'condition');
+                                const classValue = selectedValue.split(' ').join('_').toLowerCase();
+                                p.classList.add('card-info', 'condition', classValue);
                                 p.textContent = selectedValue || value;
                                 select.replaceWith(p);
                                 patchValue(cardId, p.textContent, dataset);

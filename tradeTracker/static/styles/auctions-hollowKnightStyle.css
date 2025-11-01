@@ -18,6 +18,30 @@
   --primary-font: 'HollowKnightFont', serif;
 }
 
+.mint{
+    color: #17A2B8;
+}
+.near_mint{
+    color: #3CAF56;
+}
+.excellent{
+    color: #82891E;
+}
+.good{
+   color: #FFC107;
+}
+.light_played{
+    color: #FD8B2B;
+}
+.played{
+    color: #E56874;
+}
+.poor{
+    color: #DC3545;
+}
+
+
+
 body {
   color: var(--text-color);
   font-family: var(--primary-font), "Cinzel", serif;
@@ -382,6 +406,10 @@ input[type="file"] {
     0 0 20px rgba(147, 112, 219, 0.2);
   font-family: var(--primary-font), serif;
   letter-spacing: 0.05em;
+}
+
+.auction-profit{
+  pointer-events: none;
 }
 
 .save-added-cards,

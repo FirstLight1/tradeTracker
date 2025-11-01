@@ -191,7 +191,6 @@ def update(card_id):
     field = data.get("field")
     value = data.get("value")
     allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit", "sold_date"}
-    print(field, value)
     if field == "sold" and value == True:
         db.execute('UPDATE cards SET sold_cm = 0 WHERE id = ?', (card_id,))
     elif field == "sold_cm" and value == True:
@@ -239,7 +238,6 @@ def generateSoldReport():
     db = get_db()
     month = request.args.get('month')
     year = request.args.get('year')
-    print(month, year)
     cards = db.execute('SELECT card_name, card_num, card_price, sell_price FROM cards WHERE (sold = 1 OR sold_cm = 1) AND strftime("%Y", sold_date) = ? AND strftime("%m", sold_date) = ?', (year, month)).fetchall()
     
     # Convert to list of dicts for easier processing
@@ -515,8 +513,8 @@ def getImportantCollums(cards, columns):
             expansion = japanese_pokemon_sets.get(expansion)
         else:
             expansion = None
-        print("Expansion:", expansion)
-        print("Number:", number)
+        #print("Expansion:", expansion)
+        #print("Number:", number)
         if expansion != None and number != None:
             card_num = expansion +" "+ number
         elif expansion == None:
