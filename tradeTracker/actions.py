@@ -31,40 +31,28 @@ def loadExpansions():
     if getattr(sys, 'frozen', False):
         # Running as compiled exe - use the app data directory
         app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker')
-        en_expansions_path = os.path.join(app_data_dir, 'enExpansions.json')
-        jp_expansions_path = os.path.join(app_data_dir, 'jpExpansions.json')
+        expansions_path = os.path.join(app_data_dir, 'setAbbs.json')
     else:
         # Running in development - use the module directory
-        en_expansions_path = os.path.join(os.path.dirname(__file__), r'data\expansions\enExpansions.json')
-        jp_expansions_path = os.path.join(os.path.dirname(__file__), r'data\expansions\jpExpansions.json')
+        expansions_path = os.path.join(os.path.dirname(__file__), r'data\expansions\setAbbs.json')
 
     try:
-        with open(en_expansions_path, mode='r', encoding='utf-8') as infile:
+        with open(expansions_path, mode='r', encoding='utf-8') as infile:
             data = json.load(infile)
             # Convert list of single-key dictionaries into one dictionary
-            english_pokemon_sets = {}
+            all_pokemon_sets = {}
             for item in data:
                 for key, value in item.items():
-                    english_pokemon_sets[key] = value
+                    all_pokemon_sets[key] = value
     except FileNotFoundError:
-        print(f"Warning: Expansions file not found at {en_expansions_path}")
-        english_pokemon_sets = {}
+        print(f"Warning: Expansions file not found at {expansions_path}")
+        all_pokemon_sets = {}
 
-    try:
-        with open(jp_expansions_path, mode='r', encoding='utf-8') as infile:
-            data = json.load(infile)
-            # Convert list of single-key dictionaries into one dictionary
-            japanese_pokemon_sets = {}
-            for item in data:
-                for key, value in item.items():
-                    japanese_pokemon_sets[key] = value
-    except FileNotFoundError:
-        print(f"Warning: Expansions file not found at {jp_expansions_path}")
-        japanese_pokemon_sets = {}
-    return english_pokemon_sets, japanese_pokemon_sets
+    return all_pokemon_sets
 
 # Load the expansion sets at module import time
-english_pokemon_sets, japanese_pokemon_sets = loadExpansions()
+all_pokemon_sets = loadExpansions()
+
 
 @bp.route('/addAuction')
 def addAuction():
@@ -507,10 +495,8 @@ def getImportantCollums(cards, columns):
         price = float(list(d.values())[columns['Expansion'] + 1])
         language = list(d.values())[columns['Language']]
         expansion = list(d.values())[columns['Expansion']]
-        if language == "English":
-            expansion = english_pokemon_sets.get(expansion)
-        elif language == "Japanese":
-            expansion = japanese_pokemon_sets.get(expansion)
+        if language:
+            expansion = all_pokemon_sets.get(expansion)
         else:
             expansion = None
         #print("Expansion:", expansion)

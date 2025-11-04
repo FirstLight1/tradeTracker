@@ -14,27 +14,17 @@ def setup_expansion_files():
     if getattr(sys, 'frozen', False):
         app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker')
         os.makedirs(app_data_dir, exist_ok=True)
-        
-        en_expansions_path = os.path.join(app_data_dir, 'enExpansions.json')
-        jp_expansions_path = os.path.join(app_data_dir, 'jpExpansions.json')
-        
-        # Copy English expansions if it doesn't exist
-        if not os.path.exists(en_expansions_path):
-            try:
-                source = os.path.join(sys._MEIPASS, 'enExpansions.json')
-                shutil.copy(source, en_expansions_path)
-                print(f"Copied English expansions to {en_expansions_path}")
-            except Exception as e:
-                print(f"Error copying English expansions: {e}")
 
-        # Copy Japanese expansions if it doesn't exist
-        if not os.path.exists(jp_expansions_path):
+        expansions_path = os.path.join(app_data_dir, 'setAbbs.json')
+
+        # Copy Set Abbreviations if it doesn't exist
+        if not os.path.exists(expansions_path):
             try:
-                source = os.path.join(sys._MEIPASS, 'jpExpansions.json')
-                shutil.copy(source, jp_expansions_path)
-                print(f"Copied Japanese expansions to {jp_expansions_path}")
+                source = os.path.join(sys._MEIPASS, 'setAbbs.json')
+                shutil.copy(source, expansions_path)
+                print(f"Copied Set Abbreviations to {expansions_path}")
             except Exception as e:
-                print(f"Error copying Japanese expansions: {e}")
+                print(f"Error copying Set Abbreviations: {e}")
 
 # Setup expansion files before anything else
 setup_expansion_files()
