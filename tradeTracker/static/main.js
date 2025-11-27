@@ -543,7 +543,7 @@ function displaySearchResults(results){
                 }
                 const card = auctionTab.querySelector(`.card[data-id='${result.id}']`);
                 if (card) {
-                    //card.scrollIntoView({ behavior: 'smooth' });
+                    card.scrollIntoView({ behavior: 'smooth' });
                     card.classList.add('highlighted-search-result');
                     setTimeout(() => {
                         card.classList.remove('highlighted-search-result');
