@@ -566,11 +566,16 @@ function displaySearchResults(results){
 }
 
 function groupUnnamedAuctions(){
-    const button = document.document.querySelector(".group-unnamed");
+    const button = document.querySelector(".group-unnammed");
     button.addEventListener('click',async() => {
         const response = await fetch('/groupUnnamed');
-        const data = await response.json;
-
+        const data = await response.json();
+        if(data.status == 'success'){
+            window.location.reload();
+            return;
+        }else{
+            console.err("There was a problem grouping auctions")
+        }
         return;    
     });
 }

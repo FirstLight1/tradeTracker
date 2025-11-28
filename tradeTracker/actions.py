@@ -415,6 +415,18 @@ def updateAuction(auction_id):
     db.commit()
     return jsonify({'status': 'success'}), 200
 
+@bp.route('/groupUnnamed', methods=('GET', 'POST'))
+def groupUnnamed():
+    if request.method == 'GET':
+        db = get_db()
+        cursor = db.cursor()
+        id = cursor.execute("SELECT id FROM auctions WHERE auction_name IS NULL ORDER BY id ASC LIMIT 1").fetchone()[0]
+        print(id)
+        db.execute("UPDATE cards SET auction_id = ? FROM cards c JOIN auctions a ON c.auction_id = a.id WHERE a.auction_name IS NULL", (id,))
+        db.execute("UPDATE auctions SET auction_price = (SELECT SUM(market_value) FROM cards WHERE auction_id = ?) WHERE id = ?", (id, id, ))
+        db.commit()
+        return jsonify({'status': 'success'}), 200
+
 #Gets rows of CM table using chrome extension and save them to the datasabe
 @bp.route('/CardMarketTable', methods=('GET', 'POST'))
 def cardMarketTable():
