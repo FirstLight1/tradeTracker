@@ -470,25 +470,35 @@ function searchBar(){
     let results = null;
     searchInput.addEventListener('keydown', async (event) =>{
         if(event.key == 'Enter'){
+            console.log(searchInput.value)
+            if(searchInput.value == ""){
+
+                const searchContainer = document.querySelector('.search-results');
+                searchContainer.innerHTML = ''; // Clear previous results
+                return;
+            }
             results = await search(searchInput.value.toUpperCase());
             displaySearchResults(results);
         }
     })
     searchBtn.addEventListener('click', async () =>{
-    results = await search(searchInput.value.toUpperCase().trim());
-    displaySearchResults(results);
+        if(searchInput.value == ""){
+            const searchContainer = document.querySelector('.search-results');
+            searchContainer.innerHTML = ''; // Clear previous results
+
+            return;
+        }      
+        results = await search(searchInput.value.toUpperCase().trim());
+        displaySearchResults(results);
     });
-   
+    searchInput.addEventListener('blur', () => {
+        const searchContainer = document.querySelector('.search-results');
+        searchContainer.innerHTML = ''; // Clear previous results
+    });
 }
 
 async function search(searchPrompt) {
-    let cardName = null;
-    let cardNum = null;
-    let splitSearchQuery = searchPrompt.split(" ")
-    cardNum = splitSearchQuery[splitSearchQuery.length - 1]
-    splitSearchQuery.pop()
-    cardName = splitSearchQuery.join(" ") || null;
-    const jsonbody = JSON.stringify({cardName: cardName, cardNum: cardNum});
+    const jsonbody = JSON.stringify({query: searchPrompt});
     const response = await fetch('/searchCard',
         {
             method: 'POST',
@@ -553,6 +563,13 @@ function displaySearchResults(results){
             searchContainer.innerHTML = '';
         });
         searchContainer.appendChild(div);
+    });
+}
+
+function groupUnnamedAuctions(){
+    const button = document.document.querySelector(".group-unnamed");
+    button.addEventListener('click', () => {
+        return;    
     });
 }
 

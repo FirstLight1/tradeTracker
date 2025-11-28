@@ -645,13 +645,10 @@ def search():
     if request.method == 'POST':
         card = request.get_json()
         db = get_db()
-        if card.get('cardName') == None:
-            matches = db.execute('SELECT c.card_name, c.card_num, c.condition, c.market_value,c.id,c.auction_id ,a.auction_name FROM cards c JOIN auctions a ON c.auction_id = a.id WHERE (card_name LIKE ? OR card_num LIKE ?) AND (sold=0 AND sold_cm = 0) LIMIT 10',(f'{card.get('cardNum')}%',
-                                                                                                     f'%{card.get('cardNum')}%')).fetchmany(10)
-        else:
-            matches = db.execute('SELECT c.card_name, c.card_num, c.condition, c.market_value,c.id,c.auction_id ,a.auction_name FROM cards c JOIN auctions a ON c.auction_id = a.id WHERE (card_name LIKE ? OR card_num LIKE ?) AND (sold=0 AND sold_cm = 0) LIMIT 10',(f'{card.get('cardName')}%',
-                                                                                                     f'%{card.get('cardNum')}%')).fetchmany()
-        if matches == None:
+        matches = db.execute(
+                "SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c JOIN auctions a ON c.auction_id = a.id WHERE UPPER(COALESCE(c.card_name, '') || ' ' || COALESCE(c.card_num, '')) LIKE UPPER(?) AND sold = 0 AND sold_cm = 0 LIMIT 10",
+                (f'%{card.get("query")}%', )).fetchall()
+        if matches == None or len(matches) == 0:
             return jsonify({'status': 'success','value': None}),200
         else:
             return jsonify({'status': 'success','value': [dict(m) for m in matches]}),200
