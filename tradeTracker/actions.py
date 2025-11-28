@@ -415,7 +415,7 @@ def updateAuction(auction_id):
     db.commit()
     return jsonify({'status': 'success'}), 200
 
-
+#Gets rows of CM table using chrome extension and save them to the datasabe
 @bp.route('/CardMarketTable', methods=('GET', 'POST'))
 def cardMarketTable():
     if request.method == 'POST':
@@ -438,23 +438,26 @@ def cardMarketTable():
             )
             auction_id = cursor.lastrowid
             cardsToInsert = []
+            
             for card in cards:
-                marketValue = card.get('marketValue', 0)
-                marketValue = float(marketValue) if marketValue is not None else None
+                count = card.get('count', 1)
+                for _ in range(count):
+                    marketValue = card.get('marketValue', 0)
+                    marketValue = float(marketValue) if marketValue is not None else None
 
-                if marketValue:
-                    sellPrice = marketValue
-                    buyPrice = round(marketValue * 0.80, 2)
+                    if marketValue:
+                        sellPrice = marketValue
+                        buyPrice = round(marketValue * 0.80, 2)
 
-                cardsToInsert.append((
-                    card.get('name', None),
-                    card.get('num', None),
-                    card.get('condition', None),
-                    buyPrice,
-                    marketValue,
-                    sellPrice,
-                    auction_id
-                ))
+                    cardsToInsert.append((
+                        card.get('name', None),
+                        card.get('num', None),
+                        card.get('condition', None),
+                        buyPrice,
+                        marketValue,
+                        sellPrice,
+                        auction_id
+                    ))
 
             db.executemany(
                 'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, auction_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -646,7 +649,7 @@ def search():
         card = request.get_json()
         db = get_db()
         matches = db.execute(
-                "SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c JOIN auctions a ON c.auction_id = a.id WHERE UPPER(COALESCE(c.card_name, '') || ' ' || COALESCE(c.card_num, '')) LIKE UPPER(?) AND sold = 0 AND sold_cm = 0 LIMIT 10",
+                "SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c JOIN auctions a ON c.auction_id = a.id WHERE UPPER(COALESCE(c.card_name, '') || ' ' || COALESCE(c.card_num, '')) LIKE UPPER(?) AND sold = 0 AND sold_cm = 0 GROUP BY UPPER(c.card_name), UPPER(c.card_num), UPPER(c.condition) ORDER BY c.id ASC LIMIT 10",
                 (f'%{card.get("query")}%', )).fetchall()
         if matches == None or len(matches) == 0:
             return jsonify({'status': 'success','value': None}),200

@@ -470,7 +470,6 @@ function searchBar(){
     let results = null;
     searchInput.addEventListener('keydown', async (event) =>{
         if(event.key == 'Enter'){
-            console.log(searchInput.value)
             if(searchInput.value == ""){
 
                 const searchContainer = document.querySelector('.search-results');
@@ -568,7 +567,10 @@ function displaySearchResults(results){
 
 function groupUnnamedAuctions(){
     const button = document.document.querySelector(".group-unnamed");
-    button.addEventListener('click', () => {
+    button.addEventListener('click',async() => {
+        const response = await fetch('/groupUnnamed');
+        const data = await response.json;
+
         return;    
     });
 }
@@ -1149,6 +1151,7 @@ if(document.title === "Trade Tracker"){
     loadAuctions();
     importCSV();
     soldReportBtn();
+    groupUnnamedAuctions();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
     }, false);
