@@ -468,9 +468,19 @@ function shoppingCart(){
     const confirmButton = document.querySelector(".confirm-btn");
 }
 
-function addToShoppingCart(card){
+function addToShoppingCart(card, cardId, auctionId){
+    console.log(card, cardId,auctionId);
     const contentDiv = document.querySelector(".cart-content");
-    contentDiv.innerHTML += card;
+    const cardDiv = document.createElement('div');
+    cardDiv.setAttribute("cardId", `${cardId}`)
+    cardDiv.setAttribute("auctionId", `${auctionId}`)
+    cardDiv.innerHTML = `
+    <p>${card.cardName}</p>
+    <p>${card.cardNum}</p>
+    <p>${card.condition}</p>
+    <p>${card.marketValue}</p>
+    `
+    contentDiv.append(cardDiv);
 }
 
 function searchBar(){
@@ -493,16 +503,15 @@ function searchBar(){
         if(searchInput.value == ""){
             const searchContainer = document.querySelector('.search-results');
             searchContainer.innerHTML = ''; // Clear previous results
-
-            return;
         }      
         results = await search(searchInput.value.toUpperCase().trim());
         displaySearchResults(results);
     });
+    /*
     searchInput.addEventListener('blur', () => {
         const searchContainer = document.querySelector('.search-results');
         searchContainer.innerHTML = ''; // Clear previous results
-    });
+    });*/
 }
 
 async function search(searchPrompt) {
@@ -537,6 +546,11 @@ function displaySearchResults(results){
     }
     
     results.forEach(result => {
+        let card = new struct()
+        card.cardName = result.card_name;
+        card.cardNum = result.card_num;
+        card.condition = result.condition;
+        card.marketValue = result.market_value;
         const div = document.createElement('div');
         div.classList.add('search-result-item');
         
@@ -549,6 +563,7 @@ function displaySearchResults(results){
             <p class="result result-auction-name">${result.auction_name || result.auction_id-1}</p>
         `;
         div.addEventListener('click', async() => {
+            addToShoppingCart(card, result.id, result.auction_id);
             const element = document.getElementById(`${result.auction_id}`);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
