@@ -463,6 +463,15 @@ export async function updateInventoryValueAndTotalProfit() {
         }
 }
 
+function shoppingCart(){
+    const contentDiv = document.querySelector(".cart-content");
+    const confirmButton = document.querySelector(".confirm-btn");
+}
+
+function addToShoppingCart(card){
+    const contentDiv = document.querySelector(".cart-content");
+    contentDiv.innerHTML += card;
+}
 
 function searchBar(){
     const searchInput = document.querySelector('.search-field');
