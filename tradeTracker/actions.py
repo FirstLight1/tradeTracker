@@ -668,5 +668,17 @@ def search():
         else:
             return jsonify({'status': 'success','value': [dict(m) for m in matches]}),200
 
-
+@bp.route('/generateInvoice/<int:vendor>', methods=('GET', 'POST'))
+def generateInvoice(vendor):
+    if request.method == 'POST':
+        cards = request.get_json()
+        db = get_db()
+        if vendor == 0:
+            for card in cards:
+                db.execute('UPDATE cards set sold_cm = 1 WHERE id = ?', (card.get('cardId'), ))
+        else:
+            for card in cards:
+                db.execute('UPDATE cards set sold = 1 WHERE id = ?', (card.get('cardId'), ))
+        db.commit()
+        return jsonify({'status' : 'success'})
 

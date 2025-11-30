@@ -466,21 +466,76 @@ export async function updateInventoryValueAndTotalProfit() {
 function shoppingCart(){
     const contentDiv = document.querySelector(".cart-content");
     const confirmButton = document.querySelector(".confirm-btn");
+    confirmButton.addEventListener('click', async ()=>{
+        const children = contentDiv.children;
+        let cards = []
+        
+        Array.from(children).forEach(cardDiv => {
+            // Get the card attributes
+            const cardId = cardDiv.getAttribute("cardId");
+            const auctionId = cardDiv.getAttribute("auctionId");
+            
+            // Get all paragraph elements
+            const paragraphs = cardDiv.querySelectorAll('p');
+            
+            // Create card object with the data
+            const cardData = {
+                cardId: cardId,
+                auctionId: auctionId,
+                cardName: paragraphs[0]?.textContent || '',
+                cardNum: paragraphs[1]?.textContent || '',
+                condition: paragraphs[2]?.textContent || '',
+                marketValue: paragraphs[3]?.textContent || ''
+            };   
+
+            cards.push(cardData);
+        });
+        
+        console.log('All cards:', cards);
+        let vendorCheckBox = document.querySelector('.vendor-type').checked;
+        console.log(vendorCheckBox);
+        if(cards.length != 0){
+            const response = await fetch(`/generateInvoice/${Number(vendorCheckBox)}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type' : 'application/json'},
+                    body: JSON.stringify(cards),
+                });
+            const data = await response.json();
+            if(data.status = 'success'){
+                console.log("success")
+                cards = [];
+                contentDiv.innerHTML = '';
+                existingIDs.clear();
+                vendorCheckBox = false;
+                //recalculate auction price and profit
+            }else{
+                console.error("something went wrong")
+            }
+        }
+    });
 }
 
+
+const existingIDs = new Set();
+
 function addToShoppingCart(card, cardId, auctionId){
-    console.log(card, cardId,auctionId);
-    const contentDiv = document.querySelector(".cart-content");
-    const cardDiv = document.createElement('div');
-    cardDiv.setAttribute("cardId", `${cardId}`)
-    cardDiv.setAttribute("auctionId", `${auctionId}`)
-    cardDiv.innerHTML = `
-    <p>${card.cardName}</p>
-    <p>${card.cardNum}</p>
-    <p>${card.condition}</p>
-    <p>${card.marketValue}</p>
-    `
-    contentDiv.append(cardDiv);
+   // console.log(card, cardId,auctionId);
+    if(!existingIDs.has(cardId)){
+        existingIDs.add(cardId);
+        const contentDiv = document.querySelector(".cart-content");
+        const cardDiv = document.createElement('div');
+        cardDiv.setAttribute("cardId", `${cardId}`)
+        cardDiv.setAttribute("auctionId", `${auctionId}`)
+        cardDiv.innerHTML = `
+            <p>${card.cardName}</p>
+            <p>${card.cardNum}</p>
+            <p>${card.condition}</p>
+            <p>${card.marketValue}€</p>
+            `
+        contentDiv.append(cardDiv);
+    }
 }
 
 function searchBar(){
@@ -564,6 +619,7 @@ function displaySearchResults(results){
         `;
         div.addEventListener('click', async() => {
             addToShoppingCart(card, result.id, result.auction_id);
+            /*
             const element = document.getElementById(`${result.auction_id}`);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
@@ -583,6 +639,7 @@ function displaySearchResults(results){
                     }, 2000);
                 }
             }
+            */
             searchContainer.innerHTML = '';
         });
         searchContainer.appendChild(div);
@@ -1181,6 +1238,7 @@ if(document.title === "Trade Tracker"){
     importCSV();
     soldReportBtn();
     groupUnnamedAuctions();
+    shoppingCart();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
     }, false);
