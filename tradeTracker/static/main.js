@@ -467,17 +467,21 @@ function shoppingCart(){
     const contentDiv = document.querySelector(".cart-content");
     const confirmButton = document.querySelector(".confirm-btn");
     confirmButton.addEventListener('click', async ()=>{
+        let recieverDiv = document.querySelector('.reciever-div');
+        if(recieverDiv){
+            return
+        }
         const children = contentDiv.children;
         let cards = []
-        
+
         Array.from(children).forEach(cardDiv => {
             // Get the card attributes
             const cardId = cardDiv.getAttribute("cardId");
             const auctionId = cardDiv.getAttribute("auctionId");
-            
+
             // Get all paragraph elements
             const paragraphs = cardDiv.querySelectorAll('p');
-            
+
             // Create card object with the data
             const cardData = {
                 cardId: cardId,
@@ -490,12 +494,58 @@ function shoppingCart(){
 
             cards.push(cardData);
         });
-        
+
+        if(!recieverDiv && cards.length != 0){
+            const body = document.querySelector('body');
+            recieverDiv = document.createElement('div');
+            recieverDiv.classList.add('reciever-div');
+            recieverDiv.innerHTML = `
+                <div>
+                    <p>Forma uhrady<p>
+                    <input type='text' class='payment-type'>
+                </div>
+                <div>
+                    <p>Client name and surname</p>
+                    <input type='text'>
+                </div>
+                <div>
+                    <p>Address</p>
+                    <input type='text'>
+                </div>
+                <div>
+                    <p>Payback date</p>
+                    <input type='date' class='date-input'>
+                </div>
+                <button class="generate-invoice">Confirm</button>
+                `;
+            body.append(recieverDiv);
+            const dateInput = document.querySelector('.date-input');
+            dateInput.value = new Date().toISOString().split('T')[0]; 
+            const paymentType = document.querySelector('.payment-type');
+            paymentType.value = 'Peňažný prevod';
+        }
+
+        const generateInvoiceBtn = document.querySelector('.generate-invoice');
+        if(generateInvoiceBtn){
+            let inputVals = [];
+            generateInvoiceBtn.addEventListener('click',async () => {
+            const inputs = recieverDiv.querySelectorAll('input');
+            inputs.forEach((input) =>{
+                inputVals.push(input.value);
+                })
+                const recieverInfo = {
+                    paymentMethod : inputVals[0],
+                    nameAndSurname : inputVals[1],
+                    address : inputVals[2],
+                    paybackDate: inputVals[3]
+                };
+                cards.push(recieverInfo);
+
         console.log('All cards:', cards);
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
         console.log(vendorCheckBox);
-        if(cards.length != 0){
-            const response = await fetch(`/generateInvoice/${Number(vendorCheckBox)}`,
+        if(cards.length != 1){
+            const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
                 {
                     method: 'POST',
                     headers: {
@@ -509,10 +559,15 @@ function shoppingCart(){
                 contentDiv.innerHTML = '';
                 existingIDs.clear();
                 vendorCheckBox = false;
+                recieverDiv.remove();
+                recieverDiv = null;
+                alert(data.pdf_path)
                 //recalculate auction price and profit
             }else{
                 console.error("something went wrong")
             }
+        }
+            });
         }
     });
 }

@@ -9,6 +9,7 @@ import os
 import sqlite3
 import fpdf
 import json
+from . import generateInvoice
 
 bp = Blueprint('actions', __name__)
 CORS(bp)
@@ -668,10 +669,17 @@ def search():
         else:
             return jsonify({'status': 'success','value': [dict(m) for m in matches]}),200
 
-@bp.route('/generateInvoice/<int:vendor>', methods=('GET', 'POST'))
-def generateInvoice(vendor):
+@bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
+def invoice(vendor):
     if request.method == 'POST':
         cards = request.get_json()
+        recieverInfo = cards[len(cards)-1]
+        cards.pop()
+        
+        # Generate the invoice and get the file path
+        pdf_path = generateInvoice.generate_invoice(recieverInfo, cards)
+        
+        # Update database
         db = get_db()
         if vendor == 0:
             for card in cards:
@@ -680,5 +688,8 @@ def generateInvoice(vendor):
             for card in cards:
                 db.execute('UPDATE cards set sold = 1 WHERE id = ?', (card.get('cardId'), ))
         db.commit()
-        return jsonify({'status' : 'success'})
+        
+        # Send the PDF file as a download
+        return jsonify({'status': 'success', 'pdf_path': pdf_path}), 200
+
 

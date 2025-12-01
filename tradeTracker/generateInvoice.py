@@ -1,0 +1,95 @@
+
+from decimal import Decimal
+import os
+import sys
+from datetime import date, datetime
+from InvoiceGenerator.api import Invoice, Item, Client, Provider, Creator
+from InvoiceGenerator.pdf import SimpleInvoice
+from flask import current_app
+
+def generate_invoice(reciever, items):
+    invoice_date = date.today()
+    # Set language to Slovak (or English 'en') if supported by your system locale
+    os.environ["INVOICE_LANG"] = "sk"
+
+    # 1. Define the Supplier (Dominik Forró - CARD ANVIL)
+    # Data extracted from source: 39-48, 52-63
+    provider = Provider(
+        summary="Dominik Forró - CARD ANVIL",
+        address="Vahovce 94",
+        city="Váhovce",
+        zip_code="92562",
+        phone="0949 759 023",
+        email="dominikforro95@gmail.com",
+        bank_name="Tatra banka, a.s.",
+        bank_account="SK9511000000002945283029",  # IBAN
+        # Mapping Slovak IDs to library fields:
+        ir="57310041",       # IČO
+        vat_id="1130287664", # DIČ
+        note="Neplatitel DPH",
+        logo_filename="tradeTracker/static/images/logo.png"
+    )
+
+    # 2. Define the Client (Miloš Planieta)
+    # Data extracted from source: 50-51
+    client = Client(
+        summary=reciever.get("nameAndSurname"),
+        address=reciever.get("address"), # Full street address was missing in the snippet
+        city=reciever.get("address"),
+    )
+
+    # 3. Create the Invoice
+    # Data extracted from source: 48, 67-69
+    invoice = Invoice(client, provider, Creator("Dominik Forró"))
+    invoice.number = "15"                # Invoice No.
+    invoice.variable_symbol = "15"       # VS
+    invoice.currency = "EUR"
+    invoice.date = invoice_date          # Date of exposure (Dátum vystavenia)
+    invoice.paytype=reciever.get("paymentMethod")  # Spôsob úhrady
+    
+    # Convert paybackDate string to date object (HTML date input format: YYYY-MM-DD)
+    payback_str = reciever.get("paybackDate")
+    if payback_str:
+        invoice.payback = datetime.strptime(payback_str, "%Y-%m-%d").date()
+    else:
+        invoice.payback = invoice_date  # Default to today if not provided
+
+    # 4. Add Items
+    # Data extracted from source: 70
+    for item in items:
+        print(item)
+        print(type(item.get('cardName')))
+        print(type(item.get('cardNum')))
+        market_value_decimal = Decimal(float(item.get("marketValue").replace("€", "")))
+        invoice.add_item(Item(
+            count=1,
+            price=market_value_decimal,
+            unit="ks",
+            description=item.get("cardName") + " " + item.get("cardNum"),
+            tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
+        ))
+
+    # 5. Generate PDF
+    pdf = SimpleInvoice(invoice)
+    
+    # Determine the save path based on environment
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe
+        app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker', 'Invoices')
+        os.makedirs(app_data_dir, exist_ok=True)
+        output_filename = f"Invoice_{invoice_date.strftime('%Y%m%d')}_{reciever.get('nameAndSurname', 'client').replace(' ', '_')}.pdf"
+        output_path = os.path.join(app_data_dir, output_filename)
+    else:
+        # Running in development
+        invoices_dir = os.path.join(current_app.instance_path, 'invoices')
+        os.makedirs(invoices_dir, exist_ok=True)
+        output_filename = f"Invoice_{invoice_date.strftime('%Y%m%d')}_{reciever.get('nameAndSurname', 'client').replace(' ', '_')}.pdf"
+        output_path = os.path.join(invoices_dir, output_filename)
+    
+    pdf.gen(output_path, generate_qr_code=False)
+
+    print(f"Successfully generated: {output_path}")
+    return output_path
+
+if __name__ == "__main__":
+    generate_invoice()
