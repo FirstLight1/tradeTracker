@@ -48,11 +48,6 @@ CREATE TABLE cards (
     condition TEXT,
     card_price REAL,
     market_value REAL,
-    sell_price REAL,
-    sold INTEGER DEFAULT 0,
-    sold_cm INTEGER DEFAULT 0,
-    profit REAL,
-    sold_date TEXT,
     FOREIGN KEY (auction_id) REFERENCES auctions (id)
 );
 

@@ -112,7 +112,7 @@ def generate_invoice(reciever, items):
     pdf.gen(output_path, generate_qr_code=False)
 
     print(f"Successfully generated: {output_path}")
-    return output_path
+    return output_path, invoice_num
 
 if __name__ == "__main__":
     generate_invoice()

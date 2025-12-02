@@ -22,6 +22,9 @@ def migrate_database(db_path):
         # Migration 1: Add 'sold_date' to 'cards' table
         _add_sold_date_to_cards(cursor)
         
+        # Migration 3: Add 'sold' column to 'sale_items' table
+        _add_sold_to_sale_items(cursor)
+        
         conn.commit()
         conn.close()
         
@@ -50,6 +53,27 @@ def _add_sold_date_to_cards(cursor):
         # This can happen if the table doesn't exist yet, which is fine.
         if "no such table: cards" in str(e):
             print("'cards' table not found, skipping 'sold_date' column migration.")
+        else:
+            raise e
+
+def _add_sold_to_sale_items(cursor):
+    """
+    Adds the 'sold' column to the 'sale_items' table if it doesn't exist.
+    """
+    try:
+        # Check if the column already exists
+        cursor.execute("PRAGMA table_info(sale_items)")
+        columns = [info[1] for info in cursor.fetchall()]
+        if 'sold' not in columns:
+            print("Applying migration: Adding 'sold' to 'sale_items' table...")
+            cursor.execute("ALTER TABLE sale_items ADD COLUMN sold INTEGER DEFAULT 0")
+            print("'sold' column added successfully.")
+        else:
+            print("'sold' column already exists in 'sale_items' table.")
+    except sqlite3.Error as e:
+        # This can happen if the table doesn't exist yet, which is fine.
+        if "no such table: sale_items" in str(e):
+            print("'sale_items' table not found, skipping 'sold' column migration.")
         else:
             raise e
 

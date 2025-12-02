@@ -98,19 +98,14 @@ def add():
         auction_id = cursor.lastrowid
         for card in cardsArr[1:]:
             db.execute(
-                'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, sold_date,auction_id) '
-                'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, auction_id) '
+                'VALUES (?, ?, ?, ?, ?, ?)',
                 (
                     card.get('cardName'),
                     card.get('cardNum'),
                     card.get('condition'),
                     card.get('buyPrice'),
                     card.get('marketValue'),
-                    card.get('sellPrice'),
-                    card.get('checkbox', 0),
-                    card.get('checkbox_cm', 0),
-                    card.get('profit'),
-                    card.get('soldDate'),
                     auction_id
                 )
             )
@@ -123,7 +118,8 @@ def loadAuctions():
     auctions = db.execute(
         'SELECT DISTINCT a.* FROM auctions a '
         'LEFT JOIN cards c ON a.id = c.auction_id '
-        'WHERE a.id = 1 OR (c.sold = 0 AND c.sold_cm = 0)'
+        'LEFT JOIN sale_items si ON c.id = si.card_id '
+        'WHERE a.id = 1 OR si.card_id IS NULL'
     ).fetchall()
     return jsonify([dict(auction) for auction in auctions])
 
@@ -133,7 +129,10 @@ def loadCards(auction_id):
     if auction_id == 1:
         cards = db.execute('SELECT * FROM cards WHERE auction_id = 1').fetchall()
         return jsonify([dict(card) for card in cards]),200
-    cards = db.execute('SELECT * FROM cards WHERE auction_id = ? AND sold = 0 AND sold_cm = 0', (auction_id,)).fetchall()
+    cards = db.execute(
+        'SELECT c.* FROM cards c '
+        'LEFT JOIN sale_items si ON c.id = si.card_id '
+        'WHERE c.auction_id = ? AND si.card_id IS NULL', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards]),200
 
 @bp.route('/loadAllCards/<int:auction_id>')
@@ -146,7 +145,7 @@ def loadAllCards(auction_id):
 def invertoryValue():
     db = get_db()
     cur = db.cursor()
-    value = cur.execute('SELECT SUM(market_value) FROM cards WHERE sold = 0 AND sold_cm = 0').fetchone()[0]
+    value = cur.execute('SELECT SUM(market_value) FROM cards').fetchone()[0]
 
     return jsonify({'status': 'success','value': value}),200
 
@@ -179,12 +178,7 @@ def update(card_id):
     data = request.get_json()
     field = data.get("field")
     value = data.get("value")
-    allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value", "sell_price", "sold", "sold_cm", "profit", "sold_date"}
-    if field == "sold" and value == True:
-        db.execute('UPDATE cards SET sold_cm = 0 WHERE id = ?', (card_id,))
-    elif field == "sold_cm" and value == True:
-        db.execute('UPDATE cards SET sold = 0 WHERE id = ?', (card_id,))
-
+    allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value"}
 
     if field in allowed_fields:
         db.execute(f'UPDATE cards SET {field} = ? WHERE id = ?', (value, card_id))
@@ -197,19 +191,14 @@ def addToExistingAuction(auction_id):
         cards = request.get_json()
         db = get_db()
         for card in cards:
-            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, sold_date, auction_id)'
-            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, auction_id)'
+            ' VALUES (?, ?, ?, ?, ?, ?)',
             (
                 card.get('cardName'),
                 card.get('cardNum'),
                 card.get('condition'),
                 card.get('buyPrice'),
                 card.get('marketValue'),
-                card.get('sellPrice'),
-                card.get('checkbox', 0),
-                card.get('checkbox_cm', 0),
-                card.get('profit'),
-                card.get('soldDate'),
                 auction_id
             )
         )
@@ -219,7 +208,12 @@ def addToExistingAuction(auction_id):
 @bp.route('/loadSoldCards')
 def loadSoldCards():
     db = get_db()
-    cards = db.execute('SELECT * FROM cards WHERE sold = 1 OR sold_cm = 1').fetchall()
+    cards = db.execute(
+        'SELECT c.*, si.sell_price, si.sold_cm, si.sold, si.profit, s.sale_date, s.invoice_number '
+        'FROM cards c '
+        'JOIN sale_items si ON c.id = si.card_id '
+        'JOIN sales s ON si.sale_id = s.id'
+    ).fetchall()
     return jsonify([dict(card) for card in cards])
 
 @bp.route('/generateSoldReport', methods=('GET',))
@@ -227,7 +221,13 @@ def generateSoldReport():
     db = get_db()
     month = request.args.get('month')
     year = request.args.get('year')
-    cards = db.execute('SELECT card_name, card_num, card_price, sell_price FROM cards WHERE (sold = 1 OR sold_cm = 1) AND strftime("%Y", sold_date) = ? AND strftime("%m", sold_date) = ?', (year, month)).fetchall()
+    cards = db.execute(
+        'SELECT c.card_name, c.card_num, c.card_price, si.sell_price '
+        'FROM cards c '
+        'JOIN sale_items si ON c.id = si.card_id '
+        'JOIN sales s ON si.sale_id = s.id '
+        'WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ?', 
+        (year, month)).fetchall()
     
     # Convert to list of dicts for easier processing
     cards_list = [dict(card) for card in cards]
@@ -377,19 +377,14 @@ def addToSingles():
 
         db.execute('UPDATE auctions SET auction_profit = auction_profit + ? WHERE id = 1',(profit['profit'],))
         for card in data[1:]:
-            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, sold, sold_cm, profit, sold_date, auction_id)'
-                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, auction_id)'
+                    'VALUES (?, ?, ?, ?, ?, ?)',
                     (
                         card.get('cardName'),
                         card.get('cardNum'),
                         card.get('condition'),
                         card.get('buyPrice'),
                         card.get('marketValue'),
-                        card.get('sellPrice'),
-                        card.get('checkbox', 0),
-                        card.get('checkbox_cm', 0),
-                        card.get('profit'),
-                        card.get('soldDate'),
                         auction_id
                     )
             )
@@ -459,7 +454,6 @@ def cardMarketTable():
                     marketValue = float(marketValue) if marketValue is not None else None
 
                     if marketValue:
-                        sellPrice = marketValue
                         buyPrice = round(marketValue * 0.80, 2)
 
                     cardsToInsert.append((
@@ -468,15 +462,13 @@ def cardMarketTable():
                         card.get('condition', None),
                         buyPrice,
                         marketValue,
-                        sellPrice,
                         auction_id
                     ))
 
-            db.executemany(
-                'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, sell_price, auction_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    db.executemany(
+                'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, auction_id) VALUES (?, ?, ?, ?, ?, ?)',
                 cardsToInsert
-            )
-
+            )            
             db.commit()
             return jsonify({'status': 'success'}), 201
 
@@ -531,31 +523,51 @@ def getImportantCollums(cards, columns):
 
 def updateOneCard(db, name, num, condition, sellPrice):
     #print(name, num, condition, sellPrice)
-    cardId = db.execute("SELECT id FROM cards WHERE card_name = ? AND card_num LIKE ? AND condition = ? AND sold = 0 AND sold_cm = 0 LIMIT 1", (name, f'%{num}', condition)).fetchone()
+    cardId = db.execute(
+        "SELECT c.id FROM cards c "
+        "LEFT JOIN sale_items si ON c.id = si.card_id "
+        "WHERE c.card_name = ? AND c.card_num LIKE ? AND c.condition = ? AND si.card_id IS NULL "
+        "LIMIT 1", (name, f'%{num}', condition)).fetchone()
     if cardId:
         date = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
-        db.execute("UPDATE cards SET sell_price = ?, sold_cm = ?, sold_date = ? WHERE id = ?", (sellPrice, 1, date, cardId['id']))
-        card = db.execute("SELECT auction_id," \
-                    "CASE WHEN auction_id = 1 THEN card_price END AS price," \
-                    "sold," \
-                    "sold_cm FROM cards WHERE id = ?", (cardId['id'],)).fetchone()
-        if(card['auction_id']) == 1:
-            profit = (sellPrice * 0.95) - card['price']
+        card = db.execute("SELECT auction_id, card_price FROM cards WHERE id = ?", (cardId['id'],)).fetchone()
+        
+        # Create a sale for this card
+        invoice_number = f"CSV-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}-{cardId['id']}"
+        db.execute(
+            "INSERT INTO sales (invoice_number, sale_date, total_amount) VALUES (?, ?, ?)",
+            (invoice_number, date, sellPrice)
+        )
+        sale_id = db.cursor().lastrowid
+        
+        # Calculate profit
+        if card['auction_id'] == 1:
+            profit = (sellPrice * 0.95) - card['card_price']
             profit = round(profit, 2)
-            db.execute("UPDATE cards SET profit = ? WHERE id = ?", (profit, cardId['id']))
         else:
-            cards = db.execute(
-                "SELECT c.sell_price, c.sold, c.sold_cm, a.auction_price FROM cards c " \
-            "JOIN auctions a ON c.auction_id = a.id " \
-            "WHERE a.id = ?", (card['auction_id'], )).fetchall()
-            totalSellPrice = 0
-            for item in cards:
-                if(item['sold_cm'] == 1):
-                    totalSellPrice += item['sell_price'] * 0.95
-                else:
-                    totalSellPrice += item['sell_price']
-            totalProfit = round(totalSellPrice - cards[0]['auction_price'], 2)
-            db.execute("UPDATE auctions SET auction_profit = ? WHERE id = ?", (totalProfit, card['auction_id']))
+            # For auction items, need to recalculate auction profit
+            auction_info = db.execute(
+                "SELECT auction_price FROM auctions WHERE id = ?", 
+                (card['auction_id'],)).fetchone()
+            sold_items = db.execute(
+                "SELECT si.sell_price, si.sold_cm FROM sale_items si "
+                "JOIN cards c ON si.card_id = c.id "
+                "WHERE c.auction_id = ?", (card['auction_id'],)).fetchall()
+            totalSellPrice = sum(
+                item['sell_price'] * 0.95 if item['sold_cm'] == 1 else item['sell_price']
+                for item in sold_items
+            )
+            totalSellPrice += sellPrice * 0.95  # Add current sale
+            totalProfit = round(totalSellPrice - auction_info['auction_price'], 2)
+            db.execute("UPDATE auctions SET auction_profit = ? WHERE id = ?", 
+                      (totalProfit, card['auction_id']))
+            profit = round(sellPrice * 0.95 - (auction_info['auction_price'] / (len(sold_items) + 1)), 2)
+        
+        # Add sale item
+        db.execute(
+            "INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, profit) VALUES (?, ?, ?, ?, ?)",
+            (sale_id, cardId['id'], sellPrice, 1, profit)
+        )
         db.commit()
         return
     else:
@@ -662,7 +674,11 @@ def search():
         card = request.get_json()
         db = get_db()
         matches = db.execute(
-                "SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c JOIN auctions a ON c.auction_id = a.id WHERE UPPER(COALESCE(c.card_name, '') || ' ' || COALESCE(c.card_num, '')) LIKE UPPER(?) AND sold = 0 AND sold_cm = 0 GROUP BY UPPER(c.card_name), UPPER(c.card_num), UPPER(c.condition) ORDER BY c.id ASC LIMIT 10",
+                "SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c "
+                "JOIN auctions a ON c.auction_id = a.id "
+                "LEFT JOIN sale_items si ON c.id = si.card_id "
+                "WHERE UPPER(COALESCE(c.card_name, '') || ' ' || COALESCE(c.card_num, '')) LIKE UPPER(?) AND si.card_id IS NULL "
+                "GROUP BY UPPER(c.card_name), UPPER(c.card_num), UPPER(c.condition) ORDER BY c.id ASC LIMIT 10",
                 (f'%{card.get("query")}%', )).fetchall()
         if matches == None or len(matches) == 0:
             return jsonify({'status': 'success','value': None}),200
@@ -677,16 +693,40 @@ def invoice(vendor):
         cards.pop()
         
         # Generate the invoice and get the file path
-        pdf_path = generateInvoice.generate_invoice(recieverInfo, cards)
+        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cards)
         
         # Update database
         db = get_db()
-        if vendor == 0:
-            for card in cards:
-                db.execute('UPDATE cards set sold_cm = 1 WHERE id = ?', (card.get('cardId'), ))
-        else:
-            for card in cards:
-                db.execute('UPDATE cards set sold = 1 WHERE id = ?', (card.get('cardId'), ))
+        
+        # Create sale record - ensure we have a valid date
+        sale_date = recieverInfo.get('date') or datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+        cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount) VALUES (?, ?, ?)',
+                   (invoice_num, sale_date, recieverInfo.get('total')))
+        sale_id = cursor.lastrowid
+        
+        # Add sale items
+        # vendor == 0 means CardMarket, vendor == 1 means other platform
+        sold_cm_value = 1 if vendor == 0 else 0
+        sold_value = 0 if vendor == 0 else 1
+        
+        for card in cards:
+            card_info = db.execute('SELECT card_price, auction_id FROM cards WHERE id = ?', 
+                                  (card.get('cardId'),)).fetchone()
+            sell_price = card.get('sellPrice', 0)
+            
+            # Calculate profit (CardMarket takes 5% commission)
+            if card_info:
+                profit = (sell_price * 0.95 if vendor == 0 else sell_price) - (card_info['card_price'] or 0)
+                profit = round(profit, 2)
+            else:
+                profit = 0
+                
+            db.execute(
+                'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
+                'VALUES (?, ?, ?, ?, ?, ?)',
+                (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, profit)
+            )
+        
         db.commit()
         
         # Send the PDF file as a download
