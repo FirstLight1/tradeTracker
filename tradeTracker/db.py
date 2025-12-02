@@ -24,6 +24,8 @@ def init_db():
         # Schema is included directly in the code to avoid file access issues
         schema = '''
 DROP TABLE IF EXISTS info;
+DROP TABLE IF EXISTS sale_items;
+DROP TABLE IF EXISTS sales;
 DROP TABLE IF EXISTS auctions;
 DROP TABLE IF EXISTS cards;
 DROP TABLE IF EXISTS collection;
@@ -57,6 +59,32 @@ CREATE TABLE cards (
 CREATE INDEX idx_cards_card_name ON cards(card_name);
 CREATE INDEX idx_cards_card_num ON cards(card_num);
 CREATE INDEX idx_cards_auction_id ON cards(auction_id);
+
+CREATE TABLE sales (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_number TEXT UNIQUE NOT NULL,
+    sale_date TEXT NOT NULL,
+    total_amount REAL,
+    notes TEXT
+);
+
+CREATE INDEX idx_sales_invoice ON sales(invoice_number);
+CREATE INDEX idx_sales_date ON sales(sale_date);
+
+CREATE TABLE sale_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sale_id INTEGER NOT NULL,
+    card_id INTEGER NOT NULL,
+    sell_price REAL NOT NULL,
+    sold_cm INTEGER DEFAULT 0,
+    sold INTEGER DEFAULT 0,
+    profit REAL,
+    FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE,
+    FOREIGN KEY (card_id) REFERENCES cards (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_sale_items_sale_id ON sale_items(sale_id);
+CREATE INDEX idx_sale_items_card_id ON sale_items(card_id);
 
 CREATE TABLE collection (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

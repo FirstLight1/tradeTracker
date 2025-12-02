@@ -463,6 +463,14 @@ export async function updateInventoryValueAndTotalProfit() {
         }
 }
 
+function cartValue(cards){
+    let sum = 0;
+    cards.forEach(card =>{
+        sum += Number(card.marketValue);
+    })
+    return sum;
+}
+
 function shoppingCart(){
     const contentDiv = document.querySelector(".cart-content");
     const confirmButton = document.querySelector(".confirm-btn");
@@ -489,11 +497,14 @@ function shoppingCart(){
                 cardName: paragraphs[0]?.textContent || '',
                 cardNum: paragraphs[1]?.textContent || '',
                 condition: paragraphs[2]?.textContent || '',
-                marketValue: paragraphs[3]?.textContent || ''
+                marketValue: paragraphs[3]?.textContent.replace('€','') || ''
             };   
 
             cards.push(cardData);
         });
+
+        const cartVal = cartValue(cards)
+        console.log(cartVal);
 
         if(!recieverDiv && cards.length != 0){
             const body = document.querySelector('body');
@@ -516,6 +527,9 @@ function shoppingCart(){
                     <p>Payback date</p>
                     <input type='date' class='date-input'>
                 </div>
+                <div>
+                    <p>Cena</p>
+                    <input type=text placeholder="${cartValue}" class="price-input">
                 <button class="generate-invoice">Confirm</button>
                 `;
             body.append(recieverDiv);
@@ -540,6 +554,16 @@ function shoppingCart(){
                     paybackDate: inputVals[3]
                 };
                 cards.push(recieverInfo);
+
+            const cartValueInput = document.querySelector('.price-input').value ||cartValue;
+            if (cartValueInput != cartVal){
+                const priceDiff = cartVal - cartValueInput;
+                for(let i = 0; i < cards.length -1; i++){
+                    console.log(cards[i].marketValue);
+                    const discount  = ((cards[i].marketValue / cartVal) * priceDiff);
+                    cards[i].marketValue = (cards[i].marketValue - discount).toFixed(2)
+                }
+            } 
 
         console.log('All cards:', cards);
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
