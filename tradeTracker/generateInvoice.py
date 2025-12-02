@@ -8,6 +8,29 @@ from InvoiceGenerator.pdf import SimpleInvoice
 from flask import current_app
 
 def generate_invoice(reciever, items):
+    # Read invoice number from env.txt
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe
+        env_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker')
+        os.makedirs(env_dir, exist_ok=True)
+        env_path = os.path.join(env_dir, 'env.txt')
+    else:
+        # Running in development
+        env_path = os.path.join(os.path.dirname(__file__), 'env.txt')
+    
+    # Read or create env.txt with invoice_num
+    try:
+        with open(env_path, 'r') as f:
+            invoice_num = f.read().strip()
+            if not invoice_num:
+                invoice_num = "1"
+    except FileNotFoundError:
+        invoice_num = "1"
+    
+    # Write incremented invoice number back
+    with open(env_path, 'w') as f:
+        f.write(str(int(invoice_num) + 1))
+    
     invoice_date = date.today()
     # Set language to Slovak (or English 'en') if supported by your system locale
     os.environ["INVOICE_LANG"] = "sk"
@@ -41,8 +64,8 @@ def generate_invoice(reciever, items):
     # 3. Create the Invoice
     # Data extracted from source: 48, 67-69
     invoice = Invoice(client, provider, Creator("Dominik Forró"))
-    invoice.number = "15"                # Invoice No.
-    invoice.variable_symbol = "15"       # VS
+    invoice.number = invoice_num                # Invoice No.
+    invoice.variable_symbol = invoice_num       # VS
     invoice.currency = "EUR"
     invoice.date = invoice_date          # Date of exposure (Dátum vystavenia)
     invoice.paytype=reciever.get("paymentMethod")  # Spôsob úhrady
