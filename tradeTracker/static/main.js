@@ -551,7 +551,8 @@ function shoppingCart(){
                     paymentMethod : inputVals[0],
                     nameAndSurname : inputVals[1],
                     address : inputVals[2],
-                    paybackDate: inputVals[3]
+                    paybackDate: inputVals[3],
+                    totat: null,
                 };
                 cards.push(recieverInfo);
 
@@ -567,7 +568,7 @@ function shoppingCart(){
 
         console.log('All cards:', cards);
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
-        console.log(vendorCheckBox);
+        cards[cards.length -1].totat = cartValue(cards);
         if(cards.length != 1){
             const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
                 {

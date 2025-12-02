@@ -132,7 +132,7 @@ def loadCards(auction_id):
     cards = db.execute(
         'SELECT c.* FROM cards c '
         'LEFT JOIN sale_items si ON c.id = si.card_id '
-        'WHERE c.auction_id = ? AND si.card_id IS NULL', (auction_id,)).fetchall()
+        'WHERE c.auction_id = ? AND si.card_id IS NULL AND c.sold = 0 AND c.sold_cm = 0', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards]),200
 
 @bp.route('/loadAllCards/<int:auction_id>')
@@ -699,7 +699,7 @@ def invoice(vendor):
         db = get_db()
         
         # Create sale record - ensure we have a valid date
-        sale_date = recieverInfo.get('date') or datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+        sale_date = datetime.today().date().isoformat()
         cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount) VALUES (?, ?, ?)',
                    (invoice_num, sale_date, recieverInfo.get('total')))
         sale_id = cursor.lastrowid
