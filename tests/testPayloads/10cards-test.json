@@ -1,0 +1,128 @@
+[
+  {
+    "name": "Cardmarket Condition Test Auction",
+    "buy": 450.00,
+    "profit": null,
+    "date": "2025-01-20"
+  },
+  {
+    "cardName": "Charizard V",
+    "cardNum": "019",
+    "condition": "NM",
+    "buyPrice": 20.00,
+    "marketValue": 25.50,
+    "sellPrice": 25.50,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Pikachu",
+    "cardNum": "005",
+    "condition": "LP",
+    "buyPrice": 5.00,
+    "marketValue": 8.00,
+    "sellPrice": 8.00,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Gengar EX",
+    "cardNum": "112",
+    "condition": "EX",
+    "buyPrice": 18.00,
+    "marketValue": 22.00,
+    "sellPrice": 22.00,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Mew V",
+    "cardNum": "060",
+    "condition": "GD",
+    "buyPrice": 12.00,
+    "marketValue": 14.00,
+    "sellPrice": 14.00,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Bulbasaur",
+    "cardNum": "001",
+    "condition": "PL",
+    "buyPrice": 3.00,
+    "marketValue": 5.00,
+    "sellPrice": 5.00,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Umbreon VMAX",
+    "cardNum": "215",
+    "condition": "MT",
+    "buyPrice": 80.00,
+    "marketValue": 90.00,
+    "sellPrice": 90.00,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Squirtle",
+    "cardNum": "007",
+    "condition": "GD",
+    "buyPrice": 4.00,
+    "marketValue": 6.50,
+    "sellPrice": 6.50,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Arcanine",
+    "cardNum": "059",
+    "condition": "EX",
+    "buyPrice": 7.00,
+    "marketValue": 10.00,
+    "sellPrice": 10.00,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Lugia V",
+    "cardNum": "186",
+    "condition": "LP",
+    "buyPrice": 35.00,
+    "marketValue": 40.00,
+    "sellPrice": 40.00,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  },
+  {
+    "cardName": "Rayquaza VMAX",
+    "cardNum": "218",
+    "condition": "PO",
+    "buyPrice": 60.00,
+    "marketValue": 75.00,
+    "sellPrice": 75.00,
+    "checkbox": 0,
+    "checkbox_cm": 0,
+    "profit": null,
+    "soldDate": null
+  }
+]
