@@ -132,7 +132,7 @@ def loadCards(auction_id):
     cards = db.execute(
         'SELECT c.* FROM cards c '
         'LEFT JOIN sale_items si ON c.id = si.card_id '
-        'WHERE c.auction_id = ? AND si.card_id IS NULL AND c.sold = 0 AND c.sold_cm = 0', (auction_id,)).fetchall()
+        'WHERE c.auction_id = ? AND si.card_id IS NULL', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards]),200
 
 @bp.route('/loadAllCards/<int:auction_id>')
@@ -179,6 +179,11 @@ def update(card_id):
     field = data.get("field")
     value = data.get("value")
     allowed_fields = {"card_name", "card_num", "condition", "card_price", "market_value"}
+
+    if field == 'sold' or field == 'sold_cm':
+        db.execute(f'UPDATE sale_items SET {field} = ? WHERE card_id = ?', (value, card_id))
+        db.commit()
+        return jsonify({'status': 'success'}),200
 
     if field in allowed_fields:
         db.execute(f'UPDATE cards SET {field} = ? WHERE id = ?', (value, card_id))
@@ -417,7 +422,6 @@ def groupUnnamed():
         db = get_db()
         cursor = db.cursor()
         id = cursor.execute("SELECT id FROM auctions WHERE auction_name IS NULL ORDER BY id ASC LIMIT 1").fetchone()[0]
-        print(id)
         db.execute("UPDATE cards SET auction_id = ? FROM cards c JOIN auctions a ON c.auction_id = a.id WHERE a.auction_name IS NULL", (id,))
         db.execute("UPDATE auctions SET auction_price = (SELECT SUM(market_value) FROM cards WHERE auction_id = ?) WHERE id = ?", (id, id, ))
         db.commit()
@@ -691,29 +695,28 @@ def invoice(vendor):
         cards = request.get_json()
         recieverInfo = cards[len(cards)-1]
         cards.pop()
-        
         # Generate the invoice and get the file path
         pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cards)
-        
         # Update database
         db = get_db()
         
         # Create sale record - ensure we have a valid date
-        sale_date = datetime.today().date().isoformat()
+        sale_date = datetime.date.today().isoformat()
         cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount) VALUES (?, ?, ?)',
                    (invoice_num, sale_date, recieverInfo.get('total')))
         sale_id = cursor.lastrowid
         
         # Add sale items
         # vendor == 0 means CardMarket, vendor == 1 means other platform
-        sold_cm_value = 1 if vendor == 0 else 0
-        sold_value = 0 if vendor == 0 else 1
+        sold_cm_value = 1 if vendor == 1 else 0
+        sold_value = 0 if vendor == 1 else 1
         
         for card in cards:
             card_info = db.execute('SELECT card_price, auction_id FROM cards WHERE id = ?', 
                                   (card.get('cardId'),)).fetchone()
-            sell_price = card.get('sellPrice', 0)
-            
+            sell_price = int(card.get('marketValue', 0))
+            db.execute('UPDATE cards SET sold_date = ? WHERE id = ?',
+                      (sale_date, card.get('cardId')))
             # Calculate profit (CardMarket takes 5% commission)
             if card_info:
                 profit = (sell_price * 0.95 if vendor == 0 else sell_price) - (card_info['card_price'] or 0)

@@ -465,9 +465,12 @@ export async function updateInventoryValueAndTotalProfit() {
 
 function cartValue(cards){
     let sum = 0;
-    cards.forEach(card =>{
+
+    cards.forEach(card => {
+        if (card.marketValue){
         sum += Number(card.marketValue);
-    })
+        }
+    });
     return sum;
 }
 
@@ -504,7 +507,6 @@ function shoppingCart(){
         });
 
         const cartVal = cartValue(cards)
-        console.log(cartVal);
 
         if(!recieverDiv && cards.length != 0){
             const body = document.querySelector('body');
@@ -529,7 +531,7 @@ function shoppingCart(){
                 </div>
                 <div>
                     <p>Cena</p>
-                    <input type=text placeholder="${cartValue}" class="price-input">
+                    <input type=text placeholder="${cartVal}" class="price-input">
                 <button class="generate-invoice">Confirm</button>
                 `;
             body.append(recieverDiv);
@@ -552,15 +554,14 @@ function shoppingCart(){
                     nameAndSurname : inputVals[1],
                     address : inputVals[2],
                     paybackDate: inputVals[3],
-                    totat: null,
+                    total: null,
                 };
                 cards.push(recieverInfo);
 
-            const cartValueInput = document.querySelector('.price-input').value ||cartValue;
+            const cartValueInput = document.querySelector('.price-input').value ||cartVal;
             if (cartValueInput != cartVal){
                 const priceDiff = cartVal - cartValueInput;
                 for(let i = 0; i < cards.length -1; i++){
-                    console.log(cards[i].marketValue);
                     const discount  = ((cards[i].marketValue / cartVal) * priceDiff);
                     cards[i].marketValue = (cards[i].marketValue - discount).toFixed(2)
                 }
@@ -568,7 +569,7 @@ function shoppingCart(){
 
         console.log('All cards:', cards);
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
-        cards[cards.length -1].totat = cartValue(cards);
+        cards[cards.length -1].total = cartValue(cards);
         if(cards.length != 1){
             const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
                 {

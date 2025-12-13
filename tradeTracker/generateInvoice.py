@@ -81,8 +81,6 @@ def generate_invoice(reciever, items):
     # Data extracted from source: 70
     for item in items:
         print(item)
-        print(type(item.get('cardName')))
-        print(type(item.get('cardNum')))
         market_value_decimal = Decimal(float(item.get("marketValue").replace("€", "")))
         invoice.add_item(Item(
             count=1,

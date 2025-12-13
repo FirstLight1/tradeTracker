@@ -83,10 +83,48 @@ def migrate_to_sales_history(db_path):
         cursor.execute("CREATE INDEX idx_sale_items_sale_id ON sale_items(sale_id)")
         cursor.execute("CREATE INDEX idx_sale_items_card_id ON sale_items(card_id)")
         
-        print("Updated cards table structure and created indexes")
+        print("Created indexes")
+        
+        # Step 3: Migrate historical sold cards to sale_items
+        # Check if cards table has sold/sold_cm columns
+        cursor.execute("PRAGMA table_info(cards)")
+        card_columns = [col[1] for col in cursor.fetchall()]
+        
+        if 'sold' in card_columns or 'sold_cm' in card_columns:
+            print("\nMigrating historical sold cards to sale_items...")
+            
+            # Find all sold cards
+            cursor.execute("""
+                SELECT id, sold, sold_cm, sell_price, profit, sold_date
+                FROM cards_backup 
+                WHERE sold = 1 OR sold_cm = 1
+            """)
+            sold_cards = cursor.fetchall()
+            
+            if sold_cards:
+                # Create a generic "Historical Sales" entry
+                cursor.execute("""
+                    INSERT INTO sales (invoice_number, sale_date, total_amount, notes)
+                    VALUES (?, ?, ?, ?)
+                """, ('MIGRATED-HISTORICAL', datetime.now().strftime('%Y-%m-%d'), None, 'Migrated from old sold status'))
+                sale_id = cursor.lastrowid
+                
+                migrated_count = 0
+                for card in sold_cards:
+                    card_id, sold, sold_cm, sell_price, profit, sold_date = card
+                    cursor.execute("""
+                        INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (sale_id, card_id, sell_price or 0, sold_cm or 0, sold or 0, profit))
+                    migrated_count += 1
+                
+                print(f"Migrated {migrated_count} sold cards to sale_items")
+            else:
+                print("No sold cards found to migrate")
         
         # Drop backup table
         cursor.execute("DROP TABLE cards_backup")
+        print("Cleaned up backup table")
         
         conn.commit()
         conn.close()
