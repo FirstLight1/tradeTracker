@@ -697,10 +697,12 @@ function displaySearchResults(results){
             <p class="result result-condition ${result.condition.split(' ').join('_').toLowerCase()}">${result.condition || 'Unknown'}</p>
             <p class="result result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
             <p class="result result-auction-name">${result.auction_name || result.auction_id-1}</p>
+            <button class="add-to-cart-btn">Add to cart</button>
+            <button class="view-auction" data-id="${result.auction_id}">View</button>
         `;
-        div.addEventListener('click', async() => {
-            addToShoppingCart(card, result.id, result.auction_id);
-            /*
+        const vievwButton = div.querySelector('.view-auction');
+        vievwButton.addEventListener('click', async(event) => {
+            event.stopPropagation();
             const element = document.getElementById(`${result.auction_id}`);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
@@ -720,7 +722,11 @@ function displaySearchResults(results){
                     }, 2000);
                 }
             }
-            */
+            searchContainer.innerHTML = '';
+        });
+
+        div.addEventListener('click', async() => {
+            addToShoppingCart(card, result.id, result.auction_id);
             searchContainer.innerHTML = '';
         });
         searchContainer.appendChild(div);
