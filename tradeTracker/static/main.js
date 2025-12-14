@@ -623,8 +623,8 @@ async function loadAuctionContent(button) {
                         ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
                         ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
                         ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
-                        <button class="delete-card">Add to cart</button>
-                        <span hidden class = "card-id">${card.id}</span>
+                        <button class="delete-card add-to-cart">Add to cart</button>
+                        <span hidden class="card-id">${card.id}</span>
                         <button class=delete-card data-id="${card.id}">Delete</button>
                     `;
                     cardsContainer.appendChild(cardDiv);
@@ -707,6 +707,22 @@ async function loadAuctionContent(button) {
                         if(event.key === 'Enter'){
                             input.blur();
                         }
+                    });
+                });
+
+                const addToCartButtons = cardsContainer.querySelectorAll('.add-to-cart');
+                addToCartButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const cardDiv = button.closest('.card');
+                        const cardId = cardDiv.getAttribute('data-id');
+                        const auctionId = auctionDiv.getAttribute('data-id');
+                        const card = new struct();
+                        card.cardName = cardDiv.querySelector('.card-name').textContent;
+                        card.cardNum = cardDiv.querySelector('.card-num').textContent;
+                        card.condition = cardDiv.querySelector('.condition').textContent;
+                        const marketValueText = cardDiv.querySelector('.market-value').textContent;
+                        card.marketValue = marketValueText ? marketValueText.replace('€','') : null;
+                        addToShoppingCart(card, cardId, auctionId);
                     });
                 });
 
