@@ -640,14 +640,16 @@ def importSoldCSV():
 def search():
     if request.method == 'POST':
         card = request.get_json()
+        placeholders = ",".join(["?"] * len(card.get('cartIds', [])))
         db = get_db()
         matches = db.execute(
                 "SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c "
                 "JOIN auctions a ON c.auction_id = a.id "
                 "LEFT JOIN sale_items si ON c.id = si.card_id "
                 "WHERE UPPER(COALESCE(c.card_name, '') || ' ' || COALESCE(c.card_num, '')) LIKE UPPER(?) AND si.card_id IS NULL "
+                f"AND c.id NOT IN ({placeholders}) "
                 "GROUP BY UPPER(c.card_name), UPPER(c.card_num), UPPER(c.condition) ORDER BY c.id ASC LIMIT 10",
-                (f'%{card.get("query")}%', )).fetchall()
+                (f'%{card.get("query")}%', *card.get('cartIds', []))).fetchall()
         if matches == None or len(matches) == 0:
             return jsonify({'status': 'success','value': None}),200
         else:

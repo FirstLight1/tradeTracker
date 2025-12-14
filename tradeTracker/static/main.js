@@ -520,15 +520,12 @@ function searchBar(){
         results = await search(searchInput.value.toUpperCase().trim());
         displaySearchResults(results);
     });
-    /*
-    searchInput.addEventListener('blur', () => {
-        const searchContainer = document.querySelector('.search-results');
-        searchContainer.innerHTML = ''; // Clear previous results
-    });*/
 }
 
 async function search(searchPrompt) {
-    const jsonbody = JSON.stringify({query: searchPrompt});
+    const cart = document.querySelectorAll('.cart-content > div');
+    const cartIds = Array.from(cart).map(cardDiv => parseInt(cardDiv.getAttribute('cardId')));
+    const jsonbody = JSON.stringify({query: searchPrompt, cartIds: cartIds});
     const response = await fetch('/searchCard',
         {
             method: 'POST',
