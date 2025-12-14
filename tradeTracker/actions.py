@@ -676,14 +676,12 @@ def invoice(vendor):
         sold_value = 0 if vendor == 1 else 1
         
         for card in cards:
-            card_info = db.execute('SELECT card_price, auction_id FROM cards WHERE id = ?', 
-                                  (card.get('cardId'),)).fetchone()
-            sell_price = int(card.get('marketValue', 0))
+            sell_price = float(card.get('marketValue', 0))
             db.execute('UPDATE cards SET sold_date = ? WHERE id = ?',
                       (sale_date, card.get('cardId')))
                 
             db.execute(
-                'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold) '
+                'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold)'
                 'VALUES (?, ?, ?, ?, ?)',
                 (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value)
             )

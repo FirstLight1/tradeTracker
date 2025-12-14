@@ -350,28 +350,46 @@ function shoppingCart(){
             recieverDiv = document.createElement('div');
             recieverDiv.classList.add('reciever-div');
             recieverDiv.innerHTML = `
-                <div>
-                    <p>Forma uhrady<p>
-                    <input type='text' class='payment-type'>
+                <div class="modal-content">
+                    <span class="close-modal">&times;</span>
+                    <div class='complete-invoice-info'>
+                        <p>Forma uhrady<p>
+                        <input type='text' class='payment-type'>
+                    </div>
+                    <div>
+                        <p>Client name and surname</p>
+                        <input type='text' class='client-name'>
+                    </div>
+                    <div>
+                        <p>Address</p>
+                        <input type='text' class='client-address'>
+                    </div>
+                    <div>
+                        <p>Payback date</p>
+                        <input type='date' class='date-input'>
+                    </div>
+                    <div>
+                        <p>Cena</p>
+                        <input type=text placeholder="${cartVal}" class="price-input">
+                    </div>
+                    <button class="generate-invoice">Confirm</button>
                 </div>
-                <div>
-                    <p>Client name and surname</p>
-                    <input type='text'>
-                </div>
-                <div>
-                    <p>Address</p>
-                    <input type='text'>
-                </div>
-                <div>
-                    <p>Payback date</p>
-                    <input type='date' class='date-input'>
-                </div>
-                <div>
-                    <p>Cena</p>
-                    <input type=text placeholder="${cartVal}" class="price-input">
-                <button class="generate-invoice">Confirm</button>
                 `;
             body.append(recieverDiv);
+
+            const closeModal = recieverDiv.querySelector('.close-modal');
+            closeModal.addEventListener('click', () => {
+                recieverDiv.remove();
+                recieverDiv = null;
+            });
+
+            recieverDiv.addEventListener('click', (event) => {
+                if (event.target === recieverDiv) {
+                    recieverDiv.remove();
+                    recieverDiv = null;
+                }
+            });
+
             const dateInput = document.querySelector('.date-input');
             dateInput.value = new Date().toISOString().split('T')[0]; 
             const paymentType = document.querySelector('.payment-type');
@@ -386,15 +404,16 @@ function shoppingCart(){
             inputs.forEach((input) =>{
                 inputVals.push(input.value);
                 })
-                const recieverInfo = {
-                    paymentMethod : inputVals[0],
-                    nameAndSurname : inputVals[1],
-                    address : inputVals[2],
-                    paybackDate: inputVals[3],
-                    total: null,
-                };
-                cards.push(recieverInfo);
-
+            if(!cards[cards.length -1].hasOwnProperty('total')){
+            const recieverInfo = {
+                paymentMethod : inputVals[0],
+                nameAndSurname : inputVals[1],
+                address : inputVals[2],
+                paybackDate: inputVals[3],
+                total: null,
+            };
+            cards.push(recieverInfo);
+            }
             const cartValueInput = document.querySelector('.price-input').value ||cartVal;
             if (cartValueInput != cartVal){
                 const priceDiff = cartVal - cartValueInput;
@@ -404,7 +423,6 @@ function shoppingCart(){
                 }
             } 
 
-        console.log('All cards:', cards);
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
         cards[cards.length -1].total = cartValue(cards);
         if(cards.length != 1){
@@ -623,7 +641,7 @@ async function loadAuctionContent(button) {
                         ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
                         ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
                         ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
-                        <button class="delete-card add-to-cart">Add to cart</button>
+                        <button class="add-to-cart">Add to cart</button>
                         <span hidden class="card-id">${card.id}</span>
                         <button class=delete-card data-id="${card.id}">Delete</button>
                     `;
