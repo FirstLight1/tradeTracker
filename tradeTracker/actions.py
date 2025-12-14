@@ -674,8 +674,8 @@ def invoice(vendor):
         
         # Add sale items
         # vendor == 0 means CardMarket, vendor == 1 means other platform
-        sold_cm_value = 1 if vendor == 1 else 0
-        sold_value = 0 if vendor == 1 else 1
+        sold_cm_value = 1 if vendor == 0 else 0
+        sold_value = 0 if vendor == 0 else 1
         
         for card in cards:
             sell_price = float(card.get('marketValue', 0))

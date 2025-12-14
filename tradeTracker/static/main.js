@@ -313,6 +313,18 @@ function cartValue(cards){
 
 function shoppingCart(){
     const contentDiv = document.querySelector(".cart-content");
+    if (contentDiv.childElementCount === 0){
+        contentDiv.innerHTML = '<p>Your cart is empty</p>';
+    }
+    const cartDiv = document.querySelector(".shopping-cart");
+    if (cartDiv) {
+        cartDiv.addEventListener('click', (e) => {
+            if (e.target === cartDiv) {
+                cartDiv.classList.toggle('expanded');
+            }
+        });
+    }
+
     const confirmButton = document.querySelector(".confirm-btn");
     confirmButton.addEventListener('click', async ()=>{
         let recieverDiv = document.querySelector('.reciever-div');
@@ -460,6 +472,7 @@ function addToShoppingCart(card, cardId, auctionId){
     if(!existingIDs.has(cardId)){
         existingIDs.add(cardId);
         const contentDiv = document.querySelector(".cart-content");
+        contentDiv.innerHTML = '';
         const cardDiv = document.createElement('div');
         cardDiv.setAttribute("cardId", `${cardId}`)
         cardDiv.setAttribute("auctionId", `${auctionId}`)
@@ -476,6 +489,7 @@ function addToShoppingCart(card, cardId, auctionId){
             input.type = 'text';
             input.value = card.marketValue.replace('€','');
             marketValueInCart.replaceWith(input);
+            input.focus();
             input.addEventListener('blur', () => {
                 let newValue = input.value.replace(',', '.');
                 if(isNaN(newValue)){
