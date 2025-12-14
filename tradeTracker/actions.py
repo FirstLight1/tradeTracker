@@ -201,15 +201,25 @@ def addToExistingAuction(auction_id):
         )
         db.commit()
         return jsonify({'status': 'success'}), 201
+
+@bp.route('/loadSoldHistory')
+def loadSoldHistory():
+    db = get_db()
+    sales = db.execute(
+        'SELECT * FROM sales ORDER BY sale_date DESC'
+    ).fetchall()
+    return jsonify([dict(sale) for sale in sales])
     
-@bp.route('/loadSoldCards')
-def loadSoldCards():
+@bp.route('/loadSoldCards/<int:sale_id>')
+def loadSoldCards(sale_id):
     db = get_db()
     cards = db.execute(
         'SELECT c.*, si.sell_price, si.sold_cm, si.sold, s.sale_date, s.invoice_number '
         'FROM cards c '
         'JOIN sale_items si ON c.id = si.card_id '
-        'JOIN sales s ON si.sale_id = s.id'
+        'JOIN sales s ON si.sale_id = s.id '
+        'WHERE si.sale_id = ?',
+        (sale_id,)
     ).fetchall()
     return jsonify([dict(card) for card in cards])
 
