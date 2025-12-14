@@ -1,24 +1,9 @@
-import {allTrue, updateInventoryValueAndTotalProfit} from "./main.js";
+import {updateInventoryValueAndTotalProfit} from "./main.js";
 
-function handleCheckboxes(checkboxes) {
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('click', (event) => {
-            if(event.target.name === 'sold_cm'){
-                event.target.previousElementSibling.checked = false;
-            }else if(event.target.name === 'sold'){
-                event.target.nextElementSibling.checked = false;
-            }
-        });
-    });
-}
 
 export function createNewCard(newCard){
      newCard.querySelectorAll('input').forEach(el =>{
-            if (el.type == 'checkbox') {
-                el.checked = false;
-            } else{
-                el.value = '';
-            }
+            el.value = '';
         });
 
         newCard.querySelectorAll('select').forEach(sel => {
@@ -29,8 +14,6 @@ export function createNewCard(newCard){
         newCardName.oninput = function () {
         handleCardInput(this);
         }
-        const checkboxes = newCard.querySelectorAll('input[type=checkbox]');
-        handleCheckboxes(checkboxes);
         return newCard;
 }
 
@@ -55,15 +38,10 @@ export class struct{
         this.buyPrice = null;
         this.marketValue = null;
         this.sellPrice = null;
-        this.checkbox = null;
-        this.checkbox_cm = null;
-        this.profit = null;
         this.soldDate = null;
     }
 }
 
-const checkboxes = document.querySelectorAll('input[type=checkbox]');
-handleCheckboxes(checkboxes);
 const cardsArr = [];
 let totalSellValue = 0;
 let auctionValueCalculated = 0;
@@ -72,12 +50,10 @@ const saveButton = document.querySelector('.save-btn')
 saveButton.addEventListener('click', () =>{
     const auctionName = document.querySelector('.auction-name').value;
     const auctionBuy = document.querySelector('.auction-buy-price').value;
-    const auctionProfit = document.querySelector('.auction-profit').value;
     const date = new Date().toISOString();
     let auction = {
         name: auctionName.trim() || null,
         buy: auctionBuy ? parseFloat(auctionBuy.replace(',','.')) : null,
-        profit: auctionProfit ? parseFloat(auctionProfit.replace(',','.')) : null,
         date: date.trim() || null
     };
     if(cardsArr.length === 0){
@@ -101,21 +77,11 @@ saveButton.addEventListener('click', () =>{
         card.buyPrice = inputNumber('input[name=buyPrice]');
         card.marketValue = inputNumber('input[name=marketValue]');
         card.sellPrice = inputNumber('input[name=sellPrice]');
-        card.checkbox = ell.querySelector('input[name=sold]').checked;
-        card.checkbox_cm = ell.querySelector('input[name=sold_cm]').checked;
-        card.profit = inputNumber('input[name=profit]');
         if(card.sellPrice === null){
             card.sellPrice = card.marketValue;
         }
         if(card.buyPrice === null && card.marketValue !== null){
             card.buyPrice = parseFloat((card.marketValue * 0.80).toFixed(2));
-        }
-        if(card.checkbox){
-            totalSellValue += card.sellPrice;
-            card.soldDate = date
-        } else if(card.checkbox_cm){
-            totalSellValue += (card.sellPrice * 0.95)
-            card.soldDate = date
         }
         auctionValueCalculated += card.buyPrice || 0;
         if(card.cardName !== null && card.marketValue !== null){
@@ -123,8 +89,7 @@ saveButton.addEventListener('click', () =>{
         }
     });
 
-    const currentAuctionProfit = totalSellValue - cardsArr[0].buy;
-    cardsArr[0].profit = parseFloat(currentAuctionProfit.toFixed(2));
+
     if(!cardsArr[0].buy){
         cardsArr[0].buy = parseFloat(auctionValueCalculated.toFixed(2));
     }

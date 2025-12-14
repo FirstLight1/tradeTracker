@@ -17,8 +17,6 @@ async function loadContent(){
             ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
             ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
             ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
-            <input type="checkbox" class='card-info-checkbox sold' ${card.sold ? 'checked' : ''} data-field="sold">
-            <input type="checkbox" class='card-info-checkbox sold-cm' ${card.sold_cm ? 'checked' : '' } data-field="sold_cm">
             <p>${formattedDate}</p>
             <span hidden class = "card-id">${card.id}</span>
             <button class=delete-card data-id="${card.id}">Delete</button>

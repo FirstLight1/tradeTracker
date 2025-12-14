@@ -27,10 +27,6 @@
                 <button class="collection"><a href="{{ url_for('actions.renderCollection')}}">Collection</a></button>
                 <span class="arrow left"><img src="../static/images/rightarrow.png" alt="left arrow"></span>
             </div>
-            <div class="total-profit">                   
-                <div><p class="total-profit-header">Profit</p></div>
-                <div><p class="total-profit-value"></p></div>
-            </div>
             <div class="inventory-value">
                 <div><p class="inventory-value-header">Inventory</p></div>
                 <div><p class="inventory-value-value"></p></div>
@@ -47,10 +43,6 @@
                 <label>Buy price</label><br>
                 <input type="text" class="auction-buy-price" required>
             </dir>
-            <dir class="auction-info">
-                <label>Auction profit</label><br>
-                <input type="text" class="auction-profit">
-            </dir>
         </dir>
         <dir class="content-container">
             <dir class="cards-header">
@@ -60,9 +52,6 @@
                 <p>Buy price</p>
                 <p>Market price</p>
                 <p>Sell price</p>
-                <p>Sold</p>
-                <p>Sold CM</p>
-                <p>Profit</p>
             </dir>
             <dir class="cards-container">
                 <dir class="card">
@@ -80,9 +69,6 @@
                     <input type="text" name="buyPrice" autocomplete="off">
                     <input type="text" name="marketValue" class="marketValue" oninput="handleCardInput(this)" autocomplete="off">
                     <input type="text" name="sellPrice" autocomplete="off">
-                    <input type="checkbox" name="sold" autocomplete="off">
-                    <input type="checkbox" name="sold_cm" autocomplete="off">
-                    <input type="text" name="profit" autocomplete="off">
                 </dir>
             </dir>
         </dir>

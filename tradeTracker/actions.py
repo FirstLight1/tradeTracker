@@ -88,12 +88,11 @@ def add():
         auction = {
             'name': cardsArr[0]['name'] if 'name' in cardsArr[0] else None,
             'buy': cardsArr[0]['buy'] if 'buy' in cardsArr[0] else None,
-            'profit': cardsArr[0]['profit'] if 'profit' in cardsArr[0] else None,
             'date': cardsArr[0]['date'] if 'date' in cardsArr[0] else None
         }
         cursor = db.execute(
-            'INSERT INTO auctions (auction_name, auction_price, auction_profit, date_created) VALUES (?, ?, ?, ?)',
-            (auction['name'], auction['buy'], auction['profit'], auction['date'])
+            'INSERT INTO auctions (auction_name, auction_price, date_created) VALUES (?, ?, ?)',
+            (auction['name'], auction['buy'], auction['date'])
         )
         auction_id = cursor.lastrowid
         for card in cardsArr[1:]:
@@ -149,13 +148,6 @@ def invertoryValue():
 
     return jsonify({'status': 'success','value': value}),200
 
-@bp.route('/totalProfit')
-def totalProfit():
-    db = get_db()
-    cur = db.cursor()
-    value = cur.execute('SELECT SUM(auction_profit) FROM auctions').fetchone()[0]
-
-    return jsonify({'status': 'success','value': value}),200
 
 @bp.route('/deleteCard/<int:card_id>', methods=('DELETE',))
 def deleteCard(card_id):
@@ -214,7 +206,7 @@ def addToExistingAuction(auction_id):
 def loadSoldCards():
     db = get_db()
     cards = db.execute(
-        'SELECT c.*, si.sell_price, si.sold_cm, si.sold, si.profit, s.sale_date, s.invoice_number '
+        'SELECT c.*, si.sell_price, si.sold_cm, si.sold, s.sale_date, s.invoice_number '
         'FROM cards c '
         'JOIN sale_items si ON c.id = si.card_id '
         'JOIN sales s ON si.sale_id = s.id'
@@ -376,11 +368,7 @@ def addToSingles():
         db = get_db()
         auction_id = 1
         data = request.get_json()
-        profit = {
-            'profit': data[0]['profit'] if 'profit' in data[0] else None,
-        }
 
-        db.execute('UPDATE auctions SET auction_profit = auction_profit + ? WHERE id = 1',(profit['profit'],))
         for card in data[1:]:
             db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, auction_id)'
                     'VALUES (?, ?, ?, ?, ?, ?)',
@@ -396,23 +384,13 @@ def addToSingles():
         db.commit()
     return jsonify({'status': 'success'}), 201
 
-#deprecated
-@bp.route('/updateAuctionProfit/<int:auction_id>', methods=('PATCH',))
-def updateAuctionProfit(auction_id):
-    db = get_db()
-    data = request.get_json()
-    profit = data.get('value')
-    db.execute('UPDATE auctions SET auction_profit = ? WHERE id = ?', (profit, auction_id))
-    db.commit()
-    return jsonify({'status': 'success'}), 200
-
 @bp.route('/updateAuction/<int:auction_id>', methods=('PATCH',))
 def updateAuction(auction_id):
     db = get_db()
     data = request.get_json()
-    profit = data.get('value')
+    value = data.get('value')
     field = data.get('field')
-    db.execute(f'UPDATE auctions SET {field} = ? WHERE id = ?', (profit, auction_id))
+    db.execute(f'UPDATE auctions SET {field} = ? WHERE id = ?', (value, auction_id))
     db.commit()
     return jsonify({'status': 'success'}), 200
 
@@ -437,7 +415,6 @@ def cardMarketTable():
         auction = {
             'name': None,
             'buy': None,
-            'profit': None,
             'date': date
         }
 
@@ -445,8 +422,8 @@ def cardMarketTable():
         auction["buy"] = round(auction["buy"], 2)
         try:
             cursor = db.execute(
-                'INSERT INTO auctions (auction_name, auction_price, auction_profit, date_created) VALUES (?, ?, ?, ?)',
-                (auction['name'], auction['buy'], auction['profit'], auction['date'])
+                'INSERT INTO auctions (auction_name, auction_price, date_created) VALUES (?, ?, ?)',
+                (auction['name'], auction['buy'], auction['date'])
             )
             auction_id = cursor.lastrowid
             cardsToInsert = []
@@ -544,33 +521,10 @@ def updateOneCard(db, name, num, condition, sellPrice):
         )
         sale_id = db.cursor().lastrowid
         
-        # Calculate profit
-        if card['auction_id'] == 1:
-            profit = (sellPrice * 0.95) - card['card_price']
-            profit = round(profit, 2)
-        else:
-            # For auction items, need to recalculate auction profit
-            auction_info = db.execute(
-                "SELECT auction_price FROM auctions WHERE id = ?", 
-                (card['auction_id'],)).fetchone()
-            sold_items = db.execute(
-                "SELECT si.sell_price, si.sold_cm FROM sale_items si "
-                "JOIN cards c ON si.card_id = c.id "
-                "WHERE c.auction_id = ?", (card['auction_id'],)).fetchall()
-            totalSellPrice = sum(
-                item['sell_price'] * 0.95 if item['sold_cm'] == 1 else item['sell_price']
-                for item in sold_items
-            )
-            totalSellPrice += sellPrice * 0.95  # Add current sale
-            totalProfit = round(totalSellPrice - auction_info['auction_price'], 2)
-            db.execute("UPDATE auctions SET auction_profit = ? WHERE id = ?", 
-                      (totalProfit, card['auction_id']))
-            profit = round(sellPrice * 0.95 - (auction_info['auction_price'] / (len(sold_items) + 1)), 2)
-        
         # Add sale item
         db.execute(
-            "INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, profit) VALUES (?, ?, ?, ?, ?)",
-            (sale_id, cardId['id'], sellPrice, 1, profit)
+            "INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm) VALUES (?, ?, ?, ?)",
+            (sale_id, cardId['id'], sellPrice, 1)
         )
         db.commit()
         return
@@ -717,17 +671,11 @@ def invoice(vendor):
             sell_price = int(card.get('marketValue', 0))
             db.execute('UPDATE cards SET sold_date = ? WHERE id = ?',
                       (sale_date, card.get('cardId')))
-            # Calculate profit (CardMarket takes 5% commission)
-            if card_info:
-                profit = (sell_price * 0.95 if vendor == 0 else sell_price) - (card_info['card_price'] or 0)
-                profit = round(profit, 2)
-            else:
-                profit = 0
                 
             db.execute(
-                'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
-                'VALUES (?, ?, ?, ?, ?, ?)',
-                (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, profit)
+                'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold) '
+                'VALUES (?, ?, ?, ?, ?)',
+                (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value)
             )
         
         db.commit()

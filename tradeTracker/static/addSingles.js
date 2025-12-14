@@ -4,9 +4,7 @@ const cardsArr = [];
 const saveButton = document.querySelector('.save-btn')
 
 saveButton.addEventListener('click', () => {
-    let auction = {
-        profit: null,
-    };
+    let auction = {};
     if(cardsArr.length === 0){
         cardsArr.push(auction);
     }
@@ -28,32 +26,18 @@ saveButton.addEventListener('click', () => {
             card.buyPrice = inputNumber('input[name=buyPrice]');
             card.marketValue = inputNumber('input[name=marketValue]');
             card.sellPrice = inputNumber('input[name=sellPrice]');
-            card.checkbox = ell.querySelector('input[name=sold]').checked;
-            card.checkbox_cm = ell.querySelector('input[name=sold_cm]').checked;
-            card.profit = inputNumber('input[name=profit]');
-            card.soldDate = (card.checkbox === true || card.checkbox_cm === true) ? new Date().toISOString() : null;
+            card.soldDate = null;
             if(card.sellPrice === null){
             card.sellPrice = card.marketValue;
             }
             if(card.buyPrice === null){
                 card.buyPrice = (card.marketValue * 0.80).toFixed(2);
             }
-            if(card.checkbox === true && card.sellPrice !== null && card.buyPrice !==null){
-                card.profit = card.sellPrice - card.buyPrice;
-            }
-            if(card.checkbox_cm === true && card.sellPrice !== null && card.buyPrice !==null){
-                card.profit = (card.sellPrice * 0.95) - card.buyPrice;
-            }
             if(card.cardName !== null && card.marketValue !== null){
                 cardsArr.push(card);
             }
         });
 
-        let profit = 0;
-        for(let i = 1; i < cardsArr.length; i++){
-            profit += cardsArr[i].profit || 0;
-        }
-        cardsArr[0].profit = profit;
 
         if (cardsArr.length !== 1){
             const jsonbody = JSON.stringify(cardsArr);
