@@ -457,7 +457,6 @@ function shoppingCart(){
 const existingIDs = new Set();
 
 function addToShoppingCart(card, cardId, auctionId){
-   // console.log(card, cardId,auctionId);
     if(!existingIDs.has(cardId)){
         existingIDs.add(cardId);
         const contentDiv = document.querySelector(".cart-content");
@@ -468,9 +467,32 @@ function addToShoppingCart(card, cardId, auctionId){
             <p>${card.cardName}</p>
             <p>${card.cardNum}</p>
             <p>${card.condition}</p>
-            <p>${card.marketValue}€</p>
+            <p class='market-value-invoice'>${card.marketValue}€</p>
             `
         contentDiv.append(cardDiv);
+        const marketValueInCart = cardDiv.querySelector('.market-value-invoice');
+        marketValueInCart.addEventListener('dblclick', () => {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = card.marketValue.replace('€','');
+            marketValueInCart.replaceWith(input);
+            input.addEventListener('blur', () => {
+                let newValue = input.value.replace(',', '.');
+                if(isNaN(newValue)){
+                    newValue = card.marketValue;
+                }
+                const p = document.createElement('p');
+                p.classList.add('market-value-invoice');
+                p.textContent = newValue + '€';
+                input.replaceWith(p);
+                card.marketValue = newValue;
+            });
+            input.addEventListener('keydown', (event) => {
+                if(event.key === 'Enter'){
+                    input.blur();
+                }
+            });
+        });
     }
 }
 
