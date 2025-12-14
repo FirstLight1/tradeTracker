@@ -595,10 +595,10 @@ async function loadAuctionContent(button) {
         if (cardsContainer.childElementCount === 0 || cardsContainer.style.display === 'none'){
             const response = await fetch(cardsUrl);
             const cards = await response.json();
-            //cardsContainer.style.display = 'block';
+            cardsContainer.style.display = 'flex';
             button.textContent = 'Hide';
             if(isEmpty(cards)){
-                cardsContainer.innerHTML = '<div><p>Empty</p></div>';
+                cardsContainer.innerHTML = '';
             }else{
                 cardsContainer.innerHTML = `
                     <div class="cards-header">
@@ -608,6 +608,8 @@ async function loadAuctionContent(button) {
                         <p>Buy price</p>
                         <p>Market value</p>
                         <p>Sell price</p>
+                        <p></p>
+                        <p></p>
                     </div>
                 `;
                 cards.forEach(card => {
@@ -887,10 +889,9 @@ async function loadAuctions() {
                 ${renderField(auctionPrice != null ? auctionPrice + '€' : null, 'text', ['auction-price'], 'Auction Buy Price', 'auction_price')}
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
-                    <div class="cards-container">
-                        <!-- Cards will be loaded here -->
-                        
-                    </div>
+                <div class="cards-container">
+                    <!-- Cards will be loaded here -->
+                </div>
             `;
             auctionContainer.appendChild(auctionDiv);
         });
