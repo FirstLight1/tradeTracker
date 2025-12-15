@@ -53,6 +53,7 @@ async function loadContent(button){
 async function loadHistory(){
     const response = await fetch('/loadSoldHistory');
     const sales = await response.json();
+    console.log(sales);
     const historyContainer = document.querySelector('.sales-history-container');
     sales.forEach(sale => {
         const saleElement = document.createElement('div');
@@ -63,7 +64,8 @@ async function loadHistory(){
         const formattedDate = `${saleDate.getDate().toString().padStart(2, '0')}.${(saleDate.getMonth() + 1).toString().padStart(2, '0')}.${saleDate.getFullYear()}`;
         saleElement.innerHTML = `
             <p class="auction-name">Invoice #${sale.invoice_number} - ${formattedDate}</p>
-            <p class="auction-price">${sale.total_amount}€</p>
+            <p class="auction-price">Celková suma: ${sale.total_amount}€</p>
+            <p>Marža: ${sale.total_profit ? sale.total_profit.toFixed(2) : '0.00'}€</p>
             <button class="view-auction" data-id="${sale.id}">View</button>
             <div class="cards-container">
                 <!-- Cards will be loaded here -->

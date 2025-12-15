@@ -206,8 +206,8 @@ def addToExistingAuction(auction_id):
 def loadSoldHistory():
     db = get_db()
     sales = db.execute(
-        'SELECT *, sum(si.profit) as total_profit FROM sales s '
-        'JOIN sale_items si ON s.id = si.sale_id '
+        'SELECT s.*, SUM(si.profit) as total_profit FROM sales s '
+        'RIGHT JOIN sale_items si ON s.id = si.sale_id '
         ' GROUP BY s.id '
         ' ORDER BY sale_date DESC'
     ).fetchall()
