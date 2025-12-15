@@ -407,6 +407,40 @@ def updateAuction(auction_id):
     db.commit()
     return jsonify({'status': 'success'}), 200
 
+@bp.route('/recalculateCardPrices/<int:auction_id>/<string:new_auction_price>', methods=('GET',))
+def recalculateCardPrices(auction_id, new_auction_price):
+    db = get_db()
+    new_auction_price = float(new_auction_price)
+    # Get unsold cards from the auction
+    cards = db.execute(
+        'SELECT c.id, c.market_value '
+        'FROM cards c '
+        'LEFT JOIN sale_items si ON c.id = si.card_id '
+        'WHERE c.auction_id = ? AND si.card_id IS NULL',
+        (auction_id,)
+    ).fetchall()
+
+    if not cards:
+        return jsonify({'status': 'error', 'message': 'No unsold cards found'}), 400
+
+    # Calculate total market value of unsold cards
+    total_market_value = sum(card['market_value'] or 0 for card in cards)
+    
+    if total_market_value == 0:
+        return jsonify({'status': 'error', 'message': 'Total market value is zero'}), 400
+
+    priceDiff = total_market_value - new_auction_price
+    
+    # Update each card proportionally
+    for card in cards:
+        if card['market_value'] is not None and card['market_value'] > 0:
+            discount = (card['market_value'] / total_market_value) * priceDiff
+            new_price = round(card['market_value'] - discount, 2)
+            db.execute('UPDATE cards SET card_price = ? WHERE id = ?', (new_price, card['id']))
+    
+    db.commit()
+    return jsonify({'status': 'success'}), 200
+
 @bp.route('/groupUnnamed', methods=('GET', 'POST'))
 def groupUnnamed():
     if request.method == 'GET':

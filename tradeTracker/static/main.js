@@ -662,6 +662,18 @@ function groupUnnamedAuctions(){
     });
 }
 
+async function changeCardPricesBasedOnAuctionPrice(auctionTab){
+    const auctionId = auctionTab.getAttribute('data-id');
+    let auctionPrice = auctionTab.querySelector('.auction-price').textContent.replace('€','');
+    console.log(typeof auctionPrice)
+    const response = await fetch(`/recalculateCardPrices/${auctionId}/${auctionPrice}`, {method: 'GET'});
+    const data = await response.json();
+    if(data.status == 'success'){
+        console.log('success');
+        window.location.reload();
+    }
+}
+
 
 async function loadAuctionContent(button) {
     const auctionId = button.getAttribute('data-id');
@@ -1059,7 +1071,7 @@ async function loadAuctions() {
                 input.classList.add(...event.target.classList);
                 event.target.replaceWith(input);
                 input.focus();
-                input.addEventListener('blur', (blurEvent) =>{
+                input.addEventListener('blur', async (blurEvent) =>{
                     let value = blurEvent.target.value.replace(',', '.');
                     if (isNaN(value)){
                         value = value.toUpperCase();
@@ -1069,11 +1081,12 @@ async function loadAuctions() {
                     if (!Boolean(value)){
                         return;
                     }
-                    updateAuction(auctionId, value, 'auction_price');
+                    await updateAuction(auctionId, value, 'auction_price');
                     const p = document.createElement('p');
                     p.classList.add('auction-price');
                     p.textContent = appendEuroSign(value, 'auction_price');
                     blurEvent.target.replaceWith(p);
+                    changeCardPricesBasedOnAuctionPrice(auctionDiv);
                     attachAuctionPriceListener(p);
                 })
                 input.addEventListener('keydown', (keyEvent)=>{
