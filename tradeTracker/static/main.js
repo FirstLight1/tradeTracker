@@ -327,6 +327,9 @@ function shoppingCart(){
 
     const confirmButton = document.querySelector(".confirm-btn");
     confirmButton.addEventListener('click', async ()=>{
+        if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P') {
+            return;
+        }
         let recieverDiv = document.querySelector('.reciever-div');
         if(recieverDiv){
             return
@@ -365,8 +368,14 @@ function shoppingCart(){
                 <div class="modal-content">
                     <span class="close-modal">&times;</span>
                     <div class='complete-invoice-info'>
-                        <p>Forma uhrady<p>
-                        <input type='text' class='payment-type' value='Peňažný prevod'>
+                        <p>Forma uhrady</p>
+                        <select class='payment-type'>
+                            <option value='Peňažný prevod'>Peňažný prevod</option>
+                            <option value='Hotovosť'>Hotovosť</option>
+                            <option value='Karta'>Karta</option>
+                            <option value='Dobierka'>Dobierka</option>
+                            <option value='Internetový platobný systém'>Internetový platobný systém</option>
+                        </select>
                     </div>
                     <div>
                         <p>Client name and surname</p>
@@ -404,24 +413,25 @@ function shoppingCart(){
 
             const dateInput = document.querySelector('.date-input');
             dateInput.value = new Date().toISOString().split('T')[0]; 
-            const paymentType = document.querySelector('.payment-type');
-            paymentType.value = 'Peňažný prevod';
         }
 
         const generateInvoiceBtn = document.querySelector('.generate-invoice');
-        if(generateInvoiceBtn){
+        {
             let inputVals = [];
             generateInvoiceBtn.addEventListener('click',async () => {
+            
             const inputs = recieverDiv.querySelectorAll('input');
             inputs.forEach((input) =>{
                 inputVals.push(input.value);
                 })
+            const paymentSelect = recieverDiv.querySelector('.payment-type').value;
+
             if(!cards[cards.length -1].hasOwnProperty('total')){
             const recieverInfo = {
-                paymentMethod : inputVals[0],
-                nameAndSurname : inputVals[1],
-                address : inputVals[2],
-                paybackDate: inputVals[3],
+                paymentMethod : paymentSelect,
+                nameAndSurname : inputVals[0],
+                address : inputVals[1],
+                paybackDate: inputVals[2],
                 total: null,
             };
             cards.push(recieverInfo);
