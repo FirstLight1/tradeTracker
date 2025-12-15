@@ -49,16 +49,16 @@ def generate_invoice(reciever, items):
         # Mapping Slovak IDs to library fields:
         ir="57310041",       # IČO
         vat_id="1130287664", # DIČ
-        note="Neplatitel DPH",
+        note="Osoba zapísaná v Živnostenskom registri pod číslom \n220-42582, vydal Okresný úrad Galanta dňa\n 5.11.2025. \nPlatiteľ DPH formou §66.",
         logo_filename="tradeTracker/static/images/logo.png"
     )
 
-    # 2. Define the Client (Miloš Planieta)
+    # 2. Define the Client
     # Data extracted from source: 50-51
     client = Client(
-        summary=reciever.get("nameAndSurname"),
-        address=reciever.get("address"), # Full street address was missing in the snippet
-        city=reciever.get("address"),
+        summary=" ".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")]), 
+        address=reciever.get("address").capitalize(), # Full street address was missing in the snippet
+        city=reciever.get("city").capitalize(),
     )
 
     # 3. Create the Invoice

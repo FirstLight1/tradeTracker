@@ -386,6 +386,9 @@ function shoppingCart(){
                         <input type='text' class='client-address'>
                     </div>
                     <div>
+                        <p>City</p>
+                        <input type='text' class='client-city'>
+                    <div>
                         <p>Payback date</p>
                         <input type='date' class='date-input'>
                     </div>
@@ -431,7 +434,8 @@ function shoppingCart(){
                 paymentMethod : paymentSelect,
                 nameAndSurname : inputVals[0],
                 address : inputVals[1],
-                paybackDate: inputVals[2],
+                city : inputVals[2],
+                paybackDate: inputVals[3],
                 total: null,
             };
             cards.push(recieverInfo);
@@ -493,6 +497,7 @@ function addToShoppingCart(card, cardId, auctionId){
             <p>${card.cardNum}</p>
             <p>${card.condition}</p>
             <p class='market-value-invoice'>${card.marketValue}€</p>
+            <button class='remove-from-cart'>Remove</button>
             `
         contentDiv.append(cardDiv);
         const marketValueInCart = cardDiv.querySelector('.market-value-invoice');
@@ -518,6 +523,15 @@ function addToShoppingCart(card, cardId, auctionId){
                     input.blur();
                 }
             });
+        });
+
+        const removeBtn = cardDiv.querySelector('.remove-from-cart');
+        removeBtn.addEventListener('click', () => {
+            existingIDs.delete(cardId);
+            cardDiv.remove();
+            if(contentDiv.childElementCount === 0){
+                contentDiv.innerHTML = '<p>Your cart is empty</p>';
+            }
         });
     }
 }
