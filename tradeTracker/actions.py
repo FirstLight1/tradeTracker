@@ -206,7 +206,10 @@ def addToExistingAuction(auction_id):
 def loadSoldHistory():
     db = get_db()
     sales = db.execute(
-        'SELECT * FROM sales ORDER BY sale_date DESC'
+        'SELECT *, sum(si.profit) as total_profit FROM sales s '
+        'JOIN sale_items si ON s.id = si.sale_id '
+        ' GROUP BY s.id '
+        ' ORDER BY sale_date DESC'
     ).fetchall()
     return jsonify([dict(sale) for sale in sales])
     
@@ -674,8 +677,8 @@ def invoice(vendor):
         
         # Add sale items
         # vendor == 0 means CardMarket, vendor == 1 means other platform
-        sold_cm_value = 1 if vendor == 0 else 0
-        sold_value = 0 if vendor == 0 else 1
+        sold_cm_value = 1 if vendor == 1 else 0
+        sold_value = 0 if vendor == 1 else 1
         
         for card in cards:
             sell_price = float(card.get('marketValue', 0))
@@ -683,9 +686,9 @@ def invoice(vendor):
                       (sale_date, card.get('cardId')))
                 
             db.execute(
-                'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold)'
-                'VALUES (?, ?, ?, ?, ?)',
-                (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value)
+                'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
+                'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
+                (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
             )
         
         db.commit()

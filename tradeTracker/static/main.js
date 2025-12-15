@@ -472,7 +472,9 @@ function addToShoppingCart(card, cardId, auctionId){
     if(!existingIDs.has(cardId)){
         existingIDs.add(cardId);
         const contentDiv = document.querySelector(".cart-content");
-        contentDiv.innerHTML = '';
+        if(contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P'){
+            contentDiv.innerHTML = '';
+        }
         const cardDiv = document.createElement('div');
         cardDiv.setAttribute("cardId", `${cardId}`)
         cardDiv.setAttribute("auctionId", `${auctionId}`)
