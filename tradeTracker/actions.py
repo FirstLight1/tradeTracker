@@ -664,6 +664,7 @@ def invoice(vendor):
         cards = request.get_json()
         recieverInfo = cards[len(cards)-1]
         cards.pop()
+        print("Receiver Info:", recieverInfo)
         # Generate the invoice and get the file path
         pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cards)
         # Update database
@@ -671,8 +672,8 @@ def invoice(vendor):
         
         # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()
-        cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount) VALUES (?, ?, ?)',
-                   (invoice_num, sale_date, recieverInfo.get('total')))
+        cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount, notes) VALUES (?, ?, ?, ?)',
+                   (invoice_num, sale_date, recieverInfo.get('total'), recieverInfo.get('nameAndSurname')))
         sale_id = cursor.lastrowid
         
         # Add sale items

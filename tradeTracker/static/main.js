@@ -366,7 +366,7 @@ function shoppingCart(){
                     <span class="close-modal">&times;</span>
                     <div class='complete-invoice-info'>
                         <p>Forma uhrady<p>
-                        <input type='text' class='payment-type'>
+                        <input type='text' class='payment-type' value='Peňažný prevod'>
                     </div>
                     <div>
                         <p>Client name and surname</p>

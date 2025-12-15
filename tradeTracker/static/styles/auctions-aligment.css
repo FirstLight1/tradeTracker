@@ -28,7 +28,6 @@ p{
 }
 
 .auction-tab{
-    border:5px solid black;
     border-radius: 15px;
     padding: 15px;
     display: grid;
@@ -39,6 +38,11 @@ p{
     margin-bottom: 15px;
     text-align: center;
     cursor: pointer;
+}
+
+.sold-tab{
+    grid-template-columns: repeat(4, 150px) repeat(2, 50px);
+    
 }
 
 .auction-header{
