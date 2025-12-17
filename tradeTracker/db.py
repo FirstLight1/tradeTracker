@@ -29,6 +29,8 @@ DROP TABLE IF EXISTS sales;
 DROP TABLE IF EXISTS auctions;
 DROP TABLE IF EXISTS cards;
 DROP TABLE IF EXISTS collection;
+DROP TABLE IF EXISTS bulk_counter;
+DROP TABLE IF EXISTS bulk_sales;
 
 CREATE TABLE auctions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,6 +82,29 @@ CREATE TABLE sale_items (
 
 CREATE INDEX idx_sale_items_sale_id ON sale_items(sale_id);
 CREATE INDEX idx_sale_items_card_id ON sale_items(card_id);
+
+CREATE TABLE bulk_counter(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    counter_name TEXT UNIQUE NOT NULL,
+    counter INTEGER DEFAULT 0
+);
+
+INSERT INTO bulk_counter (counter_name, counter) VALUES ('bulk', 0);
+INSERT INTO bulk_counter (counter_name, counter) VALUES ('holo', 0);
+
+CREATE TABLE bulk_sales(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sale_id INTEGER NOT NULL,
+    item_type TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price REAL NOT NULL,
+    total_price REAL NOT NULL,
+    FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE
+    );
+
+CREATE INDEX idx_bulk_sales_sale_id ON bulk_sales(sale_id)
+
+
 
 CREATE TABLE collection (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

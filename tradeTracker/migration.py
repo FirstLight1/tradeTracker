@@ -1,11 +1,11 @@
 import sqlite3
 import os
 import sys
-
 # Import the sales history migration logic
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, parent_dir)
 from migrate_to_sales_history import migrate_to_sales_history
+from add_bulk import add_bulk_sales_table
 
 def migrate_database(db_path):
     """
@@ -30,6 +30,8 @@ def migrate_database(db_path):
         
         # Migration 2: Migrate to sales history structure (checks if sales table exists)
         _migrate_to_sales_history_wrapper(db_path)
+        # Migration 4: Add bulk sales and counter tables if they don't exist
+        add_bulk_sales_table(db_path)
         
         print("Database migration check complete.")
     except sqlite3.Error as e:
