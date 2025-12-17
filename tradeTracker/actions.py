@@ -413,7 +413,7 @@ def recalculateCardPrices(auction_id, new_auction_price):
     new_auction_price = float(new_auction_price)
     # Get unsold cards from the auction
     cards = db.execute(
-        'SELECT c.id, c.market_value '
+        'SELECT c.id, c.market_value, si.card_id '
         'FROM cards c '
         'LEFT JOIN sale_items si ON c.id = si.card_id '
         'WHERE c.auction_id = ? AND si.card_id IS NULL',
@@ -422,6 +422,10 @@ def recalculateCardPrices(auction_id, new_auction_price):
 
     if not cards:
         return jsonify({'status': 'error', 'message': 'No unsold cards found'}), 400
+
+    for card in cards:
+        if card["card_id"] is not None:
+            return jsonify({'status': 'error', 'message': 'Some cards have already been sold'}), 400
 
     # Calculate total market value of unsold cards
     total_market_value = sum(card['market_value'] or 0 for card in cards)
