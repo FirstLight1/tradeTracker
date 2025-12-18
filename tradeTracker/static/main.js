@@ -647,6 +647,24 @@ function displaySearchResults(results){
     });
 }
 
+async function loadBulkHoloValues(){
+    const bulkVal = document.querySelector('.bulk-value').textContent;
+    const holoVal = document.querySelector('.holo-value').textContent;
+
+    try{
+        const response = await fetch('/bulkCounterValue');
+        const data = await response.json();
+        if(data.status == 'success'){
+            bulkVal.textContent = data.bulkValue;
+            holoVal.textContent = data.holoValue;
+        }else{
+            console.error("There was a problem loading bulk and holo values")
+        }
+    }catch(e){
+        console.error(e);
+    }
+}
+
 function groupUnnamedAuctions(){
     const button = document.querySelector(".group-unnammed");
     button.addEventListener('click',async() => {
@@ -1163,6 +1181,7 @@ if(document.title === "Trade Tracker"){
     soldReportBtn();
     groupUnnamedAuctions();
     shoppingCart();
+    loadBulkHoloValues();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
     }, false);
