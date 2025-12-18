@@ -7,12 +7,12 @@ async function loadContent(button){
     
     if (cardsContainer.childElementCount === 0 || cardsContainer.style.display === 'none'){
         const response = await fetch('/loadSoldCards/' + saleId);
-        const soldCards = await response.json();
+        const soldItems = await response.json();
         cardsContainer.style.display = 'flex';
         cardsContainer.style.marginLeft = '-400px';
         button.textContent = 'Hide';
         
-        if(soldCards.length === 0){
+        if(soldItems.length === 0){
             cardsContainer.innerHTML = '';
         } else {
             cardsContainer.innerHTML = `
@@ -23,9 +23,14 @@ async function loadContent(button){
                     <p>Buy price</p>
                     <p>Market value</p>
                     <p>Sell price</p>
+                    <p>Margin</p>
                     <p>Sold Date</p>
                 </div>
             `;
+            const soldCards = soldItems.cards;
+            const bulkSales = soldItems.bulk_sales;
+            console.log(soldCards);
+            console.log(bulkSales);
             soldCards.forEach(card => {
                 const cardElement = document.createElement('div');
                 cardElement.classList.add('card');
@@ -44,6 +49,24 @@ async function loadContent(button){
                     <span hidden class = "card-id">${card.id}</span>
                 `;
                 cardsContainer.appendChild(cardElement);
+            });
+            bulkSales.forEach(bulk => {
+                const bulkElement = document.createElement('div');
+                bulkElement.classList.add('card');
+                const soldDate = new Date(bulk.sold_date);
+                const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
+                bulkElement.innerHTML = `
+                    <p class='card-info card-name'>${bulk.item_type}</p>
+                    <p class='card-info card-num'></p>
+                    <p class='card-info condition'></p>
+                    <p class='card-info card-price'></p>
+                    <p class='card-info market-value'>Počet: ${bulk.quantity}</p>
+                    <p class='card-info sell-price'>${bulk.total_price ? bulk.total_price + '€' : 'Unknown'}</p>
+                    <p>Marža: ${bulk.total_price && bulk.total_cost ? (bulk.total_price - bulk.quantity * bulk.unit_price).toFixed(2) + '€' : 'Unknown'}</p>
+                    <p>${formattedDate}</p>
+                    <span hidden class = "bulk-id">${bulk.id}</span>
+                `;
+                cardsContainer.appendChild(bulkElement);
             });
         }
     } else {

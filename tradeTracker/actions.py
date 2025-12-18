@@ -202,14 +202,33 @@ def addToExistingAuction(auction_id):
         db.commit()
         return jsonify({'status': 'success'}), 201
 
+@bp.route('/bulkCounterValue')
+def bulkCounterValue():
+    db = get_db()
+    cur = db.cursor()
+    bulk_counter = cur.execute('SELECT counter FROM bulk_counter WHERE counter_name = "bulk"').fetchone()[0]
+    holo_counter = cur.execute('SELECT counter FROM bulk_counter WHERE counter_name = "holo"').fetchone()[0]
+    return jsonify({'status': 'success','bulk_counter': bulk_counter, 'holo_counter': holo_counter}),200
+
+@bp.route('/incrementBulkCounter/<string:counter_name>/<int:increment_type>/<int:increment>', methods=('POST',))
+def incrementBulkCounter(counter_name, increment_type, increment):
+    db = get_db()
+    if increment_type == 0:
+        db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = ?', (increment, counter_name))
+    else:
+        db.execute('UPDATE bulk_counter SET counter = counter + ? WHERE counter_name = ?', (increment, counter_name))
+    db.commit()
+    return jsonify({'status': 'success'}),200
+
 @bp.route('/loadSoldHistory')
 def loadSoldHistory():
     db = get_db()
     sales = db.execute(
-        'SELECT s.*, SUM(si.profit) as total_profit FROM sales s '
-        'RIGHT JOIN sale_items si ON s.id = si.sale_id '
-        ' GROUP BY s.id '
-        ' ORDER BY sale_date DESC'
+        'SELECT s.*, '
+        '(COALESCE((SELECT SUM(si.profit) FROM sale_items si WHERE si.sale_id = s.id), 0) + '
+        'COALESCE((SELECT SUM(bs.total_price) FROM bulk_sales bs WHERE bs.sale_id = s.id), 0)) as total_profit '
+        'FROM sales s '
+        'ORDER BY sale_date DESC'
     ).fetchall()
     return jsonify([dict(sale) for sale in sales])
     
@@ -224,7 +243,15 @@ def loadSoldCards(sale_id):
         'WHERE si.sale_id = ?',
         (sale_id,)
     ).fetchall()
-    return jsonify([dict(card) for card in cards])
+    bulk_sales = db.execute(
+        'SELECT * FROM bulk_sales WHERE sale_id = ?', (sale_id,))
+    bulk_sales_list = [dict(bulk) for bulk in bulk_sales]
+    response = {
+        "cards": [dict(card) for card in cards],
+        "bulk_sales": bulk_sales_list
+    }
+
+    return jsonify(response)
 
 @bp.route('/generateSoldReport', methods=('GET',))
 def generateSoldReport():
