@@ -2,7 +2,7 @@ import sqlite3
 import os
 import shutil
 
-def add_bulk(db_path):
+def add_bulk_sales_table(db_path):
     """
     Adds the bulk_sales and bulk_counter tables to the database if they don't exist.
     """
@@ -85,7 +85,7 @@ def add_bulk(db_path):
     
 if __name__ == "__main__":
     db_path = "trade_tracker.db"  # Update with your actual database path
-    if add_bulk(db_path):
+    if add_bulk_sales_table(db_path):
         print("Bulk tables added or already exist.")
     else:
         print("Failed to add bulk tables.")
