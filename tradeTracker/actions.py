@@ -759,11 +759,11 @@ def invoice(vendor):
 
         if bulk:
             db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
-                   (sale_id, 'bulk', bulk.get('quantity', 0), 0.01, bulk.get('price', 0)))
+                   (sale_id, 'bulk', bulk.get('quantity', 0), bulk.get('unit_price', 0), bulk.get('price', 0)))
             db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "bulk"', (bulk.get('quantity', 0),))
         if holo:
             db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
-                   (sale_id, 'holo', holo.get('quantity', 0), 0.03, holo.get('price', 0)))
+                   (sale_id, 'holo', holo.get('quantity', 0), holo.get('unit_price', 0), holo.get('price', 0)))
             db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "holo"', (holo.get('quantity', 0),))
 
         db.commit()

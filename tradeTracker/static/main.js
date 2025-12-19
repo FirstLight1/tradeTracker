@@ -309,11 +309,11 @@ function cartValue(cartContent){
     });
 
     if(cartContent.bulkItem){
-        sum = Number(sum) + Number(cartContent.bulkItem.price);
+        sum = Number(sum) + Number(cartContent.bulkItem.sell_price);
     }
 
     if(cartContent.holoItem){
-        sum += Number(cartContent.holoItem.price);
+        sum += Number(cartContent.holoItem.sell_price);
     }
     return sum.toFixed(2);
 }
@@ -379,11 +379,16 @@ function shoppingCart(){
         const holoItems = holoCartContent.querySelector('.holo-cart-item-holo');
         if(bulkItems){
             const bulkQuantity = Number(bulkItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
+
+            //this is bad I need to think about this shit cause no way this is correct
+
             const bulkMarketValue = (bulkQuantity * 0.01).toFixed(2);
+            const sellPriceInput = bulkItems.querySelector('.bulk-sell-price').value;
             const bulk = {
                 counter_name: 'bulk',
                 quantity: bulkQuantity,
-                unit_price: 0.01,
+                unit_price: sellPriceInput/bulkQuantity ? (Number(sellPriceInput)/bulkQuantity).toFixed(2) : 0.01,
+                sell_price: sellPriceInput ? Number(sellPriceInput) : 0.01,
                 price: bulkMarketValue 
             };
             cartContent.bulkItem = bulk;
@@ -391,10 +396,12 @@ function shoppingCart(){
         if(holoItems){
             const holoQuantity = Number(holoItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
             const holoMarketValue = (holoQuantity * 0.03).toFixed(2);
+            const sellPriceInput = holoItems.querySelector('.holo-sell-price').value;
             const holo = {
                 counter_name: 'holo',
                 quantity: holoQuantity,
-                unit_price: 0.03,
+                unit_price: sellPriceInput/holoQuantity ? (Number(sellPriceInput)/holoQuantity).toFixed(2) : 0.03,
+                sell_price: sellPriceInput ? Number(sellPriceInput) : 0.03,
                 price: holoMarketValue
             };
             cartContent.holoItem = holo;
@@ -599,7 +606,7 @@ function addBulkToCart(){
                 div.innerHTML = `
                     <p>Bulk</p>
                     <p>q: ${value}</p>
-                    <p>${(value * 0.01).toFixed(2)}€</p>
+                    <input type='text' class='bulk-sell-price' style='width:70px'>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
             }
@@ -633,7 +640,7 @@ function addHoloToCart(){
                 div.innerHTML = `
                     <p>Holo</p>
                     <p>q: ${value}</p>
-                    <p>${(value * 0.03).toFixed(2)}€</p>
+                    <input type='text' class='holo-sell-price' style='width:70px'>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
             }
