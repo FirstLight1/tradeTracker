@@ -7,7 +7,7 @@ from InvoiceGenerator.api import Invoice, Item, Client, Provider, Creator
 from InvoiceGenerator.pdf import SimpleInvoice
 from flask import current_app
 
-def generate_invoice(reciever, items):
+def generate_invoice(reciever, items, bulk=None, holo=None):
     # Read invoice number from env.txt
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
@@ -88,6 +88,22 @@ def generate_invoice(reciever, items):
             unit="ks",
             description=item.get("cardName") + " " + item.get("cardNum"),
             tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
+        ))
+    if bulk:
+        invoice.add_item(Item(
+            count=bulk.get("quantity", 0),
+            price=Decimal("0.01"),
+            unit="ks",
+            description="Bulk cards purchase",
+            tax=Decimal("0")
+        ))
+    if holo:
+        invoice.add_item(Item(
+            count=holo.get("quantity", 0),
+            price=Decimal("0.03"),
+            unit="ks",
+            description="Holo cards purchase",
+            tax=Decimal("0")
         ))
 
     # 5. Generate PDF

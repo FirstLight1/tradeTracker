@@ -302,7 +302,6 @@ export async function updateInventoryValueAndTotalProfit() {
 
 function cartValue(cartContent){
     let sum = 0.0;
-
     cartContent.cards.forEach(card => {
         if (card.marketValue){
         sum += Number(card.marketValue);
@@ -472,7 +471,7 @@ function shoppingCart(){
                 })
             const paymentSelect = recieverDiv.querySelector('.payment-type').value;
 
-            if(!cards[cards.length -1].hasOwnProperty('total')){
+            if(!cartContent.recieverInfo){
             const recieverInfo = {
                 paymentMethod : paymentSelect,
                 nameAndSurname : inputVals[0],
@@ -493,8 +492,7 @@ function shoppingCart(){
             } 
 
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
-        cartContent.recieverInfo.total = cartValue(cards);
-        console.log(JSON.stringify(cartContent))
+        cartContent.recieverInfo.total = Number(cartValue(cartContent));
         if(Object.keys(cartContent).length !== 0){
             const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
                 {
@@ -507,8 +505,13 @@ function shoppingCart(){
             if(data.status = 'success'){
                 console.log("success")
                 cards = [];
-                cartContent = {};
-                contentDiv.innerHTML = '';
+                for (const key in cartContent){
+                    delete cartContent[key];
+                }
+                contentDiv.innerHTML = 'Your cart is empty';
+                bulkCartContent.innerHTML = '';
+                holoCartContent.innerHTML = '';
+                loadBulkHoloValues();
                 existingIDs.clear();
                 vendorCheckBox = false;
                 recieverDiv.remove();

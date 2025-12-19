@@ -726,12 +726,12 @@ def search():
 @bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
 def invoice(vendor):
     if request.method == 'POST':
-        cards = request.get_json()
-        recieverInfo = cards[len(cards)-1]
-        cards.pop()
-        print("Receiver Info:", recieverInfo)
+        cartContent = request.get_json()
+        recieverInfo = cartContent['recieverInfo']
+        bulk = cartContent.get('bulkItem')
+        holo = cartContent.get('holoItem')
         # Generate the invoice and get the file path
-        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cards)
+        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []), bulk, holo)
         # Update database
         db = get_db()
         
@@ -746,7 +746,7 @@ def invoice(vendor):
         sold_cm_value = 1 if vendor == 1 else 0
         sold_value = 0 if vendor == 1 else 1
         
-        for card in cards:
+        for card in cartContent.get('cards', []):
             sell_price = float(card.get('marketValue', 0))
             db.execute('UPDATE cards SET sold_date = ? WHERE id = ?',
                       (sale_date, card.get('cardId')))
@@ -756,7 +756,16 @@ def invoice(vendor):
                 'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
                 (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
             )
-        
+
+        if bulk:
+            db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
+                   (sale_id, 'bulk', bulk.get('quantity', 0), 0.01, bulk.get('price', 0)))
+            db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "bulk"', (bulk.get('quantity', 0),))
+        if holo:
+            db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
+                   (sale_id, 'holo', holo.get('quantity', 0), 0.03, holo.get('price', 0)))
+            db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "holo"', (holo.get('quantity', 0),))
+
         db.commit()
         
         # Send the PDF file as a download
