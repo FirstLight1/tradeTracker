@@ -648,21 +648,64 @@ function displaySearchResults(results){
 }
 
 async function loadBulkHoloValues(){
-    const bulkVal = document.querySelector('.bulk-value').textContent;
-    const holoVal = document.querySelector('.holo-value').textContent;
-
+    let holoVal = document.querySelector('.holo-value');
+    let bulkVal = document.querySelector('.bulk-value');
     try{
         const response = await fetch('/bulkCounterValue');
         const data = await response.json();
         if(data.status == 'success'){
-            bulkVal.textContent = data.bulkValue;
-            holoVal.textContent = data.holoValue;
+            bulkVal.textContent = data.bulk_counter;
+            holoVal.textContent = data.holo_counter;
         }else{
             console.error("There was a problem loading bulk and holo values")
         }
     }catch(e){
         console.error(e);
     }
+}
+
+async function changeBulkHoloCounters(counter_name, increment_type, increment, valueEl){
+        const response = await fetch(`/incrementBulkCounter/${counter_name}/${increment_type}/${increment}`, {method: 'GET'} );
+        const data = await response.json();
+        if(data.status == 'success'){
+                    const Val = document.querySelector(`.${counter_name}-value`);
+                    Val.textContent = Number(Val.textContent) + Number(increment * (increment_type === 1 ? 1 : -1));
+                    valueEl.value = '';
+        }else{
+            console.error(`There was a problem adding ${counter_name} value`)
+        }
+}
+
+function addBulk(){
+    const button = document.querySelector(".add-bulk-btn");
+    const value = document.querySelector('.bulk-input');
+    button.addEventListener('click',async() => {
+        if(value.value <= 0){
+            changeBulkHoloCounters('bulk', 0, Math.abs(value.value), value);
+        } else{
+            changeBulkHoloCounters('bulk', 1, value.value, value);
+        }
+    });
+
+}
+
+function addHolo(){
+    const button = document.querySelector(".add-holo-btn");
+    const value = document.querySelector('.holo-input');
+
+    button.addEventListener('click',async() => {
+        if(value.value <= 0){
+            changeBulkHoloCounters('holo', 0, Math.abs(value.value), value);
+        } else{
+            changeBulkHoloCounters('holo', 1, value.value, value);
+        }
+    });
+}
+
+function initializeBulkHolo(){
+    loadBulkHoloValues();
+    addBulk();
+    addHolo();
 }
 
 function groupUnnamedAuctions(){
@@ -1181,7 +1224,7 @@ if(document.title === "Trade Tracker"){
     soldReportBtn();
     groupUnnamedAuctions();
     shoppingCart();
-    loadBulkHoloValues();
+    initializeBulkHolo();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
     }, false);
