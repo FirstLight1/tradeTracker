@@ -311,6 +311,12 @@ function cartValue(cards){
     return sum;
 }
 
+function initializeCart(){
+    shoppingCart();
+    addBulkToCart();
+    addHoloToCart();
+}
+
 function shoppingCart(){
     const contentDiv = document.querySelector(".cart-content");
     if (contentDiv.childElementCount === 0){
@@ -535,6 +541,77 @@ function addToShoppingCart(card, cardId, auctionId){
         });
     }
 }
+
+
+function addBulkToCart(){
+    const button = document.querySelector('.card-add-bulk');
+    const input = document.querySelector('.cart-bulk-input');
+    const contentDiv = document.querySelector(".bulk-cart-content");
+    button.addEventListener('click', () => {
+        const value = input.value;
+        const bulkItems = contentDiv.querySelector('.bulk-cart-item-bulk');
+        if(!bulkItems){
+            if(value && !isNaN(value)){
+                const div = document.createElement('div');
+                div.classList.add('bulk-cart-item-bulk');
+                div.innerHTML = `
+                    <p>Bulk</p>
+                    <p>q: ${value}</p>
+                    <p>${value * 0.01}€</p>
+                    <button class='remove-from-cart'>Remove</button>`
+                contentDiv.appendChild(div);
+            }
+        }else{
+            const quantityP = bulkItems.querySelectorAll('p')[1];
+            let currentQuantity = Number(quantityP.textContent.replace('q: ', ''));
+            if(value && !isNaN(value)){
+                currentQuantity += Number(value);
+                quantityP.textContent = `q: ${currentQuantity}`;
+                const priceP = bulkItems.querySelectorAll('p')[2];
+                priceP.textContent = `${(currentQuantity * 0.01).toFixed(2)}€`;
+            }
+        }
+        const removeButton = contentDiv.querySelector('.remove-from-cart');
+        removeButton.addEventListener('click', () => {
+            contentDiv.innerHTML = '';});
+    });
+}
+
+function addHoloToCart(){
+    const button = document.querySelector('.card-add-holo');
+    const input = document.querySelector('.cart-holo-input');
+    const contentDiv = document.querySelector(".holo-cart-content");
+    button.addEventListener('click', () => {
+        const value = input.value;
+        const bulkItems = contentDiv.querySelector('.holo-cart-item-holo');
+        if(!bulkItems){
+            if(value && !isNaN(value)){
+                const div = document.createElement('div');
+                div.classList.add('holo-cart-item-holo');
+                div.innerHTML = `
+                    <p>Holo</p>
+                    <p>q: ${value}</p>
+                    <p>${value * 0.01}€</p>
+                    <button class='remove-from-cart'>Remove</button>`
+                contentDiv.appendChild(div);
+            }
+        }else{
+            const quantityP = bulkItems.querySelectorAll('p')[1];
+            let currentQuantity = Number(quantityP.textContent.replace('q: ', ''));
+            if(value && !isNaN(value)){
+                currentQuantity += Number(value);
+                quantityP.textContent = `q: ${currentQuantity}`;
+                const priceP = bulkItems.querySelectorAll('p')[2];
+                priceP.textContent = `${(currentQuantity * 0.03).toFixed(2)}€`;
+            }
+        }
+        const removeButton = contentDiv.querySelector('.remove-from-cart');
+        removeButton.addEventListener('click', () => {
+        contentDiv.innerHTML = '';});
+    });
+}
+
+
 
 function searchBar(){
     const searchInput = document.querySelector('.search-field');
@@ -1223,7 +1300,7 @@ if(document.title === "Trade Tracker"){
     importCSV();
     soldReportBtn();
     groupUnnamedAuctions();
-    shoppingCart();
+    initializeCart();
     initializeBulkHolo();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
