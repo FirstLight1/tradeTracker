@@ -300,15 +300,23 @@ export async function updateInventoryValueAndTotalProfit() {
         }
 }
 
-function cartValue(cards){
-    let sum = 0;
+function cartValue(cartContent){
+    let sum = 0.0;
 
-    cards.forEach(card => {
+    cartContent.cards.forEach(card => {
         if (card.marketValue){
         sum += Number(card.marketValue);
         }
     });
-    return sum;
+
+    if(cartContent.bulkItem){
+        sum = Number(sum) + Number(cartContent.bulkItem.price);
+    }
+
+    if(cartContent.holoItem){
+        sum += Number(cartContent.holoItem.price);
+    }
+    return sum.toFixed(2);
 }
 
 function initializeCart(){
@@ -333,6 +341,7 @@ function shoppingCart(){
 
     const confirmButton = document.querySelector(".confirm-btn");
     confirmButton.addEventListener('click', async ()=>{
+        const cartContent = {};
         if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P') {
             return;
         }
@@ -363,10 +372,38 @@ function shoppingCart(){
 
             cards.push(cardData);
         });
+        cartContent.cards = cards;
 
-        const cartVal = cartValue(cards)
+        const bulkCartContent = document.querySelector(".bulk-cart-content");
+        const bulkItems = bulkCartContent.querySelector('.bulk-cart-item-bulk');
+        const holoCartContent = document.querySelector(".holo-cart-content");
+        const holoItems = holoCartContent.querySelector('.holo-cart-item-holo');
+        if(bulkItems){
+            const bulkQuantity = Number(bulkItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
+            const bulkMarketValue = (bulkQuantity * 0.01).toFixed(2);
+            const bulk = {
+                counter_name: 'bulk',
+                quantity: bulkQuantity,
+                unit_price: 0.01,
+                price: bulkMarketValue 
+            };
+            cartContent.bulkItem = bulk;
+        }
+        if(holoItems){
+            const holoQuantity = Number(holoItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
+            const holoMarketValue = (holoQuantity * 0.03).toFixed(2);
+            const holo = {
+                counter_name: 'holo',
+                quantity: holoQuantity,
+                unit_price: 0.03,
+                price: holoMarketValue
+            };
+            cartContent.holoItem = holo;
+        }
 
-        if(!recieverDiv && cards.length != 0){
+        const cartVal = Number(cartValue(cartContent));
+
+        if(!recieverDiv && Object.keys(cartContent).length != 0){
             const body = document.querySelector('body');
             recieverDiv = document.createElement('div');
             recieverDiv.classList.add('reciever-div');
@@ -444,7 +481,7 @@ function shoppingCart(){
                 paybackDate: inputVals[3],
                 total: null,
             };
-            cards.push(recieverInfo);
+            cartContent.recieverInfo = recieverInfo;
             }
             const cartValueInput = document.querySelector('.price-input').value ||cartVal;
             if (cartValueInput != cartVal){
@@ -456,19 +493,21 @@ function shoppingCart(){
             } 
 
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
-        cards[cards.length -1].total = cartValue(cards);
-        if(cards.length != 1){
+        cartContent.recieverInfo.total = cartValue(cards);
+        console.log(JSON.stringify(cartContent))
+        if(Object.keys(cartContent).length !== 0){
             const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
                 {
                     method: 'POST',
                     headers: {
                         'Content-Type' : 'application/json'},
-                    body: JSON.stringify(cards),
+                    body: JSON.stringify(cartContent),
                 });
             const data = await response.json();
             if(data.status = 'success'){
                 console.log("success")
                 cards = [];
+                cartContent = {};
                 contentDiv.innerHTML = '';
                 existingIDs.clear();
                 vendorCheckBox = false;
@@ -557,7 +596,7 @@ function addBulkToCart(){
                 div.innerHTML = `
                     <p>Bulk</p>
                     <p>q: ${value}</p>
-                    <p>${value * 0.01}€</p>
+                    <p>${(value * 0.01).toFixed(2)}€</p>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
             }
@@ -591,7 +630,7 @@ function addHoloToCart(){
                 div.innerHTML = `
                     <p>Holo</p>
                     <p>q: ${value}</p>
-                    <p>${value * 0.01}€</p>
+                    <p>${(value * 0.03).toFixed(2)}€</p>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
             }
