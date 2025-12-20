@@ -29,12 +29,11 @@ async function loadContent(button){
             `;
             const soldCards = soldItems.cards;
             const bulkSales = soldItems.bulk_sales;
-            console.log(soldCards);
-            console.log(bulkSales);
+            const soldDate = new Date(soldCards[0].sold_date);
+
             soldCards.forEach(card => {
                 const cardElement = document.createElement('div');
                 cardElement.classList.add('card');
-                const soldDate = new Date(card.sold_date);
                 const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
                 
                 cardElement.innerHTML = `
@@ -53,7 +52,6 @@ async function loadContent(button){
             bulkSales.forEach(bulk => {
                 const bulkElement = document.createElement('div');
                 bulkElement.classList.add('card');
-                const soldDate = new Date(bulk.sold_date);
                 const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
                 bulkElement.innerHTML = `
                     <p class='card-info card-name'>${bulk.item_type}</p>
@@ -61,8 +59,8 @@ async function loadContent(button){
                     <p class='card-info condition'></p>
                     <p class='card-info card-price'></p>
                     <p class='card-info market-value'>Počet: ${bulk.quantity}</p>
-                    <p class='card-info sell-price'>${bulk.total_price ? bulk.total_price + '€' : 'Unknown'}</p>
-                    <p>Marža: ${bulk.total_price && bulk.total_cost ? (bulk.total_price - bulk.quantity * bulk.unit_price).toFixed(2) + '€' : 'Unknown'}</p>
+                    <p class='card-info sell-price'>${bulk.total_price != null ? bulk.total_price + '€' : 'Unknown'}</p>
+                    <p>Marža: ${bulk.total_price !== null && bulk.quantity !== null && bulk.unit_price !== null ? (bulk.total_price - bulk.quantity * bulk.unit_price).toFixed(2) + '€' : 'Unknown'}</p>
                     <p>${formattedDate}</p>
                     <span hidden class = "bulk-id">${bulk.id}</span>
                 `;
@@ -78,7 +76,6 @@ async function loadContent(button){
 async function loadHistory(){
     const response = await fetch('/loadSoldHistory');
     const sales = await response.json();
-    console.log(sales);
     const historyContainer = document.querySelector('.sales-history-container');
     sales.forEach(sale => {
         const saleElement = document.createElement('div');

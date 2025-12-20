@@ -92,7 +92,7 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
     if bulk:
         invoice.add_item(Item(
             count=bulk.get("quantity", 0),
-            price=Decimal("0.01"),
+            price=Decimal(str(bulk.get("unit_price", 0.01))),
             unit="ks",
             description="Bulk cards purchase",
             tax=Decimal("0")
@@ -100,7 +100,7 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
     if holo:
         invoice.add_item(Item(
             count=holo.get("quantity", 0),
-            price=Decimal("0.03"),
+            price=holo.get("unit_price", 0.03),
             unit="ks",
             description="Holo cards purchase",
             tax=Decimal("0")

@@ -382,27 +382,26 @@ function shoppingCart(){
 
             //this is bad I need to think about this shit cause no way this is correct
 
-            const bulkMarketValue = (bulkQuantity * 0.01).toFixed(2);
-            const sellPriceInput = bulkItems.querySelector('.bulk-sell-price').value;
+            const sellPriceInput = bulkItems.querySelector('.bulk-sell-price').value.replace(',', '.');
             const bulk = {
                 counter_name: 'bulk',
                 quantity: bulkQuantity,
                 unit_price: sellPriceInput/bulkQuantity ? (Number(sellPriceInput)/bulkQuantity).toFixed(2) : 0.01,
                 sell_price: sellPriceInput ? Number(sellPriceInput) : 0.01,
-                price: bulkMarketValue 
+                buy_price: 0.01 
             };
             cartContent.bulkItem = bulk;
         }
+        
         if(holoItems){
             const holoQuantity = Number(holoItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
-            const holoMarketValue = (holoQuantity * 0.03).toFixed(2);
-            const sellPriceInput = holoItems.querySelector('.holo-sell-price').value;
+            const sellPriceInput = holoItems.querySelector('.holo-sell-price').value.replace(',', '.');
             const holo = {
                 counter_name: 'holo',
                 quantity: holoQuantity,
                 unit_price: sellPriceInput/holoQuantity ? (Number(sellPriceInput)/holoQuantity).toFixed(2) : 0.03,
                 sell_price: sellPriceInput ? Number(sellPriceInput) : 0.03,
-                price: holoMarketValue
+                buy_price: 0.03
             };
             cartContent.holoItem = holo;
         }
@@ -492,9 +491,9 @@ function shoppingCart(){
             const cartValueInput = document.querySelector('.price-input').value ||cartVal;
             if (cartValueInput != cartVal){
                 const priceDiff = cartVal - cartValueInput;
-                for(let i = 0; i < cards.length -1; i++){
-                    const discount  = ((cards[i].marketValue / cartVal) * priceDiff);
-                    cards[i].marketValue = (cards[i].marketValue - discount).toFixed(2)
+                for(let i = 0; i < cartContent.cards.length; i++){
+                    const discount  = ((cartContent.cards[i].marketValue / cartVal) * priceDiff);
+                    cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue - discount).toFixed(2)
                 }
             } 
 
