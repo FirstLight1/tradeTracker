@@ -590,6 +590,15 @@ function addToShoppingCart(card, cardId, auctionId){
     }
 }
 
+function currentCartValue(type){
+    const contentDiv = document.querySelector(`.${type}-cart-content`);
+    const cartQuantity = contentDiv.querySelector(`.${type}-quantity`);
+    if(cartQuantity){
+        return Number(cartQuantity.textContent.replace('q: ', ''));
+    }else{
+        return 0;
+    }
+}
 
 function addBulkToCart(){
     const button = document.querySelector('.card-add-bulk');
@@ -598,13 +607,20 @@ function addBulkToCart(){
     button.addEventListener('click', () => {
         const value = input.value;
         const bulkItems = contentDiv.querySelector('.bulk-cart-item-bulk');
+        const inventorySize = document.querySelector('.bulk-value').textContent;
+        const maxBulk = Number(inventorySize);
+        if(Number(value) + currentCartValue('bulk') > maxBulk){
+            alert(`You can not add more than ${maxBulk} bulk items to the cart`);
+            return;
+        }
+
         if(!bulkItems){
             if(value && !isNaN(value)){
                 const div = document.createElement('div');
                 div.classList.add('bulk-cart-item-bulk');
                 div.innerHTML = `
                     <p>Bulk</p>
-                    <p>q: ${value}</p>
+                    <p class='bulk-quantity'>q: ${value}</p>
                     <input type='text' class='bulk-sell-price' style='width:70px'>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
@@ -615,8 +631,6 @@ function addBulkToCart(){
             if(value && !isNaN(value)){
                 currentQuantity += Number(value);
                 quantityP.textContent = `q: ${currentQuantity}`;
-                const priceP = bulkItems.querySelectorAll('p')[2];
-                priceP.textContent = `${(currentQuantity * 0.01).toFixed(2)}€`;
             }
         }
         const removeButton = contentDiv.querySelector('.remove-from-cart');
@@ -629,28 +643,34 @@ function addHoloToCart(){
     const button = document.querySelector('.card-add-holo');
     const input = document.querySelector('.cart-holo-input');
     const contentDiv = document.querySelector(".holo-cart-content");
+
     button.addEventListener('click', () => {
         const value = input.value;
-        const bulkItems = contentDiv.querySelector('.holo-cart-item-holo');
-        if(!bulkItems){
+        const holoItems = contentDiv.querySelector('.holo-cart-item-holo');
+        const inventorySize = document.querySelector('.holo-value').textContent;
+        const maxHolo = Number(inventorySize);
+        if(Number(value) + currentCartValue('holo') > maxHolo){
+            alert(`You can not add more than ${maxHolo} holo items to the cart`);
+            return;
+        }
+
+        if(!holoItems){
             if(value && !isNaN(value)){
                 const div = document.createElement('div');
                 div.classList.add('holo-cart-item-holo');
                 div.innerHTML = `
                     <p>Holo</p>
-                    <p>q: ${value}</p>
+                    <p class='holo-quantity'>q: ${value}</p>
                     <input type='text' class='holo-sell-price' style='width:70px'>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
             }
         }else{
-            const quantityP = bulkItems.querySelectorAll('p')[1];
+            const quantityP = holoItems.querySelectorAll('p')[1];
             let currentQuantity = Number(quantityP.textContent.replace('q: ', ''));
             if(value && !isNaN(value)){
                 currentQuantity += Number(value);
                 quantityP.textContent = `q: ${currentQuantity}`;
-                const priceP = bulkItems.querySelectorAll('p')[2];
-                priceP.textContent = `${(currentQuantity * 0.03).toFixed(2)}€`;
             }
         }
         const removeButton = contentDiv.querySelector('.remove-from-cart');
