@@ -18,6 +18,20 @@ export function renderField(value, inputType, classList, placeholder, datafield)
     }
 }
 
+function paymentTypeSelect(){
+    return `
+    <select class="payment-method-select">
+        <option value=' '>Select payment method</option>
+        <option value="Hotovosť">Hotovosť</option>
+        <option value="Karta">Karta</option>
+        <option value="Bankový prevod">Bankový prevod</option>
+        <option value="Online platba">Online platba</option>
+        <option value="Dobierka">Dobierka</option>
+        <option value="Online platobný systém">Online platobný systém</option>
+        </select>
+    `
+}
+
 function calculateAuctionBuyPrice(cards){
     let totalBuyPrice = 0;
     cards.forEach(card => {
@@ -927,7 +941,7 @@ async function loadAuctionContent(button) {
             const response = await fetch(cardsUrl);
             const cards = await response.json();
             cardsContainer.style.display = 'flex';
-            cardsContainer.style.marginLeft = '-250px';
+            cardsContainer.style.marginLeft = '-600px';
             button.textContent = 'Hide';
             if(isEmpty(cards)){
                 cardsContainer.innerHTML = '';
@@ -1241,6 +1255,7 @@ async function loadAuctions() {
                 <p class="auction-name">${auctionName}</p>
                 ${renderField(auctionPrice != null ? auctionPrice + '€' : null, 'text', ['auction-price'], 'Auction Buy Price', 'auction_price')}
                 <p class="buy-date">${formatedDate}</p>
+                <p class="payment-method">${auction.payment_method || paymentTypeSelect()}</p>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
                 <div class="cards-container">
@@ -1365,6 +1380,19 @@ async function loadAuctions() {
                 }
             });
         });
+
+        const paymentMethodSelects = document.querySelectorAll('.payment-method-select');
+        if(paymentMethodSelects){
+            paymentMethodSelects.forEach(select => {
+                select.addEventListener('change', (event) => {
+                    const selectedMethod = event.target.value;
+                    const auctionDiv = event.target.closest('.auction-tab');
+                    const auctionId = auctionDiv.getAttribute('data-id');
+                    updateAuction(auctionId, selectedMethod, 'payment_method');
+                });
+            });
+        }
+
 
         const deleteButton = document.querySelectorAll('.delete-auction');
         deleteButton.forEach(button => {
