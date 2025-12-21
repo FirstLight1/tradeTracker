@@ -637,6 +637,11 @@ function addBulkToCart(){
         removeButton.addEventListener('click', () => {
             contentDiv.innerHTML = '';});
     });
+    input.addEventListener('keydown', (event) => {
+        if(event.key == 'Enter'){
+            button.click();
+        }
+    });
 }
 
 function addHoloToCart(){
@@ -676,6 +681,11 @@ function addHoloToCart(){
         const removeButton = contentDiv.querySelector('.remove-from-cart');
         removeButton.addEventListener('click', () => {
         contentDiv.innerHTML = '';});
+    });
+    input.addEventListener('keydown', (event) => {
+        if(event.key == 'Enter'){
+            button.click();
+        }
     });
 }
 
@@ -824,11 +834,22 @@ async function changeBulkHoloCounters(counter_name, increment_type, increment, v
 function addBulk(){
     const button = document.querySelector(".add-bulk-btn");
     const value = document.querySelector('.bulk-input');
+    
     button.addEventListener('click',async() => {
         if(value.value <= 0){
+            const currentValue = document.querySelector('.bulk-value').textContent;
+            if(Math.abs(value.value) > Number(currentValue)){
+                alert("You can't remove more bulk items than you have in inventory");
+                return;
+            }
             changeBulkHoloCounters('bulk', 0, Math.abs(value.value), value);
         } else{
             changeBulkHoloCounters('bulk', 1, value.value, value);
+        }
+    });
+    value.addEventListener('keydown', async(event) => {
+        if(event.key == 'Enter'){
+            button.click();
         }
     });
 
@@ -840,9 +861,19 @@ function addHolo(){
 
     button.addEventListener('click',async() => {
         if(value.value <= 0){
+            const currentValue = document.querySelector('.holo-value').textContent;
+            if(Math.abs(value.value) > Number(currentValue)){
+                alert("You can't remove more holo items than you have in inventory");
+                return;
+            }
             changeBulkHoloCounters('holo', 0, Math.abs(value.value), value);
         } else{
             changeBulkHoloCounters('holo', 1, value.value, value);
+        }
+    });
+    value.addEventListener('keydown', async(event) => {
+        if(event.key == 'Enter'){
+            button.click();
         }
     });
 }
