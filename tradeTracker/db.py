@@ -37,6 +37,7 @@ CREATE TABLE auctions (
     auction_name TEXT,
     auction_price REAL,
     auction_profit REAL,
+    payment_method TEXT,
     date_created TEXT
 );
 

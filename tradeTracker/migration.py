@@ -22,15 +22,19 @@ def migrate_database(db_path):
         # Migration 1: Add 'sold_date' to 'cards' table
         _add_sold_date_to_cards(cursor)
         
-        # Migration 3: Add 'sold' column to 'sale_items' table
+        # Migration 2: Add 'sold' column to 'sale_items' table
         _add_sold_to_sale_items(cursor)
+
+        #Mingration 3: Add 'payment_method' to 'auctions' table
+        add_payment_method_to_auctions(cursor)
+
         
         conn.commit()
         conn.close()
         
-        # Migration 2: Migrate to sales history structure (checks if sales table exists)
+        # Migration 4: Migrate to sales history structure (checks if sales table exists)
         _migrate_to_sales_history_wrapper(db_path)
-        # Migration 4: Add bulk sales and counter tables if they don't exist
+        # Migration 5: Add bulk sales and counter tables if they don't exist
         add_bulk_sales_table(db_path)
         
         print("Database migration check complete.")
@@ -76,6 +80,27 @@ def _add_sold_to_sale_items(cursor):
         # This can happen if the table doesn't exist yet, which is fine.
         if "no such table: sale_items" in str(e):
             print("'sale_items' table not found, skipping 'sold' column migration.")
+        else:
+            raise e
+        
+def add_payment_method_to_auctions(cursor):
+    """
+    Adds the 'payment_method' column to the 'auctions' table if it doesn't exist.
+    """
+    try:
+        # Check if the column already exists
+        cursor.execute("PRAGMA table_info(auctions)")
+        columns = [info[1] for info in cursor.fetchall()]
+        if 'payment_method' not in columns:
+            print("Applying migration: Adding 'payment_method' to 'auctions' table...")
+            cursor.execute("ALTER TABLE auctions ADD COLUMN payment_method TEXT")
+            print("'payment_method' column added successfully.")
+        else:
+            print("'payment_method' column already exists in 'auctions' table.")
+    except sqlite3.Error as e:
+        # This can happen if the table doesn't exist yet, which is fine.
+        if "no such table: auctions" in str(e):
+            print("'auctions' table not found, skipping 'payment_method' column migration.")
         else:
             raise e
 
