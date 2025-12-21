@@ -927,6 +927,7 @@ async function loadAuctionContent(button) {
             const response = await fetch(cardsUrl);
             const cards = await response.json();
             cardsContainer.style.display = 'flex';
+            cardsContainer.style.marginLeft = '-250px';
             button.textContent = 'Hide';
             if(isEmpty(cards)){
                 cardsContainer.innerHTML = '';
@@ -939,6 +940,7 @@ async function loadAuctionContent(button) {
                         <p>Buy price</p>
                         <p>Market value</p>
                         <p>Sell price</p>
+                        <p>Margin</p>
                         <p></p>
                         <p></p>
                     </div>
@@ -954,6 +956,7 @@ async function loadAuctionContent(button) {
                         ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
                         ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
                         ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
+                        ${renderField(card.card_price !== null && card.market_value !== null ? (card.market_value - card.card_price).toFixed(2) + '€' : ' ', 'text', ['card-info', 'profit'], 'profit', true)}
                         <button class="add-to-cart">Add to cart</button>
                         <span hidden class="card-id">${card.id}</span>
                         <button class=delete-card data-id="${card.id}">Delete</button>
@@ -1231,9 +1234,13 @@ async function loadAuctions() {
             auctionDiv.setAttribute('data-id', auction.id);
             let auctionName = auction.auction_name || "Auction " + (auction.id - 1); // Fallback for name
             let auctionPrice = auction.auction_price || null; // Fallback for buy price
+            const buyDate = new Date(auction.date_created);
+            const formatedDate = buyDate.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
+            
             auctionDiv.innerHTML = `
                 <p class="auction-name">${auctionName}</p>
                 ${renderField(auctionPrice != null ? auctionPrice + '€' : null, 'text', ['auction-price'], 'Auction Buy Price', 'auction_price')}
+                <p class="buy-date">${formatedDate}</p>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
                 <div class="cards-container">

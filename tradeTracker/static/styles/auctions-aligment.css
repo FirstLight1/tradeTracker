@@ -31,7 +31,7 @@ p{
     border-radius: 15px;
     padding: 15px;
     display: grid;
-    grid-template-columns: repeat(3, 150px) repeat(2, 50px);
+    grid-template-columns: repeat(3, 150px) repeat(3, 50px);
     grid-column-gap: 50px;
     width: 1500px;
     margin-top: 15px;
@@ -64,7 +64,7 @@ p{
 
 .cards-header{
     display: grid;
-    grid-template-columns: 280px 120px 150px 80px 100px 80px 180px 90px;
+    grid-template-columns: 280px 120px 150px 80px 100px 80px 90px 180px 90px;
     gap: 5px;
     text-align:center;
     padding-bottom: 5px;
@@ -93,7 +93,7 @@ p{
 
 .card{
     display: grid;
-    grid-template-columns: 280px 120px 150px 80px 100px 80px 180px 90px;
+    grid-template-columns: 280px 120px 150px 80px 100px 80px 90px 180px 90px;
     gap: 5px;
     margin-top: 15px;
     margin-bottom: 15px;
