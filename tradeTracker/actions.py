@@ -88,11 +88,12 @@ def add():
         auction = {
             'name': cardsArr[0]['name'] if 'name' in cardsArr[0] else None,
             'buy': cardsArr[0]['buy'] if 'buy' in cardsArr[0] else None,
-            'date': cardsArr[0]['date'] if 'date' in cardsArr[0] else None
+            'date': cardsArr[0]['date'] if 'date' in cardsArr[0] else None,
+            'paymentType': cardsArr[0]['paymentType'] if 'paymentType' in cardsArr[0] else None
         }
         cursor = db.execute(
-            'INSERT INTO auctions (auction_name, auction_price, date_created) VALUES (?, ?, ?)',
-            (auction['name'], auction['buy'], auction['date'])
+            'INSERT INTO auctions (auction_name, auction_price, date_created, payment_type) VALUES (?, ?, ?, ?)',
+            (auction['name'], auction['buy'], auction['date'], auction['paymentType'])
         )
         auction_id = cursor.lastrowid
         for card in cardsArr[1:]:

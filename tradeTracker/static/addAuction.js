@@ -51,10 +51,12 @@ saveButton.addEventListener('click', () =>{
     const auctionName = document.querySelector('.auction-name').value;
     const auctionBuy = document.querySelector('.auction-buy-price').value;
     const date = new Date().toISOString();
+    const paymentType = document.querySelector('select[name=paymentType]').value;
     let auction = {
         name: auctionName.trim() || null,
         buy: auctionBuy ? parseFloat(auctionBuy.replace(',','.')) : null,
-        date: date.trim() || null
+        date: date.trim() || null,
+        paymentType: paymentType.trim() || null
     };
     if(cardsArr.length === 0){
         cardsArr.push(auction);
