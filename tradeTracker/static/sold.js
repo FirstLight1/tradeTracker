@@ -43,7 +43,7 @@ async function loadContent(button){
                     ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
                     ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
                     ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
-                    <p>Marža: ${card.sell_price && card.card_price ? (card.sell_price - card.card_price).toFixed(2) + '€' : 'Unknown'}</p>
+                    <p>${card.sell_price && card.card_price ? (card.sell_price - card.card_price).toFixed(2) + '€' : 'Unknown'}</p>
                     <p>${formattedDate}</p>
                     <span hidden class = "card-id">${card.id}</span>
                 `;
@@ -53,6 +53,12 @@ async function loadContent(button){
                 const bulkElement = document.createElement('div');
                 bulkElement.classList.add('card');
                 const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
+                let buy_price;
+                if (bulk.item_type === 'holo'){
+                    buy_price = 0.03;
+                } else {
+                    buy_price = 0.01;
+                }
                 bulkElement.innerHTML = `
                     <p class='card-info card-name'>${bulk.item_type}</p>
                     <p class='card-info card-num'></p>
@@ -60,7 +66,7 @@ async function loadContent(button){
                     <p class='card-info card-price'></p>
                     <p class='card-info market-value'>Počet: ${bulk.quantity}</p>
                     <p class='card-info sell-price'>${bulk.total_price != null ? bulk.total_price + '€' : 'Unknown'}</p>
-                    <p>Marža: ${bulk.total_price !== null && bulk.quantity !== null && bulk.unit_price !== null ? (bulk.total_price - bulk.quantity * bulk.unit_price).toFixed(2) + '€' : 'Unknown'}</p>
+                    <p>${bulk.total_price !== null && bulk.quantity !== null && bulk.unit_price !== null ? (bulk.total_price - bulk.quantity * buy_price).toFixed(2) + '€' : 'Unknown'}</p>
                     <p>${formattedDate}</p>
                     <span hidden class = "bulk-id">${bulk.id}</span>
                 `;
