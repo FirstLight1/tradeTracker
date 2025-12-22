@@ -11,7 +11,7 @@ OLD_APP_NAME = 'run_app.exe'  # Legacy name for backward compatibility
 
 # The local version is now a variable.
 # This should be updated for each new release when you build the .exe.
-LOCAL_VERSION = "2.0.1"
+LOCAL_VERSION = "2.0.2"
 
 # Detect which executable we're currently running
 def get_current_exe_name():
@@ -76,11 +76,11 @@ def check_version():
 
                 root.eval('tk::PlaceWindow . center')
                 frm = ttk.Frame(root, padding=25,style="Custom.TFrame")
-                frm.grid()
-                ttk.Label(frm, text="New update found! Do you want to update?").grid(column=0, row=0)
-                ttk.Label(frm, text=f"Current version: {LOCAL_VERSION} | New version: {latest_version}").grid(column=0, row=1)
+                frm.pack()
+                ttk.Label(frm, text="New update found! Do you want to update?").pack(pady=(0, 5))
+                ttk.Label(frm, text=f"Current version: {LOCAL_VERSION} | New version: {latest_version}").pack(pady=(0, 15))
                 buttons = ttk.Frame(frm)
-                buttons.grid(column=0, row=2, columnspan=2, pady=(15, 0))
+                buttons.pack()
                 ttk.Button(buttons, text="Yes", command=start_update).pack(side="left", padx=(10))
                 ttk.Button(buttons, text="No", command=sys.exit).pack(side="left", padx=(10))
                 root.mainloop()
