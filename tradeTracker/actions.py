@@ -145,7 +145,7 @@ def loadAllCards(auction_id):
 def invertoryValue():
     db = get_db()
     cur = db.cursor()
-    value = cur.execute('SELECT SUM(market_value) FROM cards').fetchone()[0]
+    value = cur.execute('SELECT SUM(market_value) FROM cards WHERE sold = 0 AND sold_cm = 0').fetchone()[0]
 
     return jsonify({'status': 'success','value': value}),200
 

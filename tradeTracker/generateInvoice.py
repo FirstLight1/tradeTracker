@@ -14,9 +14,13 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
         env_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker')
         os.makedirs(env_dir, exist_ok=True)
         env_path = os.path.join(env_dir, 'env.txt')
+        # Get the base path where PyInstaller unpacks files
+        base_path = sys._MEIPASS
+        logo_path = os.path.join(base_path, 'tradeTracker', 'static', 'images', 'logo.png')
     else:
         # Running in development
         env_path = os.path.join(os.path.dirname(__file__), 'env.txt')
+        logo_path = os.path.join(os.path.dirname(__file__), 'static', 'images', 'logo.png')
     
     # Read or create env.txt with invoice_num
     try:
@@ -50,7 +54,7 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
         ir="57310041",       # IČO
         vat_id="1130287664", # DIČ
         note="Osoba zapísaná v Živnostenskom registri pod číslom \n220-42582, vydal Okresný úrad Galanta dňa\n 5.11.2025. \nPlatiteľ DPH formou §66.",
-        logo_filename="tradeTracker/static/images/logo.png"
+        logo_filename=logo_path
     )
 
     # 2. Define the Client
