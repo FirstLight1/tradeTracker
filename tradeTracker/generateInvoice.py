@@ -23,9 +23,9 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
         with open(env_path, 'r') as f:
             invoice_num = f.read().strip()
             if not invoice_num:
-                invoice_num = "1"
+                invoice_num = "62"
     except FileNotFoundError:
-        invoice_num = "1"
+        invoice_num = "62"
     
     # Write incremented invoice number back
     with open(env_path, 'w') as f:
