@@ -1251,12 +1251,17 @@ async function loadAuctions() {
             let auctionName = auction.auction_name || "Auction " + (auction.id - 1); // Fallback for name
             let auctionPrice = auction.auction_price || null; // Fallback for buy price
             const buyDate = new Date(auction.date_created);
-            const formatedDate = buyDate.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
-            
+            let formatedDate = buyDate.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
+            const dateFromUTC = new Date(String(auction.date_created).split('T')[0]).toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
+            console.log(dateFromUTC);
+            if (formatedDate === 'Invalid Date'){
+                formatedDate = dateFromUTC;
+            }
+
             auctionDiv.innerHTML = `
                 <p class="auction-name">${auctionName}</p>
                 ${renderField(auctionPrice != null ? auctionPrice + '€' : null, 'text', ['auction-price'], 'Auction Buy Price', 'auction_price')}
-                <p class="buy-date">${formatedDate}</p>
+                <p class="buy-date">${formatedDate || dateFromUTC}</p>
                 <p class="payment-method">${auction.payment_method || paymentTypeSelect()}</p>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
