@@ -1252,10 +1252,8 @@ async function loadAuctions() {
             let auctionPrice = auction.auction_price || null; // Fallback for buy price
             const buyDate = new Date(auction.date_created);
             let formatedDate = buyDate.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
-            const dateFromUTC = new Date(String(auction.date_created).split('T')[0]).toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
-            console.log(dateFromUTC);
             if (formatedDate === 'Invalid Date'){
-                formatedDate = dateFromUTC;
+                formatedDate = new Date(String(auction.date_created).split('T')[0]).toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});;
             }
 
             auctionDiv.innerHTML = `
