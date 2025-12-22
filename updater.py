@@ -11,7 +11,7 @@ OLD_APP_NAME = 'run_app.exe'  # Legacy name for backward compatibility
 
 # The local version is now a variable.
 # This should be updated for each new release when you build the .exe.
-LOCAL_VERSION = "2.0.0"
+LOCAL_VERSION = "2.0.1"
 
 # Detect which executable we're currently running
 def get_current_exe_name():
@@ -55,7 +55,6 @@ def start_update():
     if download_url:
         current_exe = get_current_exe_name()
         update_with_cmd(download_update(download_url), current_exe)
-        ttk.Label(text="Update started. The application will restart.").pack()
     else:
         messagebox.showerror("Update Error", "Failed to get download URL. Update skipped.")
         print("Failed to get download URL. Update skipped.")
@@ -145,7 +144,6 @@ del "%~f0"
             f.write(script)
 
         print("Starting update process...")
-        ttk.Label(text="Updating application... Please wait.").pack()
         time.sleep(2)
         # Run updater script and exit app
         subprocess.Popen(["cmd", "/c", cmd_path])
