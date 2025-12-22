@@ -267,18 +267,34 @@ def generateSoldReport():
         'WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ?', 
         (year, month)).fetchall()
     
+    bulkHolo = db.execute(
+        'SELECT item_type, SUM(bs.quantity) as quantity, SUM(bs.total_price) as total_price FROM bulk_sales bs '
+        'JOIN sales s ON bs.sale_id = s.id '
+        'WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ?'
+        ' GROUP BY bs.item_type',
+        (year, month)).fetchall()
+    
     # Convert to list of dicts for easier processing
     cards_list = [dict(card) for card in cards]
-    
+
+    bulkAndHoloList = []
+    i = 0
+    for item_type in bulkHolo:
+        print(dict(item_type))
+        bulkAndHoloList.append(dict(item_type))
+        bulkAndHoloList[i].update({'buy_price': 0.01} if item_type['item_type'] == 'bulk' else {'buy_price': 0.03})
+        i += 1
+
+
     try:
-        pdf_path = generatePDF(month, year, cards_list)
+        pdf_path = generatePDF(month, year, cards_list, bulkAndHoloList)
         return jsonify({'status': 'success', 'pdf_path': pdf_path}), 200
     except Exception as e:
         print(f"Error generating PDF: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
-def generatePDF(month, year, cards):
+def generatePDF(month, year, cards, bulkAndHoloList):
     # Determine the save path based on environment
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
@@ -304,7 +320,7 @@ def generatePDF(month, year, cards):
     
     # Add summary
     pdf.set_font(font_family, '', 12)
-    pdf.cell(0, 10, f'Total Cards Sold: {len(cards)}', 0, 1)
+    pdf.cell(0, 10, f'Total Cards Sold: {len(cards) + sum(item["quantity"] for item in bulkAndHoloList)}', 0, 1)
     pdf.ln(5)
     
     # Calculate totals
@@ -316,6 +332,33 @@ def generatePDF(month, year, cards):
     pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}', 0, 1)
     pdf.cell(0, 8, f'Total Profit: {total_profit:.2f}', 0, 1)
     pdf.ln(10)
+
+    # Add bulk and holo summary
+    # Table header for bulk and holo
+    pdf.set_font(font_family, '', 10)
+    pdf.cell(50, 10, 'Item type', 1, 0, 'C')
+    pdf.cell(35, 10, 'Quantity', 1, 0, 'C')
+    pdf.cell(30, 10, 'Buy Price', 1, 0, 'C')
+    pdf.cell(30, 10, 'Total Price', 1, 0, 'C')
+    pdf.cell(30, 10, 'Margin', 1, 0, 'C')
+    pdf.ln()
+
+    # Table content for bulk and holo
+    pdf.set_font(font_family, '', 9)
+    for item in bulkAndHoloList:
+        item_type = item['item_type'] or 'N/A'
+        quantity = str(item['quantity']) if item['quantity'] else 'N/A'
+        buy_price = f"{item['buy_price']:.2f}" if item['buy_price'] else 'N/A'
+        total_price = f"{item['total_price']:.2f}" if item['total_price'] else 'N/A'
+        margin = f"{(item['total_price'] - (item['quantity'] * item['buy_price'])):.2f}" if item['total_price'] and item['buy_price'] else 'N/A'
+
+        pdf.cell(50, 8, item_type, 1, 0, 'L')
+        pdf.cell(35, 8, quantity, 1, 0, 'C')
+        pdf.cell(30, 8, buy_price, 1, 0, 'R')
+        pdf.cell(30, 8, total_price, 1, 0, 'R')
+        pdf.cell(30, 8, margin, 1, 0, 'R')
+        pdf.ln()
+
     
     # Table header
     pdf.set_font(font_family, '', 10)
@@ -323,7 +366,7 @@ def generatePDF(month, year, cards):
     pdf.cell(35, 10, 'Card Number', 1, 0, 'C')
     pdf.cell(30, 10, 'Buy Price', 1, 0, 'C')
     pdf.cell(30, 10, 'Sell Price', 1, 0, 'C')
-    pdf.cell(30, 10, 'Profit', 1, 0, 'C')
+    pdf.cell(30, 10, 'Margin', 1, 0, 'C')
     pdf.ln()
     
     # Table content

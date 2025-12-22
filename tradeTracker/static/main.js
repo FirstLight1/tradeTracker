@@ -252,9 +252,11 @@ async function generateSoldReport(month, year, div) {
     if (data.status === 'success') {
         console.log('Sold report generated successfully');
         div.remove();
+        alert(data.report_path);
         // Handle successful report generation (e.g., display a success message)
     } else {
         // Handle errors (e.g., display an error message)
+        console.error('Error generating sold report:', data);
     }
 }
 
