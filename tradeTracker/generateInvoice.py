@@ -53,7 +53,8 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
         # Mapping Slovak IDs to library fields:
         ir="57310041",       # IČO
         vat_id="1130287664", # DIČ
-        note="Osoba zapísaná v Živnostenskom registri pod číslom \n220-42582, vydal Okresný úrad Galanta dňa\n 5.11.2025. \nPlatiteľ DPH formou §66.",
+        tax_id="SK1130287664", # IČ DPH
+        note="Osoba zapísaná v Živnostenskom registri pod číslom \n220-42582, vydal Okresný úrad Galanta dňa\n 5.11.2025. \nPlatiteľ DPH formou §66.\n Úprava zdaňovania prirážky - použitý tovar\n(§ 74 ods. 1 pism. n) zákona o DPH)",
         logo_filename=logo_path
     )
 
@@ -77,7 +78,7 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
     # Convert paybackDate string to date object (HTML date input format: YYYY-MM-DD)
     payback_str = reciever.get("paybackDate")
     if payback_str:
-        invoice.payback = datetime.strptime(payback_str, "%Y-%m-%d").date()
+        invoice.payback = datetime.strptime(payback_str, "%d-%m-%Y").date()
     else:
         invoice.payback = invoice_date  # Default to today if not provided
 
