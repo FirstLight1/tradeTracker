@@ -88,8 +88,7 @@ p{
     pointer-events: none;
 }
 
-.cards-container p,
-.cards-container select{
+.cards-container *{
     pointer-events: auto;
 }
 
