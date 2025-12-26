@@ -1368,11 +1368,13 @@ async function loadAuctions() {
         
         const auctionPrices = document.querySelectorAll('.auction-price');
         auctionPrices.forEach(price => attachAuctionPriceListener(price));
+        
         // Attach event listeners after auctions are loaded
         const viewButtons = document.querySelectorAll('.view-auction');
         viewButtons.forEach(button => {
             button.addEventListener('click', () => loadAuctionContent(button));
         });
+
         const auctionsTabs = document.querySelectorAll('.auction-tab');
         auctionsTabs.forEach(tab => {
             tab.addEventListener('click', async (event) => {

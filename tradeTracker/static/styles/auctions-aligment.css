@@ -85,6 +85,12 @@ p{
     display: flex;
     flex-direction: column;
     align-items: center;
+    pointer-events: none;
+}
+
+.cards-container p,
+.cards-container select{
+    pointer-events: auto;
 }
 
 .button-container{
