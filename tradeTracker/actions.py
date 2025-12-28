@@ -551,13 +551,20 @@ def cardMarketTable():
             cardsToInsert = []
             
             for card in cards:
-                count = card.get('count', 1)
+                # Safely convert count to integer
+                try:
+                    count = int(card.get('count', 1))
+                except (ValueError, TypeError):
+                    count = 1
+                    
                 for _ in range(count):
                     marketValue = card.get('marketValue', 0)
                     marketValue = float(marketValue) if marketValue is not None else None
 
                     if marketValue:
                         buyPrice = round(marketValue * 0.80, 2)
+                    else:
+                        buyPrice = 0
 
                     cardsToInsert.append((
                         card.get('name', None),
@@ -567,8 +574,9 @@ def cardMarketTable():
                         marketValue,
                         auction_id
                     ))
-
-                    db.executemany(
+            
+            # Execute the insert ONCE after building the full list
+            db.executemany(
                 'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, auction_id) VALUES (?, ?, ?, ?, ?, ?)',
                 cardsToInsert
             )            
