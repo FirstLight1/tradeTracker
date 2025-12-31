@@ -182,6 +182,25 @@ async function removeCard(id, div) {
     }
 }
 
+async function removeBulkItem(bulkId, bulkDiv) {
+    try {
+        const response = await fetch(`/deleteBulkItem/${bulkId}`, {
+            method: 'DELETE',
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            bulkDiv.remove();
+            return true;
+        } else {
+            console.error('Error deleting bulk item:', data);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error deleting bulk item:', error);
+        return false;
+    }
+}
+
 async function updateAuction(auctionId, value, field){
     try {
         const response = await fetch(`/updateAuction/${auctionId}`, {
@@ -941,6 +960,7 @@ async function changeCardPricesBasedOnAuctionPrice(auctionTab){
 async function loadAuctionContent(button) {
     const auctionId = button.getAttribute('data-id');
     const cardsUrl = '/loadCards/' + auctionId;
+    const bulkUrl = '/loadBulk/' + auctionId;
     const auctionDiv = button.closest('.auction-tab');
     const cardsContainer = auctionDiv.querySelector('.cards-container');
     try {
@@ -1238,6 +1258,55 @@ async function loadAuctionContent(button) {
     } catch (error) {
         console.error('Error loading cards:', error);
     }
+
+    try {
+        const responseBulk = await fetch(bulkUrl);
+        const bulkData = await responseBulk.json();
+        bulkData.forEach(bulkItem => {
+            const bulkDiv = document.createElement('div');
+            bulkDiv.classList.add('bulk-item');
+            bulkDiv.setAttribute('data-id', bulkItem.id);
+            bulkDiv.innerHTML = `
+                <p class="bulk-name">${bulkItem.item_type}</p>
+                <p class="bulk-quantity">Quantity: ${bulkItem.quantity}</p>
+                <p class="bulk-sell-price">Sell Price: ${bulkItem.total_price ? bulkItem.total_price + '€' : 'N/A'}</p>
+                <button class="delete-bulk-item" data-id="${bulkItem.id}">Delete</button>
+            `;
+            cardsContainer.insertBefore(bulkDiv, cardsContainer.querySelector('.button-container'));
+        }
+        );
+        const deleteBulkButtons = cardsContainer.querySelectorAll('.delete-bulk-item');
+        deleteBulkButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                const bulkId = button.getAttribute('data-id');
+                const bulkDiv = button.closest('.bulk-item');
+                const cardsContainer = button.closest('.cards-container');
+                const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
+                if(button.textContent === 'Confirm'){
+                    const deleted = await removeBulkItem(bulkId, bulkDiv);
+                    if(!deleted) return;
+                } else{
+                    // First click: ask for confirmation
+                    button.textContent = 'Confirm';
+                    const timerID = setTimeout(() => {
+                        button.textContent = 'Delete';
+                    }, 3000);
+                    // Remove confirmation if user clicks elsewhere
+                    document.addEventListener('click', function handler(e) {
+                        if (e.target !== button) {
+                            button.textContent = 'Delete';
+                            document.removeEventListener('click', handler);
+                            clearTimeout(timerID);
+                        }
+                    });
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Error loading bulk items:', error);
+    }
+
 }
 
 async function loadAuctions() {
@@ -1373,7 +1442,7 @@ async function loadAuctions() {
         
         const auctionPrices = document.querySelectorAll('.auction-price');
         auctionPrices.forEach(price => attachAuctionPriceListener(price));
-        
+
         // Attach event listeners after auctions are loaded
         const viewButtons = document.querySelectorAll('.view-auction');
         viewButtons.forEach(button => {

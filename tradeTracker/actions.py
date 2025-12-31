@@ -92,7 +92,7 @@ def add():
             'paymentType': cardsArr[0]['paymentType'] if 'paymentType' in cardsArr[0] else None
         }
         cursor = db.execute(
-            'INSERT INTO auctions (auction_name, auction_price, date_created, payment_type) VALUES (?, ?, ?, ?)',
+            'INSERT INTO auctions (auction_name, auction_price, date_created, payment_method) VALUES (?, ?, ?, ?)',
             (auction['name'], auction['buy'], auction['date'], auction['paymentType'])
         )
         auction_id = cursor.lastrowid
@@ -112,6 +112,29 @@ def add():
         db.commit()
         return jsonify({'status': 'success', 'auction_id': auction_id}), 201
     
+@bp.route('/addBulkItems/<int:auction_id>', methods=('POST',))
+def addBulkItems(auction_id):
+    bulkItems = request.get_json()
+    db = get_db()
+
+    for item in bulkItems:
+        db.execute(
+            'INSERT INTO bulk_items (auction_id, item_type, quantity, unit_price, total_price) '
+            'VALUES (?, ?, ?, ?, ?) ON CONFLICT(auction_id, item_type) DO UPDATE SET '
+            'quantity = quantity + excluded.quantity, '
+            'total_price = total_price + excluded.total_price, '
+            'unit_price = (total_price + excluded.total_price) / (quantity + excluded.quantity)',
+            (
+                auction_id,
+                item.get('itemType'),
+                item.get('quantity'),
+                item.get('unitPrice'),
+                item.get('totalPrice')
+            )
+        )
+    db.commit()
+    return jsonify({'status': 'success'}), 201
+
 @bp.route('/loadAuctions')
 def loadAuctions():
     db = get_db()
@@ -135,6 +158,15 @@ def loadCards(auction_id):
         'WHERE c.auction_id = ? AND si.card_id IS NULL', (auction_id,)).fetchall()
     return jsonify([dict(card) for card in cards]),200
 
+@bp.route('/loadBulk/<int:auction_id>')
+def loadBulk(auction_id):
+    db = get_db()
+
+    bulk_items = db.execute(
+        'SELECT bi.* FROM bulk_items bi '
+        'WHERE bi.auction_id = ?', (auction_id,)).fetchall()
+    return jsonify([dict(item) for item in bulk_items]),200
+
 @bp.route('/loadAllCards/<int:auction_id>')
 def loadAllCards(auction_id):
     db = get_db()
@@ -154,6 +186,13 @@ def invertoryValue():
 def deleteCard(card_id):
     db = get_db()
     db.execute('DELETE FROM cards WHERE id = ?', (card_id,))
+    db.commit()
+    return jsonify({'status' : 'success'})
+
+@bp.route('/deleteBulkItem/<int:item_id>', methods=('DELETE',))
+def deleteBulkItem(item_id):
+    db = get_db()
+    db.execute('DELETE FROM bulk_items WHERE id = ?', (item_id,))
     db.commit()
     return jsonify({'status' : 'success'})
 
