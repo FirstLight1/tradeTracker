@@ -1156,6 +1156,8 @@ async function loadAuctionContent(button) {
         buttonDiv.classList.add('button-container');
         buttonDiv.innerHTML = `
             <div><button class="add-cards-auction">Add cards</button></div>
+            <div><button class="add-bulk-auction">Add bulk</button></div>
+            <div><button class="add-holo-auction">Add holo</button></div>
             <div><button class="save-added-cards">Save</button></div>
             `;
         cardsContainer.appendChild(buttonDiv);
@@ -1184,8 +1186,42 @@ async function loadAuctionContent(button) {
             cardsContainer.insertBefore(newCard, cardsContainer.querySelector('.button-container'));
         });
 
+        const addBulkButton = cardsContainer.querySelector('.add-bulk-auction');
+        addBulkButton.addEventListener('click', () => {
+            cardsContainer.querySelector('.save-added-cards').hidden = false;
+            const bulkDiv = cardsContainer.querySelector('.add-bulk-item');
+            if(!bulkDiv){
+                const newBulkDiv = document.createElement('div');
+                newBulkDiv.classList.add('add-bulk-item');
+                newBulkDiv.innerHTML = `
+                    <p class="bulk-name">Bulk Item</p>
+                    <p class="bulk-quantity">Quantity: <input type="number" class="bulk-quantity-input" min="1"></p>
+                    <p class="bulk-sell-price">Sell Price: <input type="text" class="bulk-sell-price-input" ></p>
+    
+                `;
+                cardsContainer.insertBefore(newBulkDiv, cardsContainer.querySelector('.button-container'));
+            }
+        });
+
+        const addHoloButton = cardsContainer.querySelector('.add-holo-auction');
+        addHoloButton.addEventListener('click', () => {
+            cardsContainer.querySelector('.save-added-cards').hidden = false;
+            const holoDiv = cardsContainer.querySelector('.add-holo-item'); 
+            if(!holoDiv){
+                const newHoloDiv = document.createElement('div');
+                newHoloDiv.classList.add('add-holo-item');
+                newHoloDiv.innerHTML = `
+                    <p class="holo-name">Holo Item</p>
+                    <p class="holo-quantity">Quantity: <input type="number" class="holo-quantity-input" min="1"></p>
+                    <p class="holo-sell-price">Sell Price: <input type="text" class="holo-sell-price-input" ></p>
+                `;
+                cardsContainer.insertBefore(newHoloDiv, cardsContainer.querySelector('.button-container'));
+            }
+        });
+
         const saveAddedCardButton = cardsContainer.querySelector('.save-added-cards');
         saveAddedCardButton.addEventListener('click',async () => {
+            const itemsToAdd = {};
             saveAddedCardButton.hidden = true;
             const auctionId = auctionDiv.getAttribute('data-id');
             let cardsArray = [];
@@ -1210,8 +1246,8 @@ async function loadAuctionContent(button) {
                     }
                 });
                 
-                if (cardsArray.length === 0) return;
-                
+                itemsToAdd['cards'] = cardsArray;
+
                 const auctionSingles =  auctionDiv.classList.contains('singles') ? true : false;
                 for(let i = 0; i < cardsArray.length; i++){
                     let j = 0;
@@ -1223,7 +1259,27 @@ async function loadAuctionContent(button) {
                     }
                 }
 
-                const jsonbody = JSON.stringify(cardsArray);
+                const bulkDiv = cardsContainer.querySelector('.add-bulk-item');
+                if(bulkDiv){
+                    const bulkItems = {'item_type': 'bulk', 'quantity': null, 'total_price': null};
+                    bulkItems.quantity = bulkDiv.querySelector('.bulk-quantity-input').value.trim() || null;
+                    bulkItems.total_price = bulkDiv.querySelector('.bulk-sell-price-input').value.trim() || null;
+                    bulkItems.unit_price = bulkItems.total_price / bulkItems.quantity;
+                    itemsToAdd['bulk'] = bulkItems;
+                }
+
+                const holoDiv = cardsContainer.querySelector('.add-holo-item');
+                if(holoDiv){
+                    const holoItems = {'item_type': 'holo', 'quantity': null, 'total_price': null};
+                    holoItems.quantity = holoDiv.querySelector('.holo-quantity-input').value.trim() || null;
+                    holoItems.total_price = holoDiv.querySelector('.holo-sell-price-input').value.trim() || null;
+                    holoItems.unit_price = holoItems.total_price / holoItems.quantity;
+                    console.log('here');
+                    itemsToAdd['holo'] = holoItems;
+                }
+
+
+                const jsonbody = JSON.stringify(itemsToAdd);
                 const response = await fetch(`/addToExistingAuction/${auctionId}`, {
                     method: 'POST',
                     headers: {

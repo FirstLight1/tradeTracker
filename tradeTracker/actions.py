@@ -112,12 +112,14 @@ def add():
         db.commit()
         return jsonify({'status': 'success', 'auction_id': auction_id}), 201
     
-@bp.route('/addBulkItems/<int:auction_id>', methods=('POST',))
-def addBulkItems(auction_id):
-    bulkItems = request.get_json()
-    db = get_db()
-
-    for item in bulkItems:
+def _add_bulk_items_helper(db, auction_id, bulk=None, holo=None):
+    """Helper function to add bulk items. Requires db connection to be passed in."""
+    items = [dict(bulk) if bulk is not None else None, dict(holo) if holo is not None else None]
+    
+    for item in items:
+        print(item)
+        if item is None:
+            continue
         db.execute(
             'INSERT INTO bulk_items (auction_id, item_type, quantity, unit_price, total_price) '
             'VALUES (?, ?, ?, ?, ?) ON CONFLICT(auction_id, item_type) DO UPDATE SET '
@@ -126,12 +128,23 @@ def addBulkItems(auction_id):
             'unit_price = (total_price + excluded.total_price) / (quantity + excluded.quantity)',
             (
                 auction_id,
-                item.get('itemType'),
+                item.get('item_type'),
                 item.get('quantity'),
-                item.get('unitPrice'),
-                item.get('totalPrice')
+                item.get('unit_price') if item.get('unit_price') is not None else (item.get('total_price') / item.get('quantity')),
+                item.get('total_price')
             )
         )
+    db.commit()
+    return jsonify({'status': 'success'}), 201
+
+@bp.route('/addBulkItems/<int:auction_id>', methods=('POST',))
+def addBulkItems(auction_id):
+    """Route handler for adding bulk items."""
+    data = request.get_json()
+    bulk = data.get('bulk')
+    holo = data.get('holo')
+    db = get_db()
+    _add_bulk_items_helper(db, auction_id, bulk, holo)
     db.commit()
     return jsonify({'status': 'success'}), 201
 
@@ -225,7 +238,8 @@ def update(card_id):
 @bp.route('/addToExistingAuction/<int:auction_id>', methods=('POST',))
 def addToExistingAuction(auction_id):
     if request.method == 'POST':
-        cards = request.get_json()
+        data = request.get_json()
+        cards = data.get('cards', [])
         db = get_db()
         for card in cards:
             db.execute('INSERT INTO cards (card_name, card_num, condition, card_price, market_value, auction_id)'
@@ -239,6 +253,12 @@ def addToExistingAuction(auction_id):
                 auction_id
             )
         )
+        db.commit()
+
+        bulk = data.get('bulk')
+        holo = data.get('holo')
+        print(type(bulk), type(holo))
+        _add_bulk_items_helper(db, auction_id, bulk, holo)
         db.commit()
         return jsonify({'status': 'success'}), 201
 
