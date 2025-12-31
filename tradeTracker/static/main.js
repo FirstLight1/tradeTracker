@@ -342,6 +342,9 @@ function initializeCart(){
 
 function shoppingCart(){
     const contentDiv = document.querySelector(".cart-content");
+    const bulkCartDiv = document.querySelector(".bulk-cart-content");
+    const holoCartDiv = document.querySelector(".holo-cart-content");
+
     if (contentDiv.childElementCount === 0){
         contentDiv.innerHTML = '<p>Your cart is empty</p>';
     }
@@ -354,10 +357,12 @@ function shoppingCart(){
         });
     }
 
+    
     const confirmButton = document.querySelector(".confirm-btn");
     confirmButton.addEventListener('click', async ()=>{
         const cartContent = {};
-        if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P') {
+        if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P' && bulkCartDiv.childElementCount === 0 && holoCartDiv.childElementCount === 0) {
+            console.log("cart empty");
             return;
         }
         let recieverDiv = document.querySelector('.reciever-div');
