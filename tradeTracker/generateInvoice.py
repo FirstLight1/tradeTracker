@@ -81,19 +81,20 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
         invoice.payback = datetime.strptime(payback_str, "%d-%m-%Y").date()
     else:
         invoice.payback = invoice_date  # Default to today if not provided
-
+    print((items[0].get("marketValue") != ''))
     # 4. Add Items
-    # Data extracted from source: 70
-    for item in items:
-        print(item)
-        market_value_decimal = Decimal(float(item.get("marketValue").replace("€", "")))
-        invoice.add_item(Item(
-            count=1,
-            price=market_value_decimal,
-            unit="ks",
-            description=item.get("cardName") + " " + item.get("cardNum"),
-            tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
-        ))
+    if items[0].get("marketValue") != '':
+        for item in items:
+            print(item)
+            market_value_decimal = Decimal(float(item.get("marketValue").replace("€", "")))
+            invoice.add_item(Item(
+                count=1,
+                price=market_value_decimal,
+                unit="ks",
+                description=item.get("cardName") + " " + item.get("cardNum"),
+                tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
+            ))
+            
     if bulk:
         invoice.add_item(Item(
             count=bulk.get("quantity", 0),
