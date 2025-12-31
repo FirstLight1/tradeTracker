@@ -484,7 +484,7 @@ function shoppingCart(){
             });
 
             const dateInput = document.querySelector('.date-input');
-            dateInput.value = new Date().toISOString().split('T')[0]; 
+            dateInput.value = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; 
         }
 
         const generateInvoiceBtn = document.querySelector('.generate-invoice');
@@ -1373,11 +1373,13 @@ async function loadAuctions() {
         
         const auctionPrices = document.querySelectorAll('.auction-price');
         auctionPrices.forEach(price => attachAuctionPriceListener(price));
+        
         // Attach event listeners after auctions are loaded
         const viewButtons = document.querySelectorAll('.view-auction');
         viewButtons.forEach(button => {
             button.addEventListener('click', () => loadAuctionContent(button));
         });
+
         const auctionsTabs = document.querySelectorAll('.auction-tab');
         auctionsTabs.forEach(tab => {
             tab.addEventListener('click', async (event) => {
