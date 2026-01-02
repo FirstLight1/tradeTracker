@@ -265,19 +265,11 @@ def addToExistingAuction(auction_id):
 def bulkCounterValue():
     db = get_db()
     cur = db.cursor()
-    bulk_counter = cur.execute('SELECT counter FROM bulk_counter WHERE counter_name = "bulk"').fetchone()[0]
-    holo_counter = cur.execute('SELECT counter FROM bulk_counter WHERE counter_name = "holo"').fetchone()[0]
+    counters = cur.execute('SELECT sum(quantity) FROM bulk_items GROUP BY item_type').fetchall()
+    bulk_counter = counters[0][0] if len(counters) > 0 else 0
+    holo_counter = counters[1][0] if len(counters) > 1 else 0
+    
     return jsonify({'status': 'success','bulk_counter': bulk_counter, 'holo_counter': holo_counter}),200
-
-@bp.route('/incrementBulkCounter/<string:counter_name>/<int:increment_type>/<int:increment>', methods=('GET',))
-def incrementBulkCounter(counter_name, increment_type, increment):
-    db = get_db()
-    if increment_type == 0:
-        db.execute('UPDATE bulk_counter SET counter = (counter - ?) WHERE counter_name = ?', (increment, counter_name))
-    else:
-        db.execute('UPDATE bulk_counter SET counter = (counter + ?) WHERE counter_name = ?', (increment, counter_name))
-    db.commit()
-    return jsonify({'status': 'success'}),200
 
 @bp.route('/loadSoldHistory')
 def loadSoldHistory():

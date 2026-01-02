@@ -879,69 +879,8 @@ async function loadBulkHoloValues(){
     }
 }
 
-async function changeBulkHoloCounters(counter_name, increment_type, increment, valueEl){
-        const response = await fetch(`/incrementBulkCounter/${counter_name}/${increment_type}/${increment}`, {method: 'GET'} );
-        const data = await response.json();
-        if(data.status == 'success'){
-                    const Val = document.querySelector(`.${counter_name}-value`);
-                    Val.textContent = Number(Val.textContent) + Number(increment * (increment_type === 1 ? 1 : -1));
-                    valueEl.value = '';
-        }else{
-            console.error(`There was a problem adding ${counter_name} value`)
-        }
-}
-
-function addBulk(){
-    const button = document.querySelector(".add-bulk-btn");
-    const value = document.querySelector('.bulk-input');
-    
-    button.addEventListener('click',async() => {
-        if(value.value <= 0){
-            const currentValue = document.querySelector('.bulk-value').textContent;
-            if(Math.abs(value.value) > Number(currentValue)){
-                alert("You can't remove more bulk items than you have in inventory");
-                return;
-            }
-            changeBulkHoloCounters('bulk', 0, Math.abs(value.value), value);
-        } else{
-            changeBulkHoloCounters('bulk', 1, value.value, value);
-        }
-    });
-    value.addEventListener('keydown', async(event) => {
-        if(event.key == 'Enter'){
-            button.click();
-        }
-    });
-
-}
-
-function addHolo(){
-    const button = document.querySelector(".add-holo-btn");
-    const value = document.querySelector('.holo-input');
-
-    button.addEventListener('click',async() => {
-        if(value.value <= 0){
-            const currentValue = document.querySelector('.holo-value').textContent;
-            if(Math.abs(value.value) > Number(currentValue)){
-                alert("You can't remove more holo items than you have in inventory");
-                return;
-            }
-            changeBulkHoloCounters('holo', 0, Math.abs(value.value), value);
-        } else{
-            changeBulkHoloCounters('holo', 1, value.value, value);
-        }
-    });
-    value.addEventListener('keydown', async(event) => {
-        if(event.key == 'Enter'){
-            button.click();
-        }
-    });
-}
-
 function initializeBulkHolo(){
     loadBulkHoloValues();
-    addBulk();
-    addHolo();
 }
 
 function groupUnnamedAuctions(){
