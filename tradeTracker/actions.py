@@ -547,9 +547,12 @@ def updatePaymentMethod(auction_id):
     
     existing = db.execute('SELECT payment_method FROM auctions WHERE id = ?',(auction_id,)).fetchone()[0]
     if existing:
-        paymentMethod = str(paymentMethod) +' ' + str(existing)       
+        values = existing.split(' ')
+        if paymentMethod in values:
+            return jsonify({'status': 'success'}),200
+        else:
+            paymentMethod = str(paymentMethod) +' ' + str(existing)       
 
-    print(paymentMethod)
     db.execute('UPDATE auctions SET payment_method = ? WHERE id = ?',(paymentMethod, auction_id))
     db.commit()
 
