@@ -24,6 +24,7 @@ function paymentTypeSelect(){
         <option value=' '>Select payment method</option>
         <option value="Hotovosť">Hotovosť</option>
         <option value="Karta">Karta</option>
+        <option value="Barter">Barter</option>
         <option value="Bankový prevod">Bankový prevod</option>
         <option value="Online platba">Online platba</option>
         <option value="Dobierka">Dobierka</option>
@@ -220,6 +221,25 @@ async function updateAuction(auctionId, value, field){
     } catch (error) {
         console.error('Error updating auction:', error);
         return
+    }
+}
+
+async function updatePaymentMethod(auctionId, value){
+    try{
+        const response = await fetch(`/updatePaymentMethod/${auctionId}`,{
+            method: 'PATCH',
+            headers:{
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({paymentMethod: value})
+        })
+        const data = await response.json();
+        if (data.status === 'success'){
+            return
+        }
+    }
+    catch (error){
+        console.error('Error updating payment method' + error)
     }
 }
 
@@ -1390,7 +1410,10 @@ async function loadAuctions() {
                 <p class="auction-name">${auctionName}</p>
                 ${renderField(auctionPrice != null ? auctionPrice + '€' : null, 'text', ['auction-price'], 'Auction Buy Price', 'auction_price')}
                 <p class="buy-date">${formatedDate || dateFromUTC}</p>
+                <div class="payment-method-container">
                 <p class="payment-method">${auction.payment_method || paymentTypeSelect()}</p>
+                <button class="add-payment-method">+</button>
+                </div>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
                 <div class="cards-container">
@@ -1399,6 +1422,30 @@ async function loadAuctions() {
             `;
             auctionContainer.appendChild(auctionDiv);
         });
+
+        const attachPaymentMethodSelectListener = (select) => {
+            select.addEventListener('change', (event) => {
+                const selectedMethod = event.target.value;
+                const auctionDiv = event.target.closest('.auction-tab');
+                const auctionId = auctionDiv.getAttribute('data-id');
+                updatePaymentMethod(auctionId, selectedMethod);
+            });
+        }
+
+
+        const addMorePaymentMethods = document.querySelectorAll('.add-payment-method');
+        addMorePaymentMethods.forEach((button) =>{
+            button.addEventListener('click', (event)=>{
+                console.log('click');
+                const payMethodContainer = event.target.closest('.payment-method-container');
+                console.log(payMethodContainer);
+                const paymentSelect = document.createElement('p');
+                paymentSelect.innerHTML = paymentTypeSelect();
+                attachPaymentMethodSelectListener(paymentSelect);
+                payMethodContainer.insertBefore(paymentSelect, button);
+            });
+        });
+        
 
         const auctionPriceInputs = document.querySelectorAll('input.auction-price');
         auctionPriceInputs.forEach(input => {
@@ -1518,17 +1565,17 @@ async function loadAuctions() {
             });
         });
 
-        const paymentMethodSelects = document.querySelectorAll('.payment-method-select');
-        if(paymentMethodSelects){
-            paymentMethodSelects.forEach(select => {
-                select.addEventListener('change', (event) => {
-                    const selectedMethod = event.target.value;
-                    const auctionDiv = event.target.closest('.auction-tab');
-                    const auctionId = auctionDiv.getAttribute('data-id');
-                    updateAuction(auctionId, selectedMethod, 'payment_method');
+
+        const auctionTab = document.querySelectorAll('.auction-tab');
+        auctionTab.forEach((tab) =>{
+            const paymentMethodSelects = tab.querySelectorAll('.payment-method-select');
+            if(paymentMethodSelects){
+                paymentMethodSelects.forEach(select => {
+                    attachPaymentMethodSelectListener(select);
                 });
-            });
-        }
+                
+            }
+        });
 
 
         const deleteButton = document.querySelectorAll('.delete-auction');

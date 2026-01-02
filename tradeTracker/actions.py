@@ -539,6 +539,24 @@ def updateAuction(auction_id):
     db.commit()
     return jsonify({'status': 'success'}), 200
 
+@bp.route('/updatePaymentMethod/<int:auction_id>', methods=('PATCH',))
+def updatePaymentMethod(auction_id):
+    db = get_db()
+    data = request.get_json()
+    paymentMethod = data.get('paymentMethod')
+    
+    existing = db.execute('SELECT payment_method FROM auctions WHERE id = ?',(auction_id,)).fetchone()[0]
+    if existing:
+        paymentMethod = str(paymentMethod) +' ' + str(existing)       
+
+    print(paymentMethod)
+    db.execute('UPDATE auctions SET payment_method = ? WHERE id = ?',(paymentMethod, auction_id))
+    db.commit()
+
+    return jsonify({'status': 'success'}),200
+
+
+
 @bp.route('/recalculateCardPrices/<int:auction_id>/<string:new_auction_price>', methods=('GET',))
 def recalculateCardPrices(auction_id, new_auction_price):
     db = get_db()
