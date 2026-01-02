@@ -18,9 +18,9 @@ export function renderField(value, inputType, classList, placeholder, datafield)
     }
 }
 
-function paymentTypeSelect(){
+function paymentTypeSelect(className){
     return `
-    <select class="payment-method-select">
+    <select class="${className}">
         <option value=' '>Select payment method</option>
         <option value="Hotovosť">Hotovosť</option>
         <option value="Karta">Karta</option>
@@ -484,6 +484,7 @@ function shoppingCart(){
                             <option value='Dobierka'>Dobierka</option>
                             <option value='Internetový platobný systém'>Internetový platobný systém</option>
                         </select>
+                        <button class='add-another-payment-method'>Add another payment method</button>
                     </div>
                     <div>
                         <p>Client name and surname</p>
@@ -521,6 +522,15 @@ function shoppingCart(){
                     recieverDiv = null;
                 }
             });
+
+            const button = document.querySelector('.add-another-payment-method');
+            button.addEventListener('click', () => {
+                const paymentDiv = document.querySelector('.complete-invoice-info');
+                const newSelectDiv = document.createElement('div');
+                newSelectDiv.innerHTML = paymentTypeSelect('payment-type');
+                //newSelectDiv.style.width = '200px';
+                paymentDiv.insertBefore(newSelectDiv, button);
+        });
 
             const dateInput = document.querySelector('.date-input');
             dateInput.value = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; 
@@ -1350,7 +1360,7 @@ async function loadAuctions() {
                 ${renderField(auctionPrice != null ? auctionPrice + '€' : null, 'text', ['auction-price'], 'Auction Buy Price', 'auction_price')}
                 <p class="buy-date">${formatedDate || dateFromUTC}</p>
                 <div class="payment-method-container">
-                <p class="payment-method">${auction.payment_method || paymentTypeSelect()}</p>
+                <p class="payment-method">${auction.payment_method || paymentTypeSelect('payment-method-select')}</p>
                 <button class="add-payment-method">+</button>
                 </div>
                 <button class="view-auction" data-id="${auction.id}">View</button>
@@ -1379,7 +1389,7 @@ async function loadAuctions() {
                 const payMethodContainer = event.target.closest('.payment-method-container');
                 console.log(payMethodContainer);
                 const paymentSelect = document.createElement('p');
-                paymentSelect.innerHTML = paymentTypeSelect();
+                paymentSelect.innerHTML = paymentTypeSelect('payment-method-select');
                 attachPaymentMethodSelectListener(paymentSelect);
                 payMethodContainer.insertBefore(paymentSelect, button);
             });
