@@ -162,9 +162,6 @@ def loadAuctions():
 @bp.route('/loadCards/<int:auction_id>')
 def loadCards(auction_id):
     db = get_db()
-    if auction_id == 1:
-        cards = db.execute('SELECT * FROM cards WHERE auction_id = 1').fetchall()
-        return jsonify([dict(card) for card in cards]),200
     cards = db.execute(
         'SELECT c.* FROM cards c '
         'LEFT JOIN sale_items si ON c.id = si.card_id '
