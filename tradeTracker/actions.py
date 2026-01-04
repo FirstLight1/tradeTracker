@@ -1033,7 +1033,13 @@ def invoice(vendor):
                 }), 400
         
         # Generate the invoice and get the file path
-        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []), bulk, holo)
+        # Pass payment methods array (or single method for backwards compatibility)
+        payment_data = recieverInfo.get('paymentMethods', [])
+        if not payment_data and recieverInfo.get('paymentMethod'):
+            # Backwards compatibility - convert single payment method to array
+            payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]
+        
+        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []), bulk, holo, payment_data)
         
         # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()

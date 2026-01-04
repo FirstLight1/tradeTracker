@@ -7,7 +7,7 @@ from InvoiceGenerator.api import Invoice, Item, Client, Provider, Creator
 from InvoiceGenerator.pdf import SimpleInvoice
 from flask import current_app
 
-def generate_invoice(reciever, items, bulk=None, holo=None):
+def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None):
     # Read invoice number from env.txt
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
@@ -53,7 +53,7 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
         # Mapping Slovak IDs to library fields:
         ir="57310041",       # IČO
         vat_id="1130287664", # DIČ
-        #tax_id="SK1130287664", # IČ DPH
+        tax_id="SK1130287664", # IČ DPH
         note="Osoba zapísaná v Živnostenskom registri pod číslom \n220-42582, vydal Okresný úrad Galanta dňa\n 5.11.2025. \nPlatiteľ DPH formou §66.\n Úprava zdaňovania prirážky - použitý tovar\n(§ 74 ods. 1 pism. n) zákona o DPH)",
         logo_filename=logo_path
     )
@@ -73,7 +73,20 @@ def generate_invoice(reciever, items, bulk=None, holo=None):
     invoice.variable_symbol = invoice_num       # VS
     invoice.currency = "EUR"
     invoice.date = invoice_date          # Date of exposure (Dátum vystavenia)
-    invoice.paytype=reciever.get("paymentMethod")  # Spôsob úhrady
+    
+    # Format payment methods for display
+    if payment_methods and len(payment_methods) > 0:
+        # Multiple payment methods - join them with commas (remove duplicates)
+        payment_types = [pm.get('type', '') for pm in payment_methods if pm.get('type')]
+        # Remove duplicates while preserving order
+        unique_payment_types = list(dict.fromkeys(payment_types))
+        invoice.paytype = ", ".join(unique_payment_types) if unique_payment_types else "Hotovosť"
+    else:
+        # Fallback to old single payment method for backwards compatibility
+        invoice.paytype = reciever.get("paymentMethod", "Hotovosť")
+    
+    invoice.taxable_date = datetime.now() # Dátum splatnosti
+    invoice.use_tax=True
     
     # Convert paybackDate string to date object (HTML date input format: YYYY-MM-DD)
     payback_str = reciever.get("paybackDate")

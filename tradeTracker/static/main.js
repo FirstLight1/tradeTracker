@@ -633,11 +633,17 @@ function shoppingCart(){
             inputs.forEach((input) =>{
                 inputVals.push(input.value);
                 })
-            const paymentSelect = recieverDiv.querySelector('.payment-type').value;
+            
+            // Collect all payment methods
+            const paymentSelects = recieverDiv.querySelectorAll('.payment-type');
+            const paymentMethods = Array.from(paymentSelects).map(select => ({
+                type: select.value,
+                amount: 0  // Amount will be calculated/split later if needed
+            }));
 
             if(!cartContent.recieverInfo){
             const recieverInfo = {
-                paymentMethod : paymentSelect,
+                paymentMethods : paymentMethods,
                 nameAndSurname : inputVals[0],
                 address : inputVals[1],
                 city : inputVals[2],
@@ -1471,116 +1477,118 @@ async function loadAuctions() {
             auctionDiv.paymentsData = payments;
         });
 
-        // Handle payment editing
-        const editPaymentButtons = document.querySelectorAll('.edit-payments-btn');
-        editPaymentButtons.forEach((button) => {
-            button.addEventListener('click', (event) => {
-                const auctionDiv = event.target.closest('.auction-tab');
-                const auctionId = auctionDiv.getAttribute('data-id');
-                const paymentContainer = auctionDiv.querySelector('.payment-method-container');
-                const payments = auctionDiv.paymentsData || [];
+        // Handle payment editing - define as named function to allow re-attachment
+        const handleEditPayment = (event) => {
+            const auctionDiv = event.target.closest('.auction-tab');
+            const auctionId = auctionDiv.getAttribute('data-id');
+            const paymentContainer = auctionDiv.querySelector('.payment-method-container');
+            const payments = auctionDiv.paymentsData || [];
+            
+            // Clear container and create payment editor
+            paymentContainer.innerHTML = '<div class="payment-rows-container"></div>';
+            const rowsContainer = paymentContainer.querySelector('.payment-rows-container');
+            
+            // Add existing payments
+            if (payments.length > 0) {
+                payments.forEach(payment => {
+                    rowsContainer.innerHTML += paymentTypeRow(payment.type, payment.amount);
+                });
+            } else {
+                // Add one empty row if no payments
+                rowsContainer.innerHTML += paymentTypeRow();
+            }
+            
+            // Add control buttons (create elements instead of innerHTML to preserve rowsContainer reference)
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.classList.add('payment-buttons-container');
+            buttonsDiv.innerHTML = `
+                <button class="add-payment-row-btn">+</button>
+                <button class="save-payments-btn">Save</button>
+                <button class="cancel-payments-btn">Cancel</button>
+            `;
+            paymentContainer.appendChild(buttonsDiv);
+            
+            // Attach remove button listeners
+            const attachRemoveListeners = () => {
+                const removeButtons = rowsContainer.querySelectorAll('.remove-payment-btn');
+                removeButtons.forEach(btn => {
+                    btn.onclick = () => {
+                        if (rowsContainer.children.length > 1) {
+                            btn.closest('.payment-row').remove();
+                        } else {
+                            alert('At least one payment row is required');
+                        }
+                    };
+                });
+            };
+            attachRemoveListeners();
+            
+            // Add payment row button
+            paymentContainer.querySelector('.add-payment-row-btn').addEventListener('click', () => {
+                rowsContainer.innerHTML += paymentTypeRow();
+                attachRemoveListeners();
+            });
+            
+            // Save button
+            paymentContainer.querySelector('.save-payments-btn').addEventListener('click', async () => {
+                const paymentRows = rowsContainer.querySelectorAll('.payment-row');
+                const paymentsArray = [];
+                let hasEmptyType = false;
                 
-                // Clear container and create payment editor
-                paymentContainer.innerHTML = '<div class="payment-rows-container"></div>';
-                const rowsContainer = paymentContainer.querySelector('.payment-rows-container');
+                paymentRows.forEach(row => {
+                    const type = row.querySelector('.payment-type-select').value;
+                    const amount = parseFloat(row.querySelector('.payment-amount-input').value) || 0;
+                    
+                    if (!type || type.trim() === '') {
+                        hasEmptyType = true;
+                    } else {
+                        paymentsArray.push({type, amount});
+                    }
+                });
                 
-                // Add existing payments
-                if (payments.length > 0) {
-                    payments.forEach(payment => {
-                        rowsContainer.innerHTML += paymentTypeRow(payment.type, payment.amount);
-                    });
-                } else {
-                    // Add one empty row if no payments
-                    rowsContainer.innerHTML += paymentTypeRow();
+                if (hasEmptyType && paymentsArray.length === 0) {
+                    alert('Please select at least one payment type');
+                    return;
                 }
                 
-                // Add control buttons (create elements instead of innerHTML to preserve rowsContainer reference)
-                const buttonsDiv = document.createElement('div');
-                buttonsDiv.classList.add('payment-buttons-container');
-                buttonsDiv.innerHTML = `
-                    <button class="add-payment-row-btn">+</button>
-                    <button class="save-payments-btn">Save</button>
-                    <button class="cancel-payments-btn">Cancel</button>
-                `;
-                paymentContainer.appendChild(buttonsDiv);
+                // Validate payments
+                const validation = validatePayments(paymentsArray);
+                if (!validation.valid) {
+                    alert(validation.error);
+                    return;
+                }
                 
-                // Attach remove button listeners
-                const attachRemoveListeners = () => {
-                    const removeButtons = rowsContainer.querySelectorAll('.remove-payment-btn');
-                    removeButtons.forEach(btn => {
-                        btn.onclick = () => {
-                            if (rowsContainer.children.length > 1) {
-                                btn.closest('.payment-row').remove();
-                            } else {
-                                alert('At least one payment row is required');
-                            }
-                        };
-                    });
-                };
-                attachRemoveListeners();
-                
-                // Add payment row button
-                paymentContainer.querySelector('.add-payment-row-btn').addEventListener('click', () => {
-                    rowsContainer.innerHTML += paymentTypeRow();
-                    attachRemoveListeners();
-                });
-                
-                // Save button
-                paymentContainer.querySelector('.save-payments-btn').addEventListener('click', async () => {
-                    const paymentRows = rowsContainer.querySelectorAll('.payment-row');
-                    const paymentsArray = [];
-                    let hasEmptyType = false;
-                    
-                    paymentRows.forEach(row => {
-                        const type = row.querySelector('.payment-type-select').value;
-                        const amount = parseFloat(row.querySelector('.payment-amount-input').value) || 0;
-                        
-                        if (!type || type.trim() === '') {
-                            hasEmptyType = true;
-                        } else {
-                            paymentsArray.push({type, amount});
-                        }
-                    });
-                    
-                    if (hasEmptyType && paymentsArray.length === 0) {
-                        alert('Please select at least one payment type');
-                        return;
-                    }
-                    
-                    // Validate payments
-                    const validation = validatePayments(paymentsArray);
-                    if (!validation.valid) {
-                        alert(validation.error);
-                        return;
-                    }
-                    
-                    const success = await updatePaymentMethod(auctionId, paymentsArray);
-                    if (success) {
-                        // Update display
-                        auctionDiv.paymentsData = paymentsArray;
-                        const paymentDisplay = formatPaymentDisplay(paymentsArray);
-                        paymentContainer.innerHTML = `
-                            <div class="payment-method">${paymentDisplay}</div>
-                            <button class="edit-payments-btn">Edit</button>
-                        `;
-                        // Re-attach listener to new edit button
-                        paymentContainer.querySelector('.edit-payments-btn').addEventListener('click', arguments.callee);
-                    } else {
-                        alert('Failed to update payment methods. Please try again.');
-                    }
-                });
-                
-                // Cancel button
-                paymentContainer.querySelector('.cancel-payments-btn').addEventListener('click', () => {
-                    const paymentDisplay = formatPaymentDisplay(auctionDiv.paymentsData || []);
+                const success = await updatePaymentMethod(auctionId, paymentsArray);
+                if (success) {
+                    // Update display
+                    auctionDiv.paymentsData = paymentsArray;
+                    const paymentDisplay = formatPaymentDisplay(paymentsArray);
                     paymentContainer.innerHTML = `
                         <div class="payment-method">${paymentDisplay}</div>
                         <button class="edit-payments-btn">Edit</button>
                     `;
                     // Re-attach listener to new edit button
-                    paymentContainer.querySelector('.edit-payments-btn').addEventListener('click', arguments.callee);
-                });
+                    paymentContainer.querySelector('.edit-payments-btn').addEventListener('click', handleEditPayment);
+                } else {
+                    alert('Failed to update payment methods. Please try again.');
+                }
             });
+            
+            // Cancel button
+            paymentContainer.querySelector('.cancel-payments-btn').addEventListener('click', () => {
+                const paymentDisplay = formatPaymentDisplay(auctionDiv.paymentsData || []);
+                paymentContainer.innerHTML = `
+                    <div class="payment-method">${paymentDisplay}</div>
+                    <button class="edit-payments-btn">Edit</button>
+                `;
+                // Re-attach listener to new edit button
+                paymentContainer.querySelector('.edit-payments-btn').addEventListener('click', handleEditPayment);
+            });
+        };
+
+        const editPaymentButtons = document.querySelectorAll('.edit-payments-btn');
+        editPaymentButtons.forEach((button) => {
+            button.addEventListener('click', handleEditPayment);
         });
 
         const auctionPriceInputs = document.querySelectorAll('input.auction-price');
