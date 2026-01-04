@@ -112,6 +112,47 @@ def add():
         db.commit()
         return jsonify({'status': 'success', 'auction_id': auction_id}), 201
     
+def _check_bulk_inventory(db, item_type, quantity_needed):
+    """Check if sufficient inventory exists for the given item type."""
+    result = db.execute(
+        'SELECT SUM(quantity) FROM bulk_items WHERE item_type = ?',
+        (item_type,)
+    ).fetchone()
+    available = result[0] if result[0] is not None else 0
+    return available >= quantity_needed
+
+def _deduct_bulk_items_fifo(db, item_type, quantity_to_deduct):
+    """Deduct bulk/holo items using FIFO (First In, First Out) from auctions."""
+    remaining = quantity_to_deduct
+    
+    # Get all bulk_items for this type, ordered by auction_id (FIFO)
+    items = db.execute(
+        'SELECT id, auction_id, quantity FROM bulk_items '
+        'WHERE item_type = ? ORDER BY auction_id ASC',
+        (item_type,)
+    ).fetchall()
+    
+    for item in items:
+        if remaining <= 0:
+            break
+            
+        item_id = item['id']
+        current_quantity = item['quantity']
+        
+        if current_quantity <= remaining:
+            # Delete this item entirely
+            db.execute('DELETE FROM bulk_items WHERE id = ?', (item_id,))
+            remaining -= current_quantity
+        else:
+            # Reduce quantity
+            new_quantity = current_quantity - remaining
+            db.execute(
+                'UPDATE bulk_items SET quantity = ?, total_price = quantity * unit_price '
+                'WHERE id = ?',
+                (new_quantity, item_id)
+            )
+            remaining = 0
+
 def _add_bulk_items_helper(db, auction_id, bulk=None, holo=None):
     """Helper function to add bulk items. Requires db connection to be passed in."""
     items = [dict(bulk) if bulk is not None else None, dict(holo) if holo is not None else None]
@@ -211,6 +252,7 @@ def deleteBulkItem(item_id):
 @bp.route('/deleteAuction/<int:auction_id>', methods=('DELETE',))
 def deleteAuction(auction_id):
     db = get_db()
+    db.execute('DELETE FROM bulk_items WHERE auction_id = ?', (auction_id,))
     db.execute('DELETE FROM cards WHERE auction_id = ?', (auction_id,))
     db.execute('DELETE FROM auctions WHERE id = ?', (auction_id,))
     db.commit()
@@ -853,10 +895,25 @@ def invoice(vendor):
         recieverInfo = cartContent['recieverInfo']
         bulk = cartContent.get('bulkItem')
         holo = cartContent.get('holoItem')
+        
+        # Validate inventory before processing
+        db = get_db()
+        if bulk and bulk.get('quantity', 0) > 0:
+            if not _check_bulk_inventory(db, 'bulk', bulk.get('quantity', 0)):
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Insufficient bulk inventory. Requested: {bulk.get("quantity", 0)}'
+                }), 400
+        
+        if holo and holo.get('quantity', 0) > 0:
+            if not _check_bulk_inventory(db, 'holo', holo.get('quantity', 0)):
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Insufficient holo inventory. Requested: {holo.get("quantity", 0)}'
+                }), 400
+        
         # Generate the invoice and get the file path
         pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []), bulk, holo)
-        # Update database
-        db = get_db()
         
         # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()
@@ -885,10 +942,15 @@ def invoice(vendor):
             db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
                    (sale_id, 'bulk', bulk.get('quantity', 0), bulk.get('unit_price', 0.01), bulk.get('sell_price', 0)))
             db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "bulk"', (bulk.get('quantity', 0),))
+            # Deduct from bulk_items using FIFO
+            _deduct_bulk_items_fifo(db, 'bulk', bulk.get('quantity', 0))
+            
         if holo:
             db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
                    (sale_id, 'holo', holo.get('quantity', 0), holo.get('unit_price', 0.03), holo.get('sell_price', 0)))
             db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "holo"', (holo.get('quantity', 0),))
+            # Deduct from bulk_items using FIFO
+            _deduct_bulk_items_fifo(db, 'holo', holo.get('quantity', 0))
 
         db.commit()
         

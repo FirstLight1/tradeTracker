@@ -578,7 +578,7 @@ function shoppingCart(){
                     body: JSON.stringify(cartContent),
                 });
             const data = await response.json();
-            if(data.status = 'success'){
+            if(data.status === 'success'){
                 console.log("success")
                 cards = [];
                 for (const key in cartContent){
@@ -594,6 +594,10 @@ function shoppingCart(){
                 recieverDiv = null;
                 alert(data.pdf_path)
                 //recalculate auction price and profit
+            }else if(data.status === 'error'){
+                // Display error message for insufficient inventory
+                alert('Error: ' + data.message);
+                console.error('Invoice generation failed:', data.message);
             }else{
                 console.error("something went wrong")
             }
