@@ -9,7 +9,7 @@ def get_db():
             detect_types=sqlite3.PARSE_DECLTYPES
         )
         g.db.row_factory = sqlite3.Row
-        return g.db
+    return g.db
 
 def close_db(e=None):
     db = g.pop('db', None)

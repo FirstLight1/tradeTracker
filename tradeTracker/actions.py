@@ -43,8 +43,11 @@ def validate_and_sanitize_payments(payments):
     Validate and sanitize payment data.
     Returns: (is_valid, sanitized_payments, error_message)
     """
-    if not payments or not isinstance(payments, list):
+    if payments is None or not isinstance(payments, list):
         return False, None, 'Invalid payments format'
+    
+    if len(payments) == 0:
+        return False, None, 'At least one payment method required'
     
     if len(payments) > 10:  # Reasonable limit
         return False, None, 'Too many payment methods (max 10)'
@@ -75,9 +78,6 @@ def validate_and_sanitize_payments(payments):
             'type': payment_type,
             'amount': round(amount, 2)  # Ensure 2 decimal places
         })
-    
-    if len(sanitized) == 0:
-        return False, None, 'At least one payment method required'
     
     return True, sanitized, None
 
