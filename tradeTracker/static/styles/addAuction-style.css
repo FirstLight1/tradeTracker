@@ -235,3 +235,76 @@ input[type="checkbox"] {
   background: var(--accent-teal);
   box-shadow: 0 0 10px var(--glow-color);
 }
+
+/* Payment rows styling */
+.payment-type {
+    margin-bottom: 20px;
+}
+
+.payment-rows-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.payment-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.payment-type-select {
+    background: var(--waterway-light);
+    color: var(--text-color);
+    border: 1px solid var(--accent-teal);
+    border-radius: 5px;
+    padding: 8px;
+    min-width: 180px;
+    font-family: var(--primary-font);
+}
+
+.payment-amount-input {
+    background: var(--waterway-light);
+    color: var(--text-color);
+    border: 1px solid var(--accent-teal);
+    border-radius: 5px;
+    padding: 8px;
+    width: 100px;
+    font-family: var(--primary-font);
+}
+
+.remove-payment-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: all 0.3s ease;
+}
+
+.remove-payment-btn:hover {
+    background-color: #cc0000;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
+
+.add-payment-row-btn {
+    background: linear-gradient(135deg, var(--accent-teal), var(--accent-purple));
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-family: var(--primary-font);
+    transition: all 0.3s ease;
+}
+
+.add-payment-row-btn:hover {
+    box-shadow: 0 0 15px var(--glow-color);
+    transform: translateY(-2px);
+}

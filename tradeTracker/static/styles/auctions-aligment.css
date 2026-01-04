@@ -62,6 +62,98 @@ p{
     height: 26px;
 }
 
+.payment-method-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 40px;
+    max-height: 120px;
+    overflow-y: auto;
+    gap: 5px;
+}
+
+.payment-method {
+    line-height: 1.5;
+    text-align: left;
+}
+
+.payment-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.payment-type-select {
+    min-width: 150px;
+    padding: 3px;
+}
+
+.payment-amount-input {
+    width: 80px;
+    padding: 3px;
+}
+
+.remove-payment-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.remove-payment-btn:hover {
+    background-color: #cc0000;
+}
+
+.add-payment-row-btn, .edit-payments-btn, .save-payments-btn, .cancel-payments-btn {
+    padding: 5px 10px;
+    margin-top: 5px;
+    cursor: pointer;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+}
+
+.edit-payments-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+}
+
+.edit-payments-btn:hover {
+    background-color: #45a049;
+}
+
+.save-payments-btn {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+}
+
+.save-payments-btn:hover {
+    background-color: #0b7dda;
+}
+
+.cancel-payments-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+}
+
+.cancel-payments-btn:hover {
+    background-color: #da190b;
+}
+
+.payment-rows-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 .cards-header{
     display: grid;
     grid-template-columns: 280px 120px 150px 80px 100px 80px 90px 180px 90px;

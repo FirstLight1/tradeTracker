@@ -43,18 +43,25 @@
                 <label>Buy price</label><br>
                 <input type="text" class="auction-buy-price" required>
             </dir>
-        <dir class="payment-type">
-            <label>Payment type</label><br>
-            <select class="payment-method-select">
-                <option value=' '>Select payment method</option>
-                <option value="Hotovosť">Hotovosť</option>
-                <option value="Karta">Karta</option>
-                <option value="Bankový prevod">Bankový prevod</option>
-                <option value="Online platba">Online platba</option>
-                <option value="Dobierka">Dobierka</option>
-                <option value="Online platobný systém">Online platobný systém</option>
-            </select>
-        </dir>
+            <dir class="payment-type">
+                <label>Payment type</label><br>
+                <div class="payment-rows-container">
+                    <div class="payment-row">
+                        <select class="payment-type-select">
+                            <option value=''>Select payment method</option>
+                            <option value="Hotovosť">Hotovosť</option>
+                            <option value="Karta">Karta</option>
+                            <option value="Bankový prevod">Bankový prevod</option>
+                            <option value="Online platba">Online platba</option>
+                            <option value="Dobierka">Dobierka</option>
+                            <option value="Online platobný systém">Online platobný systém</option>
+                        </select>
+                        <input type="number" class="payment-amount-input" step="0.01" min="0" placeholder="Amount" autocomplete="off">
+                        <button type="button" class="remove-payment-btn">×</button>
+                    </div>
+                </div>
+                <button type="button" class="add-payment-row-btn">+ Add Payment</button>
+            </dir>
         </dir>
         <dir class="content-container">
             <dir class="cards-header">

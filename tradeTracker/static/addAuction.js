@@ -1,5 +1,41 @@
 import {updateInventoryValueAndTotalProfit} from "./main.js";
 
+const ALLOWED_PAYMENT_TYPES = new Set([
+    'Hotovosť',
+    'Karta',
+    'Barter',
+    'Bankový prevod',
+    'Online platba',
+    'Dobierka',
+    'Online platobný systém'
+]);
+
+function validatePayments(payments) {
+    if (!payments || payments.length === 0) {
+        return { valid: true }; // Payments are optional
+    }
+    
+    if (payments.length > 10) {
+        return { valid: false, error: 'Too many payment methods (max 10)' };
+    }
+    
+    for (const payment of payments) {
+        if (!ALLOWED_PAYMENT_TYPES.has(payment.type)) {
+            return { valid: false, error: 'Invalid payment type selected' };
+        }
+        
+        const amount = parseFloat(payment.amount);
+        if (isNaN(amount) || amount < 0) {
+            return { valid: false, error: 'Invalid payment amount' };
+        }
+        
+        if (amount > 1000000) {
+            return { valid: false, error: 'Payment amount too large' };
+        }
+    }
+    
+    return { valid: true };
+}
 
 export function createNewCard(newCard){
      newCard.querySelectorAll('input').forEach(el =>{
@@ -51,13 +87,34 @@ saveButton.addEventListener('click', () =>{
     const auctionName = document.querySelector('.auction-name').value;
     const auctionBuy = document.querySelector('.auction-buy-price').value;
     const date = new Date().toISOString();
-    const paymentType = document.querySelector('select[name=paymentType]').value;
+    
+    // Collect all payment rows
+    const paymentRows = document.querySelectorAll('.payment-row');
+    const payments = [];
+    paymentRows.forEach(row => {
+        const type = row.querySelector('.payment-type-select').value;
+        const amount = parseFloat(row.querySelector('.payment-amount-input').value) || 0;
+        if (type) {
+            payments.push({type, amount});
+        }
+    });
+    
     let auction = {
         name: auctionName.trim() || null,
         buy: auctionBuy ? parseFloat(auctionBuy.replace(',','.')) : null,
         date: date.trim() || null,
-        paymentType: paymentType.trim() || null
+        payments: payments.length > 0 ? payments : null
     };
+    
+    // Validate payments
+    if (auction.payments) {
+        const validation = validatePayments(auction.payments);
+        if (!validation.valid) {
+            alert('Payment validation error: ' + validation.error);
+            return;
+        }
+    }
+    
     if(cardsArr.length === 0){
         cardsArr.push(auction);
     }
@@ -105,15 +162,25 @@ saveButton.addEventListener('click', () =>{
             },
             body: jsonbody
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || 'Server error');
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.status === 'success') {
                 window.location.href = '/';
+            } else {
+                alert('Error: ' + (data.message || 'Unknown error'));
             }
         })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to save auction: ' + error.message);
+        });
     }
 })
 
@@ -127,6 +194,48 @@ addCardButton.addEventListener('click', () =>{
     container.append(newCard);
 })
 
+// Payment row management
+const addPaymentRowBtn = document.querySelector('.add-payment-row-btn');
+const paymentRowsContainer = document.querySelector('.payment-rows-container');
+
+function createPaymentRow() {
+    const row = document.createElement('div');
+    row.classList.add('payment-row');
+    row.innerHTML = `
+        <select class="payment-type-select">
+            <option value=''>Select payment method</option>
+            <option value="Hotovosť">Hotovosť</option>
+            <option value="Karta">Karta</option>
+            <option value="Bankový prevod">Bankový prevod</option>
+            <option value="Online platba">Online platba</option>
+            <option value="Dobierka">Dobierka</option>
+            <option value="Online platobný systém">Online platobný systém</option>
+        </select>
+        <input type="number" class="payment-amount-input" step="0.01" min="0" placeholder="Amount" autocomplete="off">
+        <button type="button" class="remove-payment-btn">×</button>
+    `;
+    return row;
+}
+
+function attachRemoveListener(row) {
+    const removeBtn = row.querySelector('.remove-payment-btn');
+    removeBtn.addEventListener('click', () => {
+        if (paymentRowsContainer.children.length > 1) {
+            row.remove();
+        } else {
+            alert('At least one payment row is required');
+        }
+    });
+}
+
+addPaymentRowBtn.addEventListener('click', () => {
+    const newRow = createPaymentRow();
+    paymentRowsContainer.appendChild(newRow);
+    attachRemoveListener(newRow);
+});
+
+// Attach listener to initial row
+attachRemoveListener(document.querySelector('.payment-row'));
 
 document.addEventListener('DOMContentLoaded', async () => {
     await updateInventoryValueAndTotalProfit();

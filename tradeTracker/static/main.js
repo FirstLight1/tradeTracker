@@ -33,6 +33,113 @@ function paymentTypeSelect(className){
     `
 }
 
+function paymentTypeRow(type = '', amount = 0, className = 'payment-row'){
+    return `
+    <div class="${className}">
+        <select class="payment-type-select">
+            <option value=''>Select payment method</option>
+            <option value="Hotovosť" ${type === 'Hotovosť' ? 'selected' : ''}>Hotovosť</option>
+            <option value="Karta" ${type === 'Karta' ? 'selected' : ''}>Karta</option>
+            <option value="Barter" ${type === 'Barter' ? 'selected' : ''}>Barter</option>
+            <option value="Bankový prevod" ${type === 'Bankový prevod' ? 'selected' : ''}>Bankový prevod</option>
+            <option value="Online platba" ${type === 'Online platba' ? 'selected' : ''}>Online platba</option>
+            <option value="Dobierka" ${type === 'Dobierka' ? 'selected' : ''}>Dobierka</option>
+            <option value="Online platobný systém" ${type === 'Online platobný systém' ? 'selected' : ''}>Online platobný systém</option>
+        </select>
+        <input type="number" class="payment-amount-input" step="0.01" min="0" placeholder="Amount" value="${amount}" autocomplete="off">
+        <button class="remove-payment-btn">×</button>
+    </div>
+    `
+}
+
+function parsePaymentMethods(paymentMethodData){
+    if (!paymentMethodData) return [];
+    
+    try {
+        const parsed = JSON.parse(paymentMethodData);
+        if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+        // Old format - space separated
+        return paymentMethodData.trim().split(' ').map(type => ({type: type, amount: 0}));
+    }
+    
+    return [];
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+const ALLOWED_PAYMENT_TYPES = new Set([
+    'Hotovosť',
+    'Karta',
+    'Barter',
+    'Bankový prevod',
+    'Online platba',
+    'Dobierka',
+    'Online platobný systém'
+]);
+
+function validatePayments(payments) {
+    if (!Array.isArray(payments) || payments.length === 0) {
+        return { valid: false, error: 'At least one payment method required' };
+    }
+    
+    if (payments.length > 10) {
+        return { valid: false, error: 'Too many payment methods (max 10)' };
+    }
+    
+    for (const payment of payments) {
+        if (!payment.type || !ALLOWED_PAYMENT_TYPES.has(payment.type)) {
+            return { valid: false, error: 'Invalid payment type selected' };
+        }
+        
+        const amount = parseFloat(payment.amount);
+        if (isNaN(amount) || amount < 0) {
+            return { valid: false, error: 'Invalid payment amount' };
+        }
+        
+        if (amount > 1000000) {
+            return { valid: false, error: 'Payment amount too large' };
+        }
+    }
+    
+    return { valid: true };
+}
+
+function formatPaymentDisplay(payments){
+    if (!payments || payments.length === 0) return 'No payment method';
+    
+    // Escape HTML to prevent XSS, then join with <br>
+    return payments.map(p => {
+        const type = escapeHtml(p.type || '');
+        const amount = parseFloat(p.amount || 0).toFixed(2);
+        return `${type}: ${amount}€`;
+    }).join('<br>');
+}
+
+async function updatePaymentMethod(auctionId, payments){
+    try{
+        const response = await fetch(`/updatePaymentMethod/${auctionId}`,{
+            method: 'PATCH',
+            headers:{
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({payments: payments})
+        })
+        const data = await response.json();
+        if (data.status === 'success'){
+            return true;
+        }
+    }
+    catch (error){
+        console.error('Error updating payment method: ' + error)
+        return false;
+    }
+}
+
 function calculateAuctionBuyPrice(cards){
     let totalBuyPrice = 0;
     cards.forEach(card => {
@@ -40,7 +147,7 @@ function calculateAuctionBuyPrice(cards){
         totalBuyPrice += buyPrice;
     });
     return totalBuyPrice.toFixed(2);
-    }
+}
 
 function appendEuroSign(value, dataset){
     if (dataset === 'card_num' || dataset === 'card_name'){
@@ -224,27 +331,17 @@ async function updateAuction(auctionId, value, field){
     }
 }
 
-async function updatePaymentMethod(auctionId, value){
-    try{
-        const response = await fetch(`/updatePaymentMethod/${auctionId}`,{
-            method: 'PATCH',
-            headers:{
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({paymentMethod: value})
-        })
-        const data = await response.json();
-        if (data.status === 'success'){
-            return
-        }
-    }
-    catch (error){
-        console.error('Error updating payment method' + error)
-    }
-}
-
 function isEmpty(obj) {
     return Object.keys(obj).length === 0;
+}
+
+function calculateAuctionBuyPrice(cards){
+    let totalBuyPrice = 0;
+    cards.forEach(card => {
+        const buyPrice = Number(card.querySelector('.card-price').textContent.replace('€', '').trim());
+        totalBuyPrice += buyPrice;
+    });
+    return totalBuyPrice.toFixed(2);
 }
 
 function soldReportBtn(){
@@ -1359,13 +1456,17 @@ async function loadAuctions() {
                 formatedDate = new Date(String(auction.date_created).split('T')[0]).toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});;
             }
 
+            // Parse payment methods
+            const payments = parsePaymentMethods(auction.payment_method);
+            const paymentDisplay = formatPaymentDisplay(payments);
+
             auctionDiv.innerHTML = `
                 <p class="auction-name">${auctionName}</p>
                 ${renderField(auctionPrice != null ? auctionPrice + '€' : null, 'text', ['auction-price'], 'Auction Buy Price', 'auction_price')}
                 <p class="buy-date">${formatedDate || dateFromUTC}</p>
                 <div class="payment-method-container">
-                <p class="payment-method">${auction.payment_method || paymentTypeSelect('payment-method-select')}</p>
-                <button class="add-payment-method">+</button>
+                    <div class="payment-method">${paymentDisplay}</div>
+                    <button class="edit-payments-btn">Edit</button>
                 </div>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
@@ -1374,31 +1475,110 @@ async function loadAuctions() {
                 </div>
             `;
             auctionContainer.appendChild(auctionDiv);
+            
+            // Store payments data on the div for later use
+            auctionDiv.paymentsData = payments;
         });
 
-        const attachPaymentMethodSelectListener = (select) => {
-            select.addEventListener('change', (event) => {
-                const selectedMethod = event.target.value;
+        // Handle payment editing
+        const editPaymentButtons = document.querySelectorAll('.edit-payments-btn');
+        editPaymentButtons.forEach((button) => {
+            button.addEventListener('click', (event) => {
                 const auctionDiv = event.target.closest('.auction-tab');
                 const auctionId = auctionDiv.getAttribute('data-id');
-                updatePaymentMethod(auctionId, selectedMethod);
-            });
-        }
-
-
-        const addMorePaymentMethods = document.querySelectorAll('.add-payment-method');
-        addMorePaymentMethods.forEach((button) =>{
-            button.addEventListener('click', (event)=>{
-                console.log('click');
-                const payMethodContainer = event.target.closest('.payment-method-container');
-                console.log(payMethodContainer);
-                const paymentSelect = document.createElement('p');
-                paymentSelect.innerHTML = paymentTypeSelect('payment-method-select');
-                attachPaymentMethodSelectListener(paymentSelect);
-                payMethodContainer.insertBefore(paymentSelect, button);
+                const paymentContainer = auctionDiv.querySelector('.payment-method-container');
+                const payments = auctionDiv.paymentsData || [];
+                
+                // Clear container and create payment editor
+                paymentContainer.innerHTML = '<div class="payment-rows-container"></div>';
+                const rowsContainer = paymentContainer.querySelector('.payment-rows-container');
+                
+                // Add existing payments
+                if (payments.length > 0) {
+                    payments.forEach(payment => {
+                        rowsContainer.innerHTML += paymentTypeRow(payment.type, payment.amount);
+                    });
+                } else {
+                    // Add one empty row if no payments
+                    rowsContainer.innerHTML += paymentTypeRow();
+                }
+                
+                // Add control buttons
+                paymentContainer.innerHTML += `
+                    <button class="add-payment-row-btn">+</button>
+                    <button class="save-payments-btn">Save</button>
+                    <button class="cancel-payments-btn">Cancel</button>
+                `;
+                
+                // Attach remove button listeners
+                const attachRemoveListeners = () => {
+                    const removeButtons = rowsContainer.querySelectorAll('.remove-payment-btn');
+                    removeButtons.forEach(btn => {
+                        btn.onclick = () => {
+                            if (rowsContainer.children.length > 1) {
+                                btn.closest('.payment-row').remove();
+                            } else {
+                                alert('At least one payment row is required');
+                            }
+                        };
+                    });
+                };
+                attachRemoveListeners();
+                
+                // Add payment row button
+                paymentContainer.querySelector('.add-payment-row-btn').addEventListener('click', () => {
+                    rowsContainer.innerHTML += paymentTypeRow();
+                    attachRemoveListeners();
+                });
+                
+                // Save button
+                paymentContainer.querySelector('.save-payments-btn').addEventListener('click', async () => {
+                    const paymentRows = rowsContainer.querySelectorAll('.payment-row');
+                    const paymentsArray = [];
+                    
+                    paymentRows.forEach(row => {
+                        const type = row.querySelector('.payment-type-select').value;
+                        const amount = parseFloat(row.querySelector('.payment-amount-input').value) || 0;
+                        if (type) {
+                            paymentsArray.push({type, amount});
+                        }
+                    });
+                    
+                    // Validate payments
+                    const validation = validatePayments(paymentsArray);
+                    if (!validation.valid) {
+                        alert(validation.error);
+                        return;
+                    }
+                    
+                    const success = await updatePaymentMethod(auctionId, paymentsArray);
+                    if (success) {
+                        // Update display
+                        auctionDiv.paymentsData = paymentsArray;
+                        const paymentDisplay = formatPaymentDisplay(paymentsArray);
+                        paymentContainer.innerHTML = `
+                            <div class="payment-method">${paymentDisplay}</div>
+                            <button class="edit-payments-btn">Edit</button>
+                        `;
+                        // Re-attach listener to new edit button
+                        paymentContainer.querySelector('.edit-payments-btn').addEventListener('click', arguments.callee);
+                    } else {
+                        alert('Failed to update payment methods. Please try again.');
+                    }
+                });
+                
+                // Cancel button
+                paymentContainer.querySelector('.cancel-payments-btn').addEventListener('click', () => {
+                    const paymentDisplay = formatPaymentDisplay(auctionDiv.paymentsData || []);
+                    paymentContainer.innerHTML = `
+                        <div class="payment-method">${paymentDisplay}</div>
+                        <button class="edit-payments-btn">Edit</button>
+                    `;
+                    // Re-attach listener to new edit button
+                    paymentContainer.querySelector('.edit-payments-btn').addEventListener('click', arguments.callee);
+                });
             });
         });
-        
 
         const auctionPriceInputs = document.querySelectorAll('input.auction-price');
         auctionPriceInputs.forEach(input => {

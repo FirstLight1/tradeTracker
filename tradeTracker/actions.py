@@ -27,6 +27,60 @@ conditionDict = {
     'PO' : "Poor"
 }
 
+# Allowed payment types (whitelist)
+ALLOWED_PAYMENT_TYPES = {
+    'Hotovosť',
+    'Karta',
+    'Barter',
+    'Bankový prevod',
+    'Online platba',
+    'Dobierka',
+    'Online platobný systém'
+}
+
+def validate_and_sanitize_payments(payments):
+    """
+    Validate and sanitize payment data.
+    Returns: (is_valid, sanitized_payments, error_message)
+    """
+    if not payments or not isinstance(payments, list):
+        return False, None, 'Invalid payments format'
+    
+    if len(payments) > 10:  # Reasonable limit
+        return False, None, 'Too many payment methods (max 10)'
+    
+    sanitized = []
+    for payment in payments:
+        if not isinstance(payment, dict):
+            return False, None, 'Invalid payment object'
+        
+        payment_type = payment.get('type', '').strip()
+        amount = payment.get('amount')
+        
+        # Validate payment type against whitelist
+        if payment_type not in ALLOWED_PAYMENT_TYPES:
+            return False, None, f'Invalid payment type: {payment_type}'
+        
+        # Validate amount is a number
+        try:
+            amount = float(amount)
+            if amount < 0:
+                return False, None, 'Payment amount cannot be negative'
+            if amount > 1000000:  # Reasonable limit
+                return False, None, 'Payment amount too large'
+        except (TypeError, ValueError):
+            return False, None, 'Invalid payment amount'
+        
+        sanitized.append({
+            'type': payment_type,
+            'amount': round(amount, 2)  # Ensure 2 decimal places
+        })
+    
+    if len(sanitized) == 0:
+        return False, None, 'At least one payment method required'
+    
+    return True, sanitized, None
+
 def loadExpansions():
     # Load expansion sets (works for both development and .exe)
     if getattr(sys, 'frozen', False):
@@ -53,6 +107,48 @@ def loadExpansions():
 
 # Load the expansion sets at module import time
 all_pokemon_sets = loadExpansions()
+
+
+def migrate_payment_method(payment_method_text):
+    """
+    Migrate old space-separated payment method strings to JSON format.
+    Returns: JSON string like '[{"type": "Hotovosť", "amount": 0}, {"type": "Barter", "amount": 0}]'
+    """
+    if not payment_method_text:
+        return None
+    
+    # Check if already in JSON format
+    try:
+        parsed = json.loads(payment_method_text)
+        if isinstance(parsed, list):
+            return payment_method_text  # Already migrated
+    except (json.JSONDecodeError, TypeError):
+        pass
+    
+    # Migrate old format (space-separated strings)
+    payment_types = payment_method_text.strip().split()
+    payments = [{"type": payment_type, "amount": 0} for payment_type in payment_types if payment_type]
+    return json.dumps(payments)
+
+
+def parse_payment_methods(payment_method_text):
+    """
+    Parse payment methods from database (handles both old and new formats).
+    Returns: List of dicts [{"type": "...", "amount": ...}] or empty list
+    """
+    if not payment_method_text:
+        return []
+    
+    try:
+        parsed = json.loads(payment_method_text)
+        if isinstance(parsed, list):
+            return parsed
+    except (json.JSONDecodeError, TypeError):
+        pass
+    
+    # Fallback: old format - convert on the fly
+    payment_types = payment_method_text.strip().split()
+    return [{"type": payment_type, "amount": 0} for payment_type in payment_types if payment_type]
 
 
 @bp.route('/addAuction')
@@ -89,11 +185,20 @@ def add():
             'name': cardsArr[0]['name'] if 'name' in cardsArr[0] else None,
             'buy': cardsArr[0]['buy'] if 'buy' in cardsArr[0] else None,
             'date': cardsArr[0]['date'] if 'date' in cardsArr[0] else None,
-            'paymentType': cardsArr[0]['paymentType'] if 'paymentType' in cardsArr[0] else None
+            'payments': cardsArr[0]['payments'] if 'payments' in cardsArr[0] else None
         }
+        
+        # Validate and sanitize payments if provided
+        payment_method_json = None
+        if auction['payments']:
+            is_valid, sanitized_payments, error_msg = validate_and_sanitize_payments(auction['payments'])
+            if not is_valid:
+                return jsonify({'status': 'error', 'message': error_msg}), 400
+            payment_method_json = json.dumps(sanitized_payments)
+        
         cursor = db.execute(
             'INSERT INTO auctions (auction_name, auction_price, date_created, payment_method) VALUES (?, ?, ?, ?)',
-            (auction['name'], auction['buy'], auction['date'], auction['paymentType'])
+            (auction['name'], auction['buy'], auction['date'], payment_method_json)
         )
         auction_id = cursor.lastrowid
         for card in cardsArr[1:]:
@@ -198,7 +303,23 @@ def loadAuctions():
         'LEFT JOIN sale_items si ON c.id = si.card_id '
         'WHERE a.id = 1 OR si.card_id IS NULL'
     ).fetchall()
-    return jsonify([dict(auction) for auction in auctions])
+    
+    # Auto-migrate payment_method data on load
+    auctions_list = []
+    for auction in auctions:
+        auction_dict = dict(auction)
+        if auction_dict.get('payment_method'):
+            # Check if migration needed
+            migrated = migrate_payment_method(auction_dict['payment_method'])
+            if migrated != auction_dict['payment_method']:
+                # Update database with migrated value
+                db.execute('UPDATE auctions SET payment_method = ? WHERE id = ?', 
+                          (migrated, auction_dict['id']))
+                auction_dict['payment_method'] = migrated
+        auctions_list.append(auction_dict)
+    
+    db.commit()
+    return jsonify(auctions_list)
 
 @bp.route('/loadCards/<int:auction_id>')
 def loadCards(auction_id):
@@ -574,20 +695,19 @@ def updateAuction(auction_id):
 def updatePaymentMethod(auction_id):
     db = get_db()
     data = request.get_json()
-    paymentMethod = data.get('paymentMethod')
+    payments = data.get('payments')  # Expecting array of {type, amount} objects
     
-    existing = db.execute('SELECT payment_method FROM auctions WHERE id = ?',(auction_id,)).fetchone()[0]
-    if existing:
-        values = existing.split(' ')
-        if paymentMethod in values:
-            return jsonify({'status': 'success'}),200
-        else:
-            paymentMethod = str(paymentMethod) +' ' + str(existing)       
-
-    db.execute('UPDATE auctions SET payment_method = ? WHERE id = ?',(paymentMethod, auction_id))
+    # Validate and sanitize input
+    is_valid, sanitized_payments, error_msg = validate_and_sanitize_payments(payments)
+    if not is_valid:
+        return jsonify({'status': 'error', 'message': error_msg}), 400
+    
+    # Store as JSON string
+    payment_method_json = json.dumps(sanitized_payments)
+    db.execute('UPDATE auctions SET payment_method = ? WHERE id = ?', (payment_method_json, auction_id))
     db.commit()
 
-    return jsonify({'status': 'success'}),200
+    return jsonify({'status': 'success'}), 200
 
 
 
