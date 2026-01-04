@@ -73,6 +73,8 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
     invoice.variable_symbol = invoice_num       # VS
     invoice.currency = "EUR"
     invoice.date = invoice_date          # Date of exposure (Dátum vystavenia)
+
+    invoice.note = "Uplatnený osobitný režim zdaňovania podľa §66 zákona o DPH – daň z pridanej hodnoty je zahrnutá v marži.\nPredmet plnenia je použitý zberateľský tovar – individuálne ocenené kusy.\nReklamácia je možná výlučne pri preukázateľnej neautenticite alebo nesúlade s deklarovaným stavom.\nKupujúci nemá nárok na vrátenie tovaru bez uvedenia dôvodu.\nÚprava zdaňovania prirážky - použitý tovar (§ 74 ods. 1 písm. n) zákona o DPH)"
     
     # Format payment methods for display
     if payment_methods and len(payment_methods) > 0:
@@ -124,6 +126,7 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
             description="Holo cards purchase",
             tax=Decimal("0")
         ))
+
 
     # 5. Generate PDF
     pdf = SimpleInvoice(invoice)
