@@ -67,9 +67,12 @@ p{
     flex-direction: column;
     align-items: flex-start;
     min-height: 40px;
-    max-height: 120px;
+    max-height: 250px;
     overflow-y: auto;
+    overflow-x: hidden;
     gap: 5px;
+    width: 100%;
+    max-width: 450px;
 }
 
 .payment-method {
@@ -80,18 +83,23 @@ p{
 .payment-row {
     display: flex;
     align-items: center;
-    gap: 5px;
-    margin-bottom: 5px;
+    gap: 3px;
+    margin-bottom: 3px;
+    flex-wrap: nowrap;
+    width: 100%;
 }
 
 .payment-type-select {
-    min-width: 150px;
-    padding: 3px;
+    min-width: 180px;
+    max-width: 220px;
+    padding: 2px;
+    font-size: 12px;
 }
 
 .payment-amount-input {
-    width: 80px;
-    padding: 3px;
+    width: 50px;
+    padding: 2px;
+    font-size: 12px;
 }
 
 .remove-payment-btn {
@@ -99,33 +107,28 @@ p{
     color: white;
     border: none;
     border-radius: 3px;
-    width: 25px;
-    height: 25px;
+    width: 22px;
+    height: 22px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1;
-}
-
-.remove-payment-btn:hover {
-    background-color: #cc0000;
+    flex-shrink: 0;
 }
 
 .add-payment-row-btn, .edit-payments-btn, .save-payments-btn, .cancel-payments-btn {
-    padding: 5px 10px;
-    margin-top: 5px;
+    padding: 3px 8px;
+    margin-top: 3px;
+    margin-right: 3px;
     cursor: pointer;
     border-radius: 3px;
     border: 1px solid #ccc;
+    font-size: 11px;
 }
 
 .edit-payments-btn {
     background-color: #4CAF50;
     color: white;
     border: none;
-}
-
-.edit-payments-btn:hover {
-    background-color: #45a049;
 }
 
 .save-payments-btn {
@@ -151,7 +154,10 @@ p{
 .payment-rows-container {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 3px;
+    width: 100%;
+    max-height: 120px;
+    overflow-y: auto;
 }
 
 .cards-header{

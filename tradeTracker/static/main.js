@@ -335,15 +335,6 @@ function isEmpty(obj) {
     return Object.keys(obj).length === 0;
 }
 
-function calculateAuctionBuyPrice(cards){
-    let totalBuyPrice = 0;
-    cards.forEach(card => {
-        const buyPrice = Number(card.querySelector('.card-price').textContent.replace('€', '').trim());
-        totalBuyPrice += buyPrice;
-    });
-    return totalBuyPrice.toFixed(2);
-}
-
 function soldReportBtn(){
     const salesBtn = document.querySelector('.sales-btn');
     salesBtn.addEventListener('click', () =>{
@@ -1503,12 +1494,15 @@ async function loadAuctions() {
                     rowsContainer.innerHTML += paymentTypeRow();
                 }
                 
-                // Add control buttons
-                paymentContainer.innerHTML += `
+                // Add control buttons (create elements instead of innerHTML to preserve rowsContainer reference)
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.classList.add('payment-buttons-container');
+                buttonsDiv.innerHTML = `
                     <button class="add-payment-row-btn">+</button>
                     <button class="save-payments-btn">Save</button>
                     <button class="cancel-payments-btn">Cancel</button>
                 `;
+                paymentContainer.appendChild(buttonsDiv);
                 
                 // Attach remove button listeners
                 const attachRemoveListeners = () => {
@@ -1535,14 +1529,23 @@ async function loadAuctions() {
                 paymentContainer.querySelector('.save-payments-btn').addEventListener('click', async () => {
                     const paymentRows = rowsContainer.querySelectorAll('.payment-row');
                     const paymentsArray = [];
+                    let hasEmptyType = false;
                     
                     paymentRows.forEach(row => {
                         const type = row.querySelector('.payment-type-select').value;
                         const amount = parseFloat(row.querySelector('.payment-amount-input').value) || 0;
-                        if (type) {
+                        
+                        if (!type || type.trim() === '') {
+                            hasEmptyType = true;
+                        } else {
                             paymentsArray.push({type, amount});
                         }
                     });
+                    
+                    if (hasEmptyType && paymentsArray.length === 0) {
+                        alert('Please select at least one payment type');
+                        return;
+                    }
                     
                     // Validate payments
                     const validation = validatePayments(paymentsArray);
