@@ -13,6 +13,11 @@
     z-index: 1000;
 }
 
+.cart-content{
+    max-height: 250px;
+    overflow-y: auto;
+}
+
 /* Modal Content */
 .modal-content {
     background: linear-gradient(
