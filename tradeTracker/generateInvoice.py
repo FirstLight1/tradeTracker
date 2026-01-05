@@ -64,6 +64,7 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
         summary=" ".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")]), 
         address=reciever.get("address").capitalize(), # Full street address was missing in the snippet
         city=reciever.get("city").capitalize(),
+        country=reciever.get("state", "").capitalize()
     )
 
     # 3. Create the Invoice

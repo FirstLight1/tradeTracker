@@ -586,6 +586,11 @@ function shoppingCart(){
                         <p>City</p>
                         <input type='text' class='client-city'>
                     <div>
+                    <div>
+                        <p>Country</p>
+                        <input type='text' class='client-country'>
+                    </div>
+                    <div>
                         <p>Payback date</p>
                         <input type='date' class='date-input'>
                     </div>
@@ -647,7 +652,8 @@ function shoppingCart(){
                 nameAndSurname : inputVals[0],
                 address : inputVals[1],
                 city : inputVals[2],
-                paybackDate: inputVals[3],
+                state: inputVals[3],
+                paybackDate: inputVals[4],
                 total: null,
             };
             cartContent.recieverInfo = recieverInfo;
