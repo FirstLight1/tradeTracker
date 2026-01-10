@@ -1194,7 +1194,7 @@ async function loadAuctionContent(button) {
                                     cardsContainer.insertBefore(p, cardsContainer.querySelector('.button-container'));
                                 }
                             }else{
-                                await setAuctionBuyPrice(cards, auctionDiv);
+                               // await setAuctionBuyPrice(cards, auctionDiv);
                                 await updateInventoryValueAndTotalProfit();
 
                             }
