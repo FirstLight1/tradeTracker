@@ -131,9 +131,10 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
         ))
 
     if shipping:
+        shippingPrice = (float(shipping.get('shippingPrice'))/123) * 100
         invoice.add_item(Item(
             count=1,
-            price=Decimal(float(shipping.get("shippingPrice"))),
+            price=shippingPrice,
             description=shipping.get("shippingWay"),
             tax=Decimal("23")
         ))
