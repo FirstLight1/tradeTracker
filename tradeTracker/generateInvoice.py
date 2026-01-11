@@ -1,13 +1,16 @@
 
 from decimal import Decimal
+from itertools import count
 import os
 import sys
 from datetime import date, datetime
+
+os.environ["INVOICE_LANG"] = "sk"
 from InvoiceGenerator.api import Invoice, Item, Client, Provider, Creator
 from InvoiceGenerator.pdf import SimpleInvoice
 from flask import current_app
 
-def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None):
+def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None, shipping=None):
     # Read invoice number from env.txt
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
@@ -37,7 +40,6 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
     
     invoice_date = date.today()
     # Set language to Slovak (or English 'en') if supported by your system locale
-    os.environ["INVOICE_LANG"] = "sk"
 
     # 1. Define the Supplier (Dominik Forró - CARD ANVIL)
     # Data extracted from source: 39-48, 52-63
@@ -126,6 +128,14 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
             unit="ks",
             description="Holo cards purchase",
             tax=Decimal("0")
+        ))
+
+    if shipping:
+        invoice.add_item(Item(
+            count=1,
+            price=Decimal(float(shipping.get("shippingPrice"))),
+            description=shipping.get("shippingWay"),
+            tax=Decimal("23")
         ))
 
 

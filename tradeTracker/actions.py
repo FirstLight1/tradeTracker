@@ -1059,7 +1059,7 @@ def invoice(vendor):
             # Backwards compatibility - convert single payment method to array
             payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]
         
-        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []), bulk, holo, payment_data)
+        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []), bulk, holo, payment_data, cartContent.get("shipping"))
         
         # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()

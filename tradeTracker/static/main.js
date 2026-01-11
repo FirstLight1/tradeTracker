@@ -595,8 +595,13 @@ function shoppingCart(){
                         <input type='date' class='date-input'>
                     </div>
                     <div>
-                        <p>Cena</p>
+                        <p>Price</p>
                         <input type=text placeholder="${cartVal}" class="price-input">
+                    </div>
+                    <div>
+                    <p>Shipping</p>
+                    <input type=text placeholder="Way of shipping" class="shipping-way">
+                    <input type=text placeholder="Price of shipping" class="shipping-price">
                     </div>
                     <button class="generate-invoice">Confirm</button>
                 </div>
@@ -646,18 +651,23 @@ function shoppingCart(){
                 amount: 0  // Amount will be calculated/split later if needed
             }));
 
-            if(!cartContent.recieverInfo){
-            const recieverInfo = {
-                paymentMethods : paymentMethods,
-                nameAndSurname : inputVals[0],
-                address : inputVals[1],
-                city : inputVals[2],
-                state: inputVals[3],
-                paybackDate: inputVals[4],
-                total: null,
-            };
-            cartContent.recieverInfo = recieverInfo;
-            }
+                if(!cartContent.recieverInfo){
+                    const recieverInfo = {
+                        paymentMethods : paymentMethods,
+                        nameAndSurname : inputVals[0],
+                        address : inputVals[1],
+                        city : inputVals[2],
+                        state: inputVals[3],
+                        paybackDate: inputVals[4],
+                        total: null,
+                    };
+                    cartContent.recieverInfo = recieverInfo;
+                    const shipping = {
+                        shippingWay : inputVals[6],
+                        shippingPrice : inputVals[7],
+                    };
+                    cartContent.shipping = shipping;
+                }
             const cartValueInput = document.querySelector('.price-input').value ||cartVal;
             if (cartValueInput != cartVal){
                 const priceDiff = cartVal - cartValueInput;
@@ -666,7 +676,8 @@ function shoppingCart(){
                     cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue - discount).toFixed(2)
                 }
             } 
-
+                console.log(inputVals)
+        console.log(cartContent.shipping);
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
         cartContent.recieverInfo.total = Number(cartValue(cartContent));
         if(Object.keys(cartContent).length !== 0){
