@@ -10,6 +10,37 @@ class struct{
     }
 }
 
+class queue{
+    constructor(size){
+        this.items = [];
+        this.size = size;
+        this.curr = 0;
+        this.next = 1;
+        this.prev = size -1;
+    }
+    moveNext(){
+        this.prev = this.curr;
+        this.curr = this.next;
+        this.next = (this.next +1) % this.size;
+    }
+    movePrev(){
+        this.next = this.curr;
+        this.curr = this.prev;
+        this.prev = (this.prev -1 + this.size) % this.size;
+    }
+
+    enqueue(item){
+        if(this.items.length < this.size){
+            this.items.push(item);
+        } else{
+            this.items[this.curr] = item;
+        }
+    }
+    printQueue(){
+        console.log(this.items);
+    }
+}
+
 export function renderField(value, inputType, classList, placeholder, datafield) {
     if (value === null) {
         return `<input type="${inputType}" class="${classList.join(' ')}" placeholder="${placeholder}" data-field="${datafield}" autocomplete="off">`;
@@ -924,6 +955,7 @@ async function search(searchPrompt) {
 }
 
 function displaySearchResults(results){
+    
     const searchContainer = document.querySelector('.search-results');
     searchContainer.innerHTML = ''; // Clear previous results
     
