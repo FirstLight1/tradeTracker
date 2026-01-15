@@ -1026,7 +1026,6 @@ function groupUnnamedAuctions(){
 async function changeCardPricesBasedOnAuctionPrice(auctionTab){
     const auctionId = auctionTab.getAttribute('data-id');
     let auctionPrice = auctionTab.querySelector('.auction-price').textContent.replace('€','');
-    console.log(typeof auctionPrice)
     const response = await fetch(`/recalculateCardPrices/${auctionId}/${auctionPrice}`, {method: 'GET'});
     const data = await response.json();
     if(data.status == 'success'){
@@ -1205,7 +1204,7 @@ async function loadAuctionContent(button) {
                                     cardsContainer.insertBefore(p, cardsContainer.querySelector('.button-container'));
                                 }
                             }else{
-                                //await matchAuctionBuyPrice();
+                                await changeCardPricesBasedOnAuctionPrice(auctionDiv);
                                 await updateInventoryValueAndTotalProfit();
 
                             }

@@ -717,6 +717,15 @@ def updatePaymentMethod(auction_id):
 def recalculateCardPrices(auction_id, new_auction_price):
     db = get_db()
     new_auction_price = float(new_auction_price)
+
+    bulkQuantity = db.execute('SELECT quantity FROM bulk_items WHERE auction_id = ? AND item_type = "bulk"', (auction_id, )).fetchone()
+    holoQuantity = db.execute('SELECT quantity FROM bulk_items WHERE auction_id = ? AND item_type = "holo"', (auction_id, )).fetchone()
+
+    if bulkQuantity:
+        new_auction_price -= (bulkQuantity[0] * 0.01)
+
+    if holoQuantity:
+        new_auction_price -= (holoQuantity[0] * 0.03)
     # Get unsold cards from the auction
     cards = db.execute(
         'SELECT c.id, c.market_value, si.card_id '
