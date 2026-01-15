@@ -1205,7 +1205,7 @@ async function loadAuctionContent(button) {
                                     cardsContainer.insertBefore(p, cardsContainer.querySelector('.button-container'));
                                 }
                             }else{
-                               // await setAuctionBuyPrice(cards, auctionDiv);
+                                //await matchAuctionBuyPrice();
                                 await updateInventoryValueAndTotalProfit();
 
                             }
@@ -1740,6 +1740,11 @@ async function loadAuctions() {
                     blurEvent.target.replaceWith(p);
                     auctionDateListener(p);
                 });
+               input.addEventListener('keydown', (keyEvent) =>{
+                    if(keyEvent.key === 'Enter'){
+                        input.blur();
+                    }
+               })     
             });
         }
         
