@@ -136,6 +136,7 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
             count=1,
             price=shippingPrice,
             description=shipping.get("shippingWay"),
+            unit="ks",
             tax=Decimal("23")
         ))
 

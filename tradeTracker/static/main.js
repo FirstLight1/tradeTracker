@@ -1707,6 +1707,44 @@ async function loadAuctions() {
         const auctionPrices = document.querySelectorAll('.auction-price');
         auctionPrices.forEach(price => attachAuctionPriceListener(price));
 
+        //Attach event listener for changing date
+        const auctionDateListener = (date) =>{
+            date.addEventListener('dblclick', (event) =>{
+                const currValue = event.target.textContent;
+                const input = document.createElement('INPUT');
+                input.type = 'date';
+                const maxDate = new Date().toISOString().split("T")[0];
+                input.max = `${maxDate}`;
+                const [day, month, year] = currValue.split(". ").map(s => s.trim());
+                const dateValue = `${year}-${month}-${day}`;
+                input.value = dateValue;
+                input.classList.add(...event.target.classList);
+                event.target.replaceWith(input);
+                input.focus();
+           
+                input.addEventListener('blur', async (blurEvent) =>{
+                    let value = blurEvent.target.value;
+                    console.log(value);
+                    const auctionDiv = blurEvent.target.closest('.auction-tab');
+                    const auctionId = auctionDiv.getAttribute('data-id');
+                    if (!Boolean(value)){
+                        return;
+                    }
+                    await updateAuction(auctionId, value, 'date_created');
+                    const p = document.createElement('p');
+
+                    value  = new Date(value);
+                    let formatedDate = value.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
+                    p.textContent = formatedDate;
+                    p.classList.add('buy-date');
+                    blurEvent.target.replaceWith(p);
+                    auctionDateListener(p);
+                });
+            });
+        }
+        
+        const dateElements = document.querySelectorAll('.buy-date');
+        dateElements.forEach(date => auctionDateListener(date));
         // Attach event listeners after auctions are loaded
         const viewButtons = document.querySelectorAll('.view-auction');
         viewButtons.forEach(button => {
