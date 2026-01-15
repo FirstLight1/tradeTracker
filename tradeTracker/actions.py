@@ -301,7 +301,9 @@ def loadAuctions():
         'SELECT DISTINCT a.* FROM auctions a '
         'LEFT JOIN cards c ON a.id = c.auction_id '
         'LEFT JOIN sale_items si ON c.id = si.card_id '
-        'WHERE a.id = 1 OR si.card_id IS NULL'
+        'WHERE a.id = 1 OR si.card_id IS NULL '
+        'ORDER BY (a.id = 1) DESC, '
+        'a.id DESC '
     ).fetchall()
     
     # Auto-migrate payment_method data on load
