@@ -130,11 +130,16 @@ h1 {
     backdrop-filter: blur(10px);
 }
 
-.search-results div:hover {
+.search-results div:hover,
+.search-results div:focus {
     border-color: var(--glow-color, 0.6);
     box-shadow: 0 0 24px var(--glow-color), 0 0 12px var(--mist-color), 0 0 10px var(--mist-color);
     color: var(--text-accent);
     cursor: pointer;
+}
+
+.search-results div:focus {
+    outline: none;
 }
 
 .highlighted-search-result {

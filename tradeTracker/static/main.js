@@ -36,6 +36,12 @@ class queue{
             this.items[this.curr] = item;
         }
     }
+    getCurrent(){
+        return this.items[this.curr];
+    }
+    getItem(){
+        return this.items[this.curr];
+    }
     printQueue(){
         console.log(this.items);
     }
@@ -905,6 +911,20 @@ function addHoloToCart(){
     });
 }
 
+function addResultScrollingWithArrows(searchInput,resultsQueue){
+                searchInput.addEventListener('keydown', (event) => {
+                if(event.key == 'ArrowDown' || event.key == 'j'){
+                    event.preventDefault();
+                    resultsQueue.moveNext();
+                    resultsQueue.getCurrent().focus();
+                }
+                if(event.key == 'ArrowUp' || event.key == 'k'){
+                    event.preventDefault();
+                    resultsQueue.movePrev();
+                    resultsQueue.getCurrent().focus();
+                }
+            });
+}
 
 
 function searchBar(){
@@ -914,13 +934,17 @@ function searchBar(){
     searchInput.addEventListener('keydown', async (event) =>{
         if(event.key == 'Enter'){
             if(searchInput.value == ""){
-
+                
                 const searchContainer = document.querySelector('.search-results');
                 searchContainer.innerHTML = ''; // Clear previous results
                 return;
             }
             results = await search(searchInput.value.toUpperCase());
-            displaySearchResults(results);
+            const resultsQueue = new queue(results.length + 1);
+            resultsQueue.enqueue(searchInput)
+            displaySearchResults(results, resultsQueue);
+            addResultScrollingWithArrows(searchInput, resultsQueue);
+
         }
     })
     searchBtn.addEventListener('click', async () =>{
@@ -929,7 +953,11 @@ function searchBar(){
             searchContainer.innerHTML = ''; // Clear previous results
         }      
         results = await search(searchInput.value.toUpperCase().trim());
-        displaySearchResults(results);
+        const resultsQueue = new queue(results.length + 1);
+        resultsQueue.enqueue(searchInput)
+        displaySearchResults(results, resultsQueue);
+        searchInput.focus();
+        addResultScrollingWithArrows(searchInput, resultsQueue);
     });
 }
 
@@ -954,7 +982,7 @@ async function search(searchPrompt) {
     }
 }
 
-function displaySearchResults(results){
+function displaySearchResults(results, resultsQueue){
     
     const searchContainer = document.querySelector('.search-results');
     searchContainer.innerHTML = ''; // Clear previous results
@@ -975,6 +1003,7 @@ function displaySearchResults(results){
         card.marketValue = result.market_value;
         const div = document.createElement('div');
         div.classList.add('search-result-item');
+        div.tabIndex = 0;
         
         // Display in desired order, with proper formatting
         div.innerHTML = `
@@ -986,8 +1015,23 @@ function displaySearchResults(results){
             <button class="add-to-cart-btn">Add to cart</button>
             <button class="view-auction" data-id="${result.auction_id}">View</button>
         `;
-        const vievwButton = div.querySelector('.view-auction');
-        vievwButton.addEventListener('click', async(event) => {
+        resultsQueue.enqueue(div);
+
+        div.addEventListener('keydown', (event) => {
+            event.preventDefault();
+            if(event.key == 'ArrowDown' || event.key == 'j'){
+                resultsQueue.moveNext();
+                resultsQueue.getCurrent().focus();
+            }else if(event.key == 'ArrowUp' || event.key == 'k'){
+                resultsQueue.movePrev();
+                resultsQueue.getCurrent().focus();
+            }else if(event.key == 'Enter'){
+                div.click();
+            }
+        });
+
+        const viewButton = div.querySelector('.view-auction');
+        viewButton.addEventListener('click', async(event) => {
             event.stopPropagation();
             const element = document.getElementById(`${result.auction_id}`);
             if (element) {

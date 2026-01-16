@@ -1031,12 +1031,13 @@ def search():
                 "JOIN auctions a ON c.auction_id = a.id "
                 "LEFT JOIN sale_items si ON c.id = si.card_id "
                 f"WHERE ({where_clause}) AND si.card_id IS NULL "
-                "GROUP BY UPPER(c.card_name), UPPER(c.card_num), UPPER(c.condition) ORDER BY c.id ASC LIMIT 10",
+                "GROUP BY UPPER(c.card_name), UPPER(c.card_num), UPPER(c.condition) ORDER BY c.id ASC LIMIT 8",
                 params).fetchall()
         
         if matches == None or len(matches) == 0:
             return jsonify({'status': 'success','value': None}),200
         else:
+            print(len(matches))
             return jsonify({'status': 'success','value': [dict(m) for m in matches]}),200
 
 @bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
