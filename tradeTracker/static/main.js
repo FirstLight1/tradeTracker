@@ -701,7 +701,7 @@ function shoppingCart(){
                     cartContent.recieverInfo = recieverInfo;
                     const shipping = {
                         shippingWay : inputVals[6],
-                        shippingPrice : inputVals[7],
+                        shippingPrice : inputVals[7].replace(',', '.'),
                     };
                     cartContent.shipping = shipping;
                 }
