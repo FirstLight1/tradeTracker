@@ -913,12 +913,12 @@ function addHoloToCart(){
 
 function addResultScrollingWithArrows(searchInput,resultsQueue){
                 searchInput.addEventListener('keydown', (event) => {
-                if(event.key == 'ArrowDown' || event.key == 'j'){
+                if(event.key == 'ArrowDown'){
                     event.preventDefault();
                     resultsQueue.moveNext();
                     resultsQueue.getCurrent().focus();
                 }
-                if(event.key == 'ArrowUp' || event.key == 'k'){
+                if(event.key == 'ArrowUp'){
                     event.preventDefault();
                     resultsQueue.movePrev();
                     resultsQueue.getCurrent().focus();
@@ -1019,10 +1019,10 @@ function displaySearchResults(results, resultsQueue){
 
         div.addEventListener('keydown', (event) => {
             event.preventDefault();
-            if(event.key == 'ArrowDown' || event.key == 'j'){
+            if(event.key == 'ArrowDown'){
                 resultsQueue.moveNext();
                 resultsQueue.getCurrent().focus();
-            }else if(event.key == 'ArrowUp' || event.key == 'k'){
+            }else if(event.key == 'ArrowUp'){
                 resultsQueue.movePrev();
                 resultsQueue.getCurrent().focus();
             }else if(event.key == 'Enter'){
