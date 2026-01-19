@@ -36,6 +36,8 @@ def migrate_database(db_path):
         _migrate_to_sales_history_wrapper(db_path)
         # Migration 5: Add bulk sales and counter tables if they don't exist
         add_bulk_sales_table(db_path)
+        # Migration 6: Add sealed products table
+        addSealedProductsTable(db_path)
         
         print("Database migration check complete.")
     except sqlite3.Error as e:
@@ -129,3 +131,40 @@ def _migrate_to_sales_history_wrapper(db_path):
             
     except sqlite3.Error as e:
         print(f"Error checking for sales table: {e}")
+
+def addSealedProductsTable(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("""SELECT name FROM sqlite_master WHERE type='table' AND name='sealed'
+                   """)
+
+        exist = cursor.fetchone() is not None
+        
+        if not exist:
+            print("Applying migration: Creating 'sealed' table...")
+            cursor.execute("""
+                CREATE TABLE sealed(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    price REAL,
+                    market_value REAL,
+                    date TEXT,
+                    sale_id INTEGER,
+                    auction_id INTEGER,
+                    FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE,
+                    FOREIGN KEY (auction_id) REFERENCES auctions(id)
+                )
+            """)
+            cursor.execute("CREATE INDEX idx_sealed_name ON sealed(name)")
+            cursor.execute("CREATE INDEX idx_auction_id ON sealed(auction_id)")
+            conn.commit()
+            print("'sealed' table created successfully.")
+        else:
+            print("'sealed' table already exists.")
+            
+        conn.close()
+
+    except sqlite3.Error as e:
+        print(f"Error checking for table: {e}")

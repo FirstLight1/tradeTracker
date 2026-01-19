@@ -1524,6 +1524,41 @@ async function loadAuctionContent(button) {
 
 }
 
+async function loadSealed() {
+    const sealedContainer = document.querySelector('.sealed-container');
+    const sealedTab = document.querySelector('.sealed-tab');
+    try{
+        const response = await fetch('/loadSealed');
+        const data = await response.json();
+        if(data.status != 'success'){
+            console.error('Failed to load sealed products');
+            return;
+        }
+        const sealedDiv = document.createElement('div');
+
+        data.data.forEach((sealedData) => {
+            sealedDiv.classList.add('sealed-item');
+            const margin = Number(sealedData.price) - Number(sealedData.market_value);
+            const date = new Date(sealedData.date);
+            let formatedDate = date.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
+            sealedDiv.innerHTML = `
+                <p class='sealed-name'>${sealedData.name}</p>
+                <p class='unit-price'>${sealedData.price }</p>
+                <p class='market-value-sealed'>${sealedData.market_value}</p>
+                <p class='margin'>${margin}</p>
+                <p class='add-date'>${formatedDate}</p>
+                <button class='add-to-cart'>Add to cart</button>
+                <button class='delete-sealed'>Delete</button>
+                `
+            sealedTab.appendChild(sealedDiv);
+        });
+    }
+    catch(e){
+        console.log('Error:',e);
+    }
+
+}
+
 async function loadAuctions() {
     const auctionContainer = document.querySelector('.auction-container');
     try {
@@ -1894,6 +1929,7 @@ async function loadAuctions() {
 if(document.title === "Trade Tracker"){
     searchBar();
     loadAuctions();
+    loadSealed();
     importCSV();
     soldReportBtn();
     groupUnnamedAuctions();

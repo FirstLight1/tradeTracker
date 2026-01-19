@@ -32,6 +32,7 @@ DROP TABLE IF EXISTS collection;
 DROP TABLE IF EXISTS bulk_counter;
 DROP TABLE IF EXISTS bulk_sales;
 DROP TABLE IF EXISTS bulk_items;
+DROP TABLE IF EXISTS sealed;
 
 CREATE TABLE auctions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,7 +121,22 @@ CREATE TABLE bulk_sales(
 
 CREATE INDEX idx_bulk_sales_sale_id ON bulk_sales(sale_id);
 
-CREATE TABLE collection (
+CREATE TABLE sealed(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    price REAL,
+    market_value REAL,
+    date TEXT,
+    sale_id INTEGER,
+    auction_id INTEGER,
+    FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE,
+    FOREIGN KEY (auction_id) REFERENCES auctions(id)
+    );
+
+CREATE INDEX idx_sealed_name ON sealed(name);
+CREATE INDEX idx_sealed_name ON sealed(auction_id);
+
+CREATE TABLE collection(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     card_name TEXT NOT NULL,
     card_num TEXT,

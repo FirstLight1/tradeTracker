@@ -319,9 +319,29 @@ def loadAuctions():
                           (migrated, auction_dict['id']))
                 auction_dict['payment_method'] = migrated
         auctions_list.append(auction_dict)
-    
     db.commit()
     return jsonify(auctions_list)
+
+@bp.route('/loadSealed')
+def loadSealed():
+    db = get_db()
+
+    sealed_products =  db.execute("SELECT 's' || id as sid, name, price, market_value, date FROM sealed WHERE sale_id is NULL AND auction_id is NULL").fetchall()
+    for s in sealed_products:
+        print(dict(s))
+    return jsonify({'status':'success', 'data' : [dict(product) for product in sealed_products]})
+
+@bp.route('/addSealed', methods=('POST',))
+def addSealed():
+    data = request.get_json()
+    db = get_db()
+    
+    for sealed in data:
+        price = float(sealed.get("market_value")) if sealed.get("market_value") is not None else 0
+        db.execute("INSERT INTO sealed(name, price, market_value, date) VALUES (?, ?, ?, ?)",(sealed.get("name"), price, sealed.get("market_value"), datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"))
+    db.commit()
+    return jsonify({'status':'success'}),200
+
 
 @bp.route('/loadCards/<int:auction_id>')
 def loadCards(auction_id):
