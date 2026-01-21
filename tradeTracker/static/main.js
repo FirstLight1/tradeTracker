@@ -699,11 +699,14 @@ function shoppingCart(){
                         total: null,
                     };
                     cartContent.recieverInfo = recieverInfo;
-                    const shipping = {
-                        shippingWay : inputVals[6],
-                        shippingPrice : inputVals[7].replace(',', '.'),
-                    };
-                    cartContent.shipping = shipping;
+
+                    if(inputVals[6] !== ""){
+                        const shipping = {
+                            shippingWay : inputVals[6],
+                            shippingPrice : inputVals[7].replace(',', '.'),
+                        };
+                        cartContent.shipping = shipping;
+                    }
                 }
             const cartValueInput = document.querySelector('.price-input').value ||cartVal;
             if (cartValueInput != cartVal){
