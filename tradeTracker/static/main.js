@@ -1108,7 +1108,7 @@ async function changeCardPricesBasedOnAuctionPrice(auctionTab){
         console.log('success');
         window.location.reload();
     } else if(data.status == 'error'){
-        alert('Error recalculating card prices: ' + data.message);
+        console.error('Error recalculating card prices: ' + data.message);
     } else if(data.status == 'no_cards'){
         alert('No cards found in this auction to recalculate prices.');
     }  

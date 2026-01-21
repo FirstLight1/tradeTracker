@@ -731,7 +731,7 @@ def recalculateCardPrices(auction_id, new_auction_price):
         'SELECT c.id, c.market_value, si.card_id '
         'FROM cards c '
         'LEFT JOIN sale_items si ON c.id = si.card_id '
-        'WHERE c.auction_id = ? AND si.card_id IS NULL',
+        'WHERE c.auction_id = ?',
         (auction_id,)
     ).fetchall()
 
