@@ -452,7 +452,7 @@ def loadSoldHistory():
 def loadSoldCards(sale_id):
     db = get_db()
     cards = db.execute(
-        'SELECT c.*, si.sell_price, si.sold_cm, si.sold, s.sale_date, s.invoice_number '
+        'SELECT c.*, si.sell_price as invoice_sell_price, si.sold_cm, si.sold, s.sale_date, s.invoice_number '
         'FROM cards c '
         'JOIN sale_items si ON c.id = si.card_id '
         'JOIN sales s ON si.sale_id = s.id '

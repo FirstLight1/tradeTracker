@@ -28,6 +28,8 @@ async function loadContent(button){
                 </div>
             `;
             const soldCards = soldItems.cards;
+            console.log(soldItems);
+            console.log(soldCards);
             const bulkSales = soldItems.bulk_sales;
             const soldDate = new Date(soldCards[0].sold_date);
 
@@ -42,8 +44,8 @@ async function loadContent(button){
                     <p class='card-info condition ${card.condition.split(' ').join('_').toLowerCase()}' data-field="condition">${card.condition ? card.condition : 'Unknown'}</p>
                     ${renderField(card.card_price ? card.card_price + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
                     ${renderField(card.market_value ? card.market_value + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
-                    ${renderField(card.sell_price ? card.sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
-                    <p>${card.sell_price && card.card_price ? (card.sell_price - card.card_price).toFixed(2) + '€' : 'Unknown'}</p>
+                    ${renderField(card.invoice_sell_price ? card.invoice_sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
+                    <p>${card.invoice_sell_price && card.card_price ? (card.invoice_sell_price - card.card_price).toFixed(2) + '€' : 'Unknown'}</p>
                     <p>${formattedDate}</p>
                     <span hidden class = "card-id">${card.id}</span>
                 `;
