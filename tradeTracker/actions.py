@@ -392,6 +392,14 @@ def deleteBulkItem(item_id):
     db.commit()
     return jsonify({'status' : 'success'})
 
+@bp.route('/deleteSealed/<string:sid>', methods=('DELETE',))
+def deleteSealed(sid):
+    id = sid.replace('s', '')
+    db = get_db()
+    db.execute('DELETE FROM sealed WHERE id = ?',(id,))
+    db.commit()
+    return jsonify({'status' : 'success'})
+
 @bp.route('/deleteAuction/<int:auction_id>', methods=('DELETE',))
 def deleteAuction(auction_id):
     db = get_db()

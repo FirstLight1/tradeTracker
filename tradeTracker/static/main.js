@@ -822,6 +822,33 @@ function currentCartValue(type){
     }
 }
 
+function addSealedToCart(sealed, sid, auctionId=null ){
+    if(!existingIDs.has(sid)){
+        existingIDs.add(sid);
+        const sealedDiv = document.querySelector('.sealed-content');
+        const itemDiv = document.createElement('div');
+        itemDiv.setAttribute('sid', sid);
+        if(auctionId != null){
+            itemDiv.setAttribute('auction_id',auctionId)
+        }
+        itemDiv.innerHTML = `
+        <p class='sealed-name'>${sealed.name}</p>
+        <p class='sealed-price'>${sealed.market_value}€</p>
+        <button class='remove-from-cart'>Remove</p>
+        `
+        
+        const removeFromCart = itemDiv.querySelector('.remove-from-cart');
+        removeFromCart.addEventListener('click', ()=>{
+            existingIDs.remove(sid);
+            itemDiv.remove();
+        });
+
+        sealedDiv.appendChild(itemDiv);
+    }
+    return;
+}
+
+
 function addBulkToCart(){
     const button = document.querySelector('.card-add-bulk');
     const input = document.querySelector('.cart-bulk-input');
@@ -1521,11 +1548,29 @@ async function loadAuctionContent(button) {
     } catch (error) {
         console.error('Error loading bulk items:', error);
     }
+}
+
+async function initializeSealed(){ 
+    const sealedContainer = document.querySelector('.sealed-container');
+    const sealedTab = sealedContainer.querySelector('.sealed-tab');
+    const viewButton = sealedContainer.querySelector('.view-sealed');
+    //TODO HIDE/VIEW button
+    viewButton.addEventListener('click', () => {
+        if (viewButton.innerHTML === 'View'){
+            loadSealed()
+            viewButton.innerHTML = 'Hide';
+            console.log(viewButton.innerHTML);
+        }else{
+            console.log('HERE')
+            console.log(sealedTab.children);
+            //sealedTab.removeChild(...sealedTab.children);
+            viewButton.innerHTML = 'View';
+        }
+    });
 
 }
 
 async function loadSealed() {
-    const sealedContainer = document.querySelector('.sealed-container');
     const sealedTab = document.querySelector('.sealed-tab');
     try{
         const response = await fetch('/loadSealed');
@@ -1534,10 +1579,10 @@ async function loadSealed() {
             console.error('Failed to load sealed products');
             return;
         }
-        const sealedDiv = document.createElement('div');
-
         data.data.forEach((sealedData) => {
+            const sealedDiv = document.createElement('div');
             sealedDiv.classList.add('sealed-item');
+            sealedDiv.setAttribute('sid', sealedData.sid);
             const margin = Number(sealedData.price) - Number(sealedData.market_value);
             const date = new Date(sealedData.date);
             let formatedDate = date.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
@@ -1550,6 +1595,37 @@ async function loadSealed() {
                 <button class='add-to-cart'>Add to cart</button>
                 <button class='delete-sealed'>Delete</button>
                 `
+
+            const addToCart = sealedDiv.querySelector('.add-to-cart');
+            addToCart.addEventListener('click', () => { 
+                addSealedToCart(sealedData, sealedData.sid)
+            });
+
+            const removeSealed = sealedDiv.querySelector('.delete-sealed');
+            removeSealed.addEventListener('click', async () =>{
+
+                if(removeSealed.textContent === 'Confirm'){
+                    const response = await fetch(`/deleteSealed/${sealedData.sid}`,{ method : 'DELETE'})
+                    const data = await response.json();
+
+                    if(data.status === 'success'){
+                        sealedDiv.remove();
+                    }
+                }else{
+                    removeSealed.textContent = 'Confirm';
+                    const timerID = setTimeout(() => {
+                        removeSealed.textContent = 'Delete';
+                    }, 3000);
+                    // Remove confirmation if user clicks elsewhere
+                    document.addEventListener('click', function handler(e) {
+                        if (e.target !== removeSealed) {
+                            removeSealed.textContent = 'Delete';
+                            document.removeEventListener('click', handler);
+                            clearTimeout(timerID);
+                        }
+                    });
+                }
+            });
             sealedTab.appendChild(sealedDiv);
         });
     }
@@ -1929,7 +2005,7 @@ async function loadAuctions() {
 if(document.title === "Trade Tracker"){
     searchBar();
     loadAuctions();
-    loadSealed();
+    initializeSealed();
     importCSV();
     soldReportBtn();
     groupUnnamedAuctions();
