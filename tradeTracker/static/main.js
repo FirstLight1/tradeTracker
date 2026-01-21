@@ -929,6 +929,7 @@ function addResultScrollingWithArrows(searchInput,resultsQueue){
 
 function searchBar(){
     const searchInput = document.querySelector('.search-field');
+
     const searchBtn = document.querySelector('.search-btn');
     let results = null;
     searchInput.addEventListener('keydown', async (event) =>{
@@ -940,10 +941,10 @@ function searchBar(){
                 return;
             }
             results = await search(searchInput.value.toUpperCase());
-            const resultsQueue = new queue(results.length + 1);
+            const resultsQueue = new queue(results.length + 1) //if no results it thows error;
             resultsQueue.enqueue(searchInput)
-            displaySearchResults(results, resultsQueue);
-            addResultScrollingWithArrows(searchInput, resultsQueue);
+            displaySearchResults(results, resultsQueue, searchInput);
+            addResultScrollingWithArrows(searchInput, resultsQueue, searchInput);
 
         }
     })
@@ -982,7 +983,7 @@ async function search(searchPrompt) {
     }
 }
 
-function displaySearchResults(results, resultsQueue){
+function displaySearchResults(results, resultsQueue, searchInput){
     
     const searchContainer = document.querySelector('.search-results');
     searchContainer.innerHTML = ''; // Clear previous results
@@ -1027,6 +1028,8 @@ function displaySearchResults(results, resultsQueue){
                 resultsQueue.getCurrent().focus();
             }else if(event.key == 'Enter'){
                 div.click();
+                searchInput.value = '';
+                searchInput.focus();
             }
         });
 
