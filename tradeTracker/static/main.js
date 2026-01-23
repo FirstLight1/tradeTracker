@@ -488,8 +488,15 @@ function cartValue(cartContent){
         }
     });
 
+    if(cartContent.sealed){
+        cartContent.sealed.forEach(item =>{
+            sum += Number(item.marketValue.replace("€",""));
+        })
+    };
+
+
     if(cartContent.bulkItem){
-        sum = Number(sum) + Number(cartContent.bulkItem.sell_price);
+        sum += Number(sum) + Number(cartContent.bulkItem.sell_price);
     }
 
     if(cartContent.holoItem){
@@ -508,6 +515,7 @@ function shoppingCart(){
     const contentDiv = document.querySelector(".cart-content");
     const bulkCartDiv = document.querySelector(".bulk-cart-content");
     const holoCartDiv = document.querySelector(".holo-cart-content");
+    const sealedContent = document.querySelector('.sealed-content');
 
     if (contentDiv.childElementCount === 0){
         contentDiv.innerHTML = '<p>Your cart is empty</p>';
@@ -525,7 +533,7 @@ function shoppingCart(){
     const confirmButton = document.querySelector(".confirm-btn");
     confirmButton.addEventListener('click', async ()=>{
         const cartContent = {};
-        if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P' && bulkCartDiv.childElementCount === 0 && holoCartDiv.childElementCount === 0) {
+        if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P' && bulkCartDiv.childElementCount === 0 && holoCartDiv.childElementCount === 0 && sealedContent.childElementCount === 0) {
             console.log("cart empty");
             return;
         }
@@ -557,6 +565,26 @@ function shoppingCart(){
             cards.push(cardData);
         });
         cartContent.cards = cards;
+
+        const sealedItem = sealedContent.querySelectorAll(".sealed-item-cart");
+        if(sealedItem){
+            let sealed = [];
+            sealedItem.forEach(item => {
+                const sid = item.getAttribute('sid');
+                const auctionId = item.getAttribute('auction_id') || null;
+                
+                const paragraphs = item.querySelectorAll('p');
+
+                const sealedData = {
+                    sid : sid,
+                    auctionId: auctionId,
+                    sealedName: paragraphs[0]?.textContent || '',
+                    marketValue: paragraphs[1]?.textContent || ''
+                };
+                sealed.push(sealedData);
+            });
+            cartContent.sealed = sealed;
+        }
 
         const bulkCartContent = document.querySelector(".bulk-cart-content");
         const bulkItems = bulkCartContent.querySelector('.bulk-cart-item-bulk');
@@ -590,6 +618,7 @@ function shoppingCart(){
             };
             cartContent.holoItem = holo;
         }
+
 
         const cartVal = Number(cartValue(cartContent));
 
@@ -713,8 +742,6 @@ function shoppingCart(){
                     cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue - discount).toFixed(2)
                 }
             } 
-                console.log(inputVals)
-        console.log(cartContent.shipping);
         let vendorCheckBox = document.querySelector('.vendor-type').checked;
         cartContent.recieverInfo.total = Number(cartValue(cartContent));
         if(Object.keys(cartContent).length !== 0){
@@ -828,6 +855,7 @@ function addSealedToCart(sealed, sid, auctionId=null ){
         const sealedDiv = document.querySelector('.sealed-content');
         const itemDiv = document.createElement('div');
         itemDiv.setAttribute('sid', sid);
+        itemDiv.classList.add('sealed-item-cart');
         if(auctionId != null){
             itemDiv.setAttribute('auction_id',auctionId)
         }
@@ -1569,9 +1597,9 @@ async function initializeSealed(){
 
 async function loadSealed(viewButton) {
     const sealedTab = document.querySelector('.sealed-tab');
-    console.log(sealedTab.style.display);
     if(sealedTab.style.display === 'none' || sealedTab.childElementCount === 0 ){
-        sealedTab.style.display = 'block';
+        sealedTab.style.display = 'flex';
+        sealedTab.style.marginLeft = '-600px';
         viewButton.innerHTML = 'Hide';
         
         // Only fetch if we don't have items already
@@ -1583,12 +1611,27 @@ async function loadSealed(viewButton) {
                     console.error('Failed to load sealed products');
                     return;
                 }
+                
+                const headerDiv = document.createElement('div');
+                headerDiv.classList.add('sealed-header');
+                headerDiv.innerHTML = `
+                    <p>Name</p>
+                    <p>Price</p>
+                    <p>Market Value</p>
+                    <p>Margin</p>
+                    <p>Date</p>
+                    <p></p>
+                    <p></p>
+                `;
+                sealedTab.appendChild(headerDiv);
+
                 data.data.forEach((sealedData) => {
                     const sealedDiv = document.createElement('div');
                     sealedDiv.classList.add('sealed-item');
                     sealedDiv.setAttribute('sid', sealedData.sid);
                     const margin = Number(sealedData.price) - Number(sealedData.market_value);
-                    const date = new Date(sealedData.date);
+                    const timeStamp = sealedData.date.replace('Z','');
+                    const date = new Date(timeStamp);
                     let formatedDate = date.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
                     sealedDiv.innerHTML = `
                         <p class='sealed-name'>${sealedData.name}</p>

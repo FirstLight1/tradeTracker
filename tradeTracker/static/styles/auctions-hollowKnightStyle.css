@@ -231,7 +231,8 @@ button a{
 }
 
 /* Cards */
-.card {
+.card,
+.sealed-item {
   height: 30px;
   box-shadow: 
     0 4px 15px rgba(0, 0, 0, 0.3),
@@ -242,7 +243,8 @@ button a{
   border-radius: 15px;
 }
 
-.card:hover {
+.card:hover,
+.sealed-item:hover {
     border-color: var(--glow-color, 0.6);
     box-shadow: 0 0 24px var(--glow-color), 0 0 12px var(--mist-color), 0 0 10px var(--mist-color);
     color: var(--text-accent);
@@ -296,7 +298,8 @@ input[type="text"]:focus, select:focus, textarea:focus {
 
 /* Headers and text */
 .auction-header p,
-.cards-header p {
+.cards-header p,
+.sealed-header p {
   color: var(--accent-cyan);
   letter-spacing: 0.08em;
   text-shadow: 
