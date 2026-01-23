@@ -1151,15 +1151,18 @@ async function loadAuctionContent(button) {
     const cardsContainer = auctionDiv.querySelector('.cards-container');
     try {
         if (cardsContainer.childElementCount === 0 || cardsContainer.style.display === 'none'){
-            const response = await fetch(cardsUrl);
-            const cards = await response.json();
             cardsContainer.style.display = 'flex';
             cardsContainer.style.marginLeft = '-600px';
             button.textContent = 'Hide';
-            if(isEmpty(cards)){
-                cardsContainer.innerHTML = '';
-            }else{
-                cardsContainer.innerHTML = `
+            
+            // Only fetch if we don't have content already
+            if (cardsContainer.childElementCount === 0) {
+                const response = await fetch(cardsUrl);
+                const cards = await response.json();
+                if(isEmpty(cards)){
+                    cardsContainer.innerHTML = '';
+                }else{
+                    cardsContainer.innerHTML = `
                     <div class="cards-header">
                         <p>Card name</p>
                         <p>Card number</p>
@@ -1334,22 +1337,29 @@ async function loadAuctionContent(button) {
                     });
                 });
             }
+            }
         } else{
             cardsContainer.style.display = 'none';
             button.textContent = 'View';
         }
-        const buttonDiv = document.createElement('div');
-        buttonDiv.classList.add('button-container');
-        buttonDiv.innerHTML = `
-            <div><button class="add-cards-auction">Add cards</button></div>
-            <div><button class="add-bulk-auction">Add bulk</button></div>
-            <div><button class="add-holo-auction">Add holo</button></div>
-            <div><button class="save-added-cards">Save</button></div>
-            `;
-        cardsContainer.appendChild(buttonDiv);
-        cardsContainer.querySelector('.save-added-cards').hidden = true;
+    } catch (error) {
+        console.error('Error loading cards:', error);
+    }
+        
+    // Only add button container if it doesn't exist
+    if (!cardsContainer.querySelector('.button-container')) {
+            const buttonDiv = document.createElement('div');
+            buttonDiv.classList.add('button-container');
+            buttonDiv.innerHTML = `
+                <div><button class="add-cards-auction">Add cards</button></div>
+                <div><button class="add-bulk-auction">Add bulk</button></div>
+                <div><button class="add-holo-auction">Add holo</button></div>
+                <div><button class="save-added-cards">Save</button></div>
+                `;
+            cardsContainer.appendChild(buttonDiv);
+            cardsContainer.querySelector('.save-added-cards').hidden = true;
 
-        const addCardButton = cardsContainer.querySelector('.add-cards-auction');
+            const addCardButton = cardsContainer.querySelector('.add-cards-auction');
         addCardButton.addEventListener('click', () => {
             cardsContainer.querySelector('.save-added-cards').hidden = false;
             const newCard = document.createElement('div');
@@ -1450,7 +1460,7 @@ async function loadAuctionContent(button) {
                     const bulkItems = {'item_type': 'bulk', 'quantity': null, 'total_price': null};
                     bulkItems.quantity = bulkDiv.querySelector('.bulk-quantity-input').value.trim() || null;
                     bulkItems.total_price = bulkDiv.querySelector('.bulk-sell-price-input').value.trim() || null;
-                    bulkItems.unit_price = bulkItems.total_price / bulkItems.quantity;
+                    bulkItems.unit_price = bulkItems.total_price / bulkItems.quantity || null;
                     itemsToAdd['bulk'] = bulkItems;
                 }
 
@@ -1459,8 +1469,7 @@ async function loadAuctionContent(button) {
                     const holoItems = {'item_type': 'holo', 'quantity': null, 'total_price': null};
                     holoItems.quantity = holoDiv.querySelector('.holo-quantity-input').value.trim() || null;
                     holoItems.total_price = holoDiv.querySelector('.holo-sell-price-input').value.trim() || null;
-                    holoItems.unit_price = holoItems.total_price / holoItems.quantity;
-                    console.log('here');
+                    holoItems.unit_price = holoItems.total_price / holoItems.quantity || null;
                     itemsToAdd['holo'] = holoItems;
                 }
 
@@ -1496,9 +1505,6 @@ async function loadAuctionContent(button) {
             //this could be done better by dynamically adding the cards instead of reloading the whole auction
             window.location.reload();
         });
-
-    } catch (error) {
-        console.error('Error loading cards:', error);
     }
 
     try {
@@ -1556,83 +1562,85 @@ async function initializeSealed(){
     const viewButton = sealedContainer.querySelector('.view-sealed');
     //TODO HIDE/VIEW button
     viewButton.addEventListener('click', () => {
-        if (viewButton.innerHTML === 'View'){
-            loadSealed()
-            viewButton.innerHTML = 'Hide';
-            console.log(viewButton.innerHTML);
-        }else{
-            console.log('HERE')
-            console.log(sealedTab.children);
-            //sealedTab.removeChild(...sealedTab.children);
-            viewButton.innerHTML = 'View';
-        }
+            loadSealed(viewButton);
     });
 
 }
 
-async function loadSealed() {
+async function loadSealed(viewButton) {
     const sealedTab = document.querySelector('.sealed-tab');
-    try{
-        const response = await fetch('/loadSealed');
-        const data = await response.json();
-        if(data.status != 'success'){
-            console.error('Failed to load sealed products');
-            return;
-        }
-        data.data.forEach((sealedData) => {
-            const sealedDiv = document.createElement('div');
-            sealedDiv.classList.add('sealed-item');
-            sealedDiv.setAttribute('sid', sealedData.sid);
-            const margin = Number(sealedData.price) - Number(sealedData.market_value);
-            const date = new Date(sealedData.date);
-            let formatedDate = date.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
-            sealedDiv.innerHTML = `
-                <p class='sealed-name'>${sealedData.name}</p>
-                <p class='unit-price'>${sealedData.price }</p>
-                <p class='market-value-sealed'>${sealedData.market_value}</p>
-                <p class='margin'>${margin}</p>
-                <p class='add-date'>${formatedDate}</p>
-                <button class='add-to-cart'>Add to cart</button>
-                <button class='delete-sealed'>Delete</button>
-                `
+    console.log(sealedTab.style.display);
+    if(sealedTab.style.display === 'none' || sealedTab.childElementCount === 0 ){
+        sealedTab.style.display = 'block';
+        viewButton.innerHTML = 'Hide';
+        
+        // Only fetch if we don't have items already
+        if(sealedTab.childElementCount === 0) {
+            try{
+                const response = await fetch('/loadSealed');
+                const data = await response.json();
+                if(data.status != 'success'){
+                    console.error('Failed to load sealed products');
+                    return;
+                }
+                data.data.forEach((sealedData) => {
+                    const sealedDiv = document.createElement('div');
+                    sealedDiv.classList.add('sealed-item');
+                    sealedDiv.setAttribute('sid', sealedData.sid);
+                    const margin = Number(sealedData.price) - Number(sealedData.market_value);
+                    const date = new Date(sealedData.date);
+                    let formatedDate = date.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit'});
+                    sealedDiv.innerHTML = `
+                        <p class='sealed-name'>${sealedData.name}</p>
+                        <p class='unit-price'>${sealedData.price }</p>
+                        <p class='market-value-sealed'>${sealedData.market_value}</p>
+                        <p class='margin'>${margin}</p>
+                        <p class='add-date'>${formatedDate}</p>
+                        <button class='add-to-cart'>Add to cart</button>
+                        <button class='delete-sealed'>Delete</button>
+                        `
 
-            const addToCart = sealedDiv.querySelector('.add-to-cart');
-            addToCart.addEventListener('click', () => { 
-                addSealedToCart(sealedData, sealedData.sid)
-            });
+                    const addToCart = sealedDiv.querySelector('.add-to-cart');
+                    addToCart.addEventListener('click', () => { 
+                        addSealedToCart(sealedData, sealedData.sid)
+                    });
 
-            const removeSealed = sealedDiv.querySelector('.delete-sealed');
-            removeSealed.addEventListener('click', async () =>{
+                    const removeSealed = sealedDiv.querySelector('.delete-sealed');
+                    removeSealed.addEventListener('click', async () =>{
 
-                if(removeSealed.textContent === 'Confirm'){
-                    const response = await fetch(`/deleteSealed/${sealedData.sid}`,{ method : 'DELETE'})
-                    const data = await response.json();
+                        if(removeSealed.textContent === 'Confirm'){
+                            const response = await fetch(`/deleteSealed/${sealedData.sid}`,{ method : 'DELETE'})
+                            const data = await response.json();
 
-                    if(data.status === 'success'){
-                        sealedDiv.remove();
-                    }
-                }else{
-                    removeSealed.textContent = 'Confirm';
-                    const timerID = setTimeout(() => {
-                        removeSealed.textContent = 'Delete';
-                    }, 3000);
-                    // Remove confirmation if user clicks elsewhere
-                    document.addEventListener('click', function handler(e) {
-                        if (e.target !== removeSealed) {
-                            removeSealed.textContent = 'Delete';
-                            document.removeEventListener('click', handler);
-                            clearTimeout(timerID);
+                            if(data.status === 'success'){
+                                sealedDiv.remove();
+                            }
+                        }else{
+                            removeSealed.textContent = 'Confirm';
+                            const timerID = setTimeout(() => {
+                                removeSealed.textContent = 'Delete';
+                            }, 3000);
+                            // Remove confirmation if user clicks elsewhere
+                            document.addEventListener('click', function handler(e) {
+                                if (e.target !== removeSealed) {
+                                    removeSealed.textContent = 'Delete';
+                                    document.removeEventListener('click', handler);
+                                    clearTimeout(timerID);
+                                }
+                            });
                         }
                     });
-                }
-            });
-            sealedTab.appendChild(sealedDiv);
-        });
+                    sealedTab.appendChild(sealedDiv);
+                })
+            }
+            catch(e){
+                console.log('Error:',e);
+            }
+        }
+    } else{
+        sealedTab.style.display = 'none'
+        viewButton.innerHTML = 'View';
     }
-    catch(e){
-        console.log('Error:',e);
-    }
-
 }
 
 async function loadAuctions() {
