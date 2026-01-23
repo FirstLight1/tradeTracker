@@ -728,11 +728,14 @@ function shoppingCart(){
                         total: null,
                     };
                     cartContent.recieverInfo = recieverInfo;
-                    const shipping = {
-                        shippingWay : inputVals[6],
-                        shippingPrice : inputVals[7].replace(',', '.'),
-                    };
-                    cartContent.shipping = shipping;
+
+                    if(inputVals[6] !== ""){
+                        const shipping = {
+                            shippingWay : inputVals[6],
+                            shippingPrice : inputVals[7].replace(',', '.'),
+                        };
+                        cartContent.shipping = shipping;
+                    }
                 }
             const cartValueInput = document.querySelector('.price-input').value ||cartVal;
             if (cartValueInput != cartVal){
@@ -984,6 +987,7 @@ function addResultScrollingWithArrows(searchInput,resultsQueue){
 
 function searchBar(){
     const searchInput = document.querySelector('.search-field');
+
     const searchBtn = document.querySelector('.search-btn');
     let results = null;
     searchInput.addEventListener('keydown', async (event) =>{
@@ -995,10 +999,10 @@ function searchBar(){
                 return;
             }
             results = await search(searchInput.value.toUpperCase());
-            const resultsQueue = new queue(results.length + 1);
+            const resultsQueue = new queue(results.length + 1) //if no results it thows error;
             resultsQueue.enqueue(searchInput)
-            displaySearchResults(results, resultsQueue);
-            addResultScrollingWithArrows(searchInput, resultsQueue);
+            displaySearchResults(results, resultsQueue, searchInput);
+            addResultScrollingWithArrows(searchInput, resultsQueue, searchInput);
 
         }
     })
@@ -1037,7 +1041,7 @@ async function search(searchPrompt) {
     }
 }
 
-function displaySearchResults(results, resultsQueue){
+function displaySearchResults(results, resultsQueue, searchInput){
     
     const searchContainer = document.querySelector('.search-results');
     searchContainer.innerHTML = ''; // Clear previous results
@@ -1082,6 +1086,8 @@ function displaySearchResults(results, resultsQueue){
                 resultsQueue.getCurrent().focus();
             }else if(event.key == 'Enter'){
                 div.click();
+                searchInput.value = '';
+                searchInput.focus();
             }
         });
 
@@ -1163,7 +1169,7 @@ async function changeCardPricesBasedOnAuctionPrice(auctionTab){
         console.log('success');
         window.location.reload();
     } else if(data.status == 'error'){
-        alert('Error recalculating card prices: ' + data.message);
+        console.error('Error recalculating card prices: ' + data.message);
     } else if(data.status == 'no_cards'){
         alert('No cards found in this auction to recalculate prices.');
     }  
