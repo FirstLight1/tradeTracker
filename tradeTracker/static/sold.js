@@ -1,6 +1,7 @@
 import { renderField } from "./main.js";
 
 async function loadContent(button, soldDate){
+    const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
     const saleId = button.getAttribute('data-id');
     const saleEntry = button.closest('.auction-tab');
     const cardsContainer = saleEntry.querySelector('.cards-container');
@@ -27,19 +28,14 @@ async function loadContent(button, soldDate){
                 </div>
             `;
             const soldCards = soldItems.cards;
-<<<<<<< HEAD
             const sealedSales = soldItems.sealed;
-=======
-            console.log(soldItems);
-            console.log(soldCards);
->>>>>>> margin-fix
             const bulkSales = soldItems.bulk_sales;
 
             soldCards.forEach(card => {
                 const cardElement = document.createElement('div');
                 cardElement.classList.add('card');
 
-                const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
+                
                 
                 cardElement.innerHTML = `
                     ${renderField(card.card_name, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
@@ -57,7 +53,7 @@ async function loadContent(button, soldDate){
             sealedSales.forEach(item =>{
                 const sealedDiv = document.createElement('div');
                 sealedDiv.classList.add('card');
-                const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
+
                 sealedDiv.innerHTML = `
                     <p class='card-info card-name'>${item.name}</p>
                     <p class='card-info card-num'></p>
@@ -75,7 +71,7 @@ async function loadContent(button, soldDate){
             bulkSales.forEach(bulk => {
                 const bulkElement = document.createElement('div');
                 bulkElement.classList.add('card');
-                const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
+
                 let buy_price;
                 if (bulk.item_type === 'holo'){
                     buy_price = 0.03;
