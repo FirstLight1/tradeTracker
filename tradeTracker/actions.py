@@ -467,6 +467,7 @@ def bulkCounterValue():
 @bp.route('/loadSoldHistory')
 def loadSoldHistory():
     db = get_db()
+    # TODO: update profit calculation
     sales = db.execute(
         'SELECT s.*, '
         '(COALESCE((SELECT SUM(si.profit) FROM sale_items si WHERE si.sale_id = s.id), 0) + '
@@ -479,6 +480,7 @@ def loadSoldHistory():
 @bp.route('/loadSoldCards/<int:sale_id>')
 def loadSoldCards(sale_id):
     db = get_db()
+
     cards = db.execute(
         'SELECT c.*, si.sell_price, si.sold_cm, si.sold, s.sale_date, s.invoice_number '
         'FROM cards c '
@@ -487,11 +489,16 @@ def loadSoldCards(sale_id):
         'WHERE si.sale_id = ?',
         (sale_id,)
     ).fetchall()
+
+    sealed_sales = db.execute('SELECT * FROM sealed WHERE sale_id = ?', (sale_id,))
+    sealed_sales_list = [dict(item) for item in sealed_sales]
+
     bulk_sales = db.execute(
         'SELECT * FROM bulk_sales WHERE sale_id = ?', (sale_id,))
     bulk_sales_list = [dict(bulk) for bulk in bulk_sales]
     response = {
         "cards": [dict(card) for card in cards],
+        "sealed": sealed_sales_list,
         "bulk_sales": bulk_sales_list
     }
 
@@ -1075,7 +1082,7 @@ def invoice(vendor):
         recieverInfo = cartContent['recieverInfo']
         bulk = cartContent.get('bulkItem')
         holo = cartContent.get('holoItem')
-        
+        sealed = cartContent.get('sealed') 
         # Validate inventory before processing
         db = get_db()
         if bulk and bulk.get('quantity', 0) > 0:
@@ -1099,7 +1106,7 @@ def invoice(vendor):
             # Backwards compatibility - convert single payment method to array
             payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]
         
-        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []), bulk, holo, payment_data, cartContent.get("shipping"))
+        pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []),sealed , bulk, holo, payment_data, cartContent.get("shipping"))
         
         # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()
@@ -1123,6 +1130,11 @@ def invoice(vendor):
                     'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
                     (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
                 )
+
+        if sealed:
+            for item in sealed:
+                print(item.get('sid'))
+                db.execute('UPDATE sealed SET sale_id = ? WHERE id = ?',(sale_id, item.get("sid").replace('s','')))
 
         if bulk:
             db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',

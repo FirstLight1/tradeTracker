@@ -1,10 +1,9 @@
 import { renderField } from "./main.js";
 
-async function loadContent(button){
+async function loadContent(button, soldDate){
     const saleId = button.getAttribute('data-id');
     const saleEntry = button.closest('.auction-tab');
     const cardsContainer = saleEntry.querySelector('.cards-container');
-    
     if (cardsContainer.childElementCount === 0 || cardsContainer.style.display === 'none'){
         const response = await fetch('/loadSoldCards/' + saleId);
         const soldItems = await response.json();
@@ -28,12 +27,13 @@ async function loadContent(button){
                 </div>
             `;
             const soldCards = soldItems.cards;
+            const sealedSales = soldItems.sealed;
             const bulkSales = soldItems.bulk_sales;
-            const soldDate = new Date(soldCards[0].sold_date);
 
             soldCards.forEach(card => {
                 const cardElement = document.createElement('div');
                 cardElement.classList.add('card');
+
                 const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
                 
                 cardElement.innerHTML = `
@@ -49,6 +49,24 @@ async function loadContent(button){
                 `;
                 cardsContainer.appendChild(cardElement);
             });
+            sealedSales.forEach(item =>{
+                const sealedDiv = document.createElement('div');
+                sealedDiv.classList.add('card');
+                const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
+                sealedDiv.innerHTML = `
+                    <p class='card-info card-name'>${item.name}</p>
+                    <p class='card-info card-num'></p>
+                    <p class='card-info condition'></p>
+                    <p class='card-info card-price'></p>
+                    <p class='card-info market-value'>${item.market_value}</p>
+                    <p class='card-info sell-price'>${item.market_value}</p>
+                    <p>${item.market_value !== null && item.price !== null ? (item.market_value - item.price).toFixed(2) + '€' : 'Unknown'}</p>
+                    <p>${formattedDate}</p>
+                    <span hidden class = "sid">${item.id}</span>
+                    `;
+                cardsContainer.appendChild(sealedDiv);
+            });
+
             bulkSales.forEach(bulk => {
                 const bulkElement = document.createElement('div');
                 bulkElement.classList.add('card');
@@ -105,7 +123,7 @@ async function loadHistory(){
         
         const viewButton = saleElement.querySelector('.view-auction');
         viewButton.addEventListener('click', () => {
-            loadContent(viewButton);
+            loadContent(viewButton, saleDate);
         });
         saleElement.addEventListener('click', (event) => {
             if(event.target !== viewButton){

@@ -10,7 +10,7 @@ from InvoiceGenerator.api import Invoice, Item, Client, Provider, Creator
 from InvoiceGenerator.pdf import SimpleInvoice
 from flask import current_app
 
-def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None, shipping=None):
+def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, payment_methods=None, shipping=None):
     # Read invoice number from env.txt
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
@@ -103,7 +103,6 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
     # 4. Add Items
     if items[0].get("marketValue") != '':
         for item in items:
-            print(item)
             market_value_decimal = Decimal(float(item.get("marketValue").replace("€", "")))
             invoice.add_item(Item(
                 count=1,
@@ -112,7 +111,21 @@ def generate_invoice(reciever, items, bulk=None, holo=None, payment_methods=None
                 description=item.get("cardName") + " " + item.get("cardNum"),
                 tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
             ))
-            
+           
+    if sealed:
+        for item in sealed:
+            if item.get("auctionId") == None:
+                tax = Decimal("23")
+            else:
+                tax = Decimal("0")
+            invoice.add_item(Item(
+                count=1,
+                price=Decimal(float(item.get("marketValue").replace("€",""))),
+                unit="ks",
+                description=item.get("sealedName"),
+                tax=tax
+            ))
+
     if bulk:
         invoice.add_item(Item(
             count=bulk.get("quantity", 0),
