@@ -1594,7 +1594,6 @@ async function initializeSealed(){
     const sealedContainer = document.querySelector('.sealed-container');
     const sealedTab = sealedContainer.querySelector('.sealed-tab');
     const viewButton = sealedContainer.querySelector('.view-sealed');
-    //TODO HIDE/VIEW button
     viewButton.addEventListener('click', () => {
             loadSealed(viewButton);
     });
@@ -1602,14 +1601,14 @@ async function initializeSealed(){
 }
 
 async function loadSealed(viewButton) {
-    const sealedTab = document.querySelector('.sealed-tab');
+    const sealedTab = document.querySelector('.sealed-tab'); 
     if(sealedTab.style.display === 'none' || sealedTab.childElementCount === 0 ){
         sealedTab.style.display = 'flex';
         sealedTab.style.marginLeft = '-600px';
         viewButton.innerHTML = 'Hide';
-        
+
         // Only fetch if we don't have items already
-        if(sealedTab.childElementCount === 0) {
+        if(sealedTab.childElementCount === 2) {
             try{
                 const response = await fetch('/loadSealed');
                 const data = await response.json();
@@ -1618,19 +1617,6 @@ async function loadSealed(viewButton) {
                     return;
                 }
                 
-                const headerDiv = document.createElement('div');
-                headerDiv.classList.add('sealed-header');
-                headerDiv.innerHTML = `
-                    <p>Name</p>
-                    <p>Price</p>
-                    <p>Market Value</p>
-                    <p>Margin</p>
-                    <p>Date</p>
-                    <p></p>
-                    <p></p>
-                `;
-                sealedTab.appendChild(headerDiv);
-
                 data.data.forEach((sealedData) => {
                     const sealedDiv = document.createElement('div');
                     sealedDiv.classList.add('sealed-item');
@@ -1679,7 +1665,16 @@ async function loadSealed(viewButton) {
                             });
                         }
                     });
-                    sealedTab.appendChild(sealedDiv);
+                   
+                    const buttonsContainer = document.querySelector('.buttons-container') 
+                    sealedTab.insertBefore(sealedDiv, buttonsContainer);
+
+                    const addButton = buttonsContainer.querySelector('.add-sealed');
+                    addButton.addEventListener('click', () => {
+                        const div = document.createElement('div');
+                    });
+
+
                 })
             }
             catch(e){

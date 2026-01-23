@@ -507,7 +507,7 @@ def loadSoldCards(sale_id):
 @bp.route('/generateSoldReport', methods=('GET',))
 def generateSoldReport():
     db = get_db()
-    month = request.args.get('month')
+    month = request.args.get('month').zfill(2)
     year = request.args.get('year')
     cards = db.execute(
         'SELECT c.card_name, c.card_num, c.card_price, si.sell_price '
@@ -516,7 +516,11 @@ def generateSoldReport():
         'JOIN sales s ON si.sale_id = s.id '
         'WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ?', 
         (year, month)).fetchall()
-    
+   
+    sealed = db.execute('SELECT se.name, se.price, se.market_value FROM sealed se JOIN sales s ON se.sale_id = s.id WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ? ',
+                        (year, month)).fetchall()
+    sealedList = [dict(item) for item in sealed]
+
     bulkHolo = db.execute(
         'SELECT item_type, SUM(bs.quantity) as quantity, SUM(bs.total_price) as total_price FROM bulk_sales bs '
         'JOIN sales s ON bs.sale_id = s.id '
@@ -530,21 +534,19 @@ def generateSoldReport():
     bulkAndHoloList = []
     i = 0
     for item_type in bulkHolo:
-        print(dict(item_type))
         bulkAndHoloList.append(dict(item_type))
         bulkAndHoloList[i].update({'buy_price': 0.01} if item_type['item_type'] == 'bulk' else {'buy_price': 0.03})
         i += 1
 
-
     try:
-        pdf_path = generatePDF(month, year, cards_list, bulkAndHoloList)
+        pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList)
         return jsonify({'status': 'success', 'pdf_path': pdf_path}), 200
     except Exception as e:
         print(f"Error generating PDF: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
-def generatePDF(month, year, cards, bulkAndHoloList):
+def generatePDF(month, year, cards, sealed,bulkAndHoloList):
     # Determine the save path based on environment
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
@@ -639,6 +641,31 @@ def generatePDF(month, year, cards, bulkAndHoloList):
         pdf.cell(30, 8, card_profit, 1, 0, 'R')
         pdf.ln()
     
+    # Table header
+    pdf.set_font(font_family, '', 10)
+    pdf.cell(85, 10, 'Product Name', 1, 0, 'C')
+    pdf.cell(30, 10, 'Buy Price', 1, 0, 'C')
+    pdf.cell(30, 10, 'Sell Price', 1, 0, 'C')
+    pdf.cell(30, 10, 'Margin', 1, 0, 'C')
+    pdf.ln()
+    
+    # Table content
+    pdf.set_font(font_family, '', 9)
+    for item in sealed:
+        name = item['name'] or 'N/A'
+        buy_price = f"{item['price']:.2f}" if item['price'] else 'N/A'
+        sell_price = f"{item['market_value']:.2f}" if item['market_value'] else 'N/A'
+        card_profit = f"{(item['market_value'] - item['price']):.2f}" if item['market_value'] and item['price'] else 'N/A'
+        
+        # Truncate long card names to fit
+        if len(name) > 80:
+            card_name = card_name[:77] + '...'
+
+        pdf.cell(85, 8, name, 1, 0, 'L')
+        pdf.cell(30, 8, buy_price, 1, 0, 'R')
+        pdf.cell(30, 8, sell_price, 1, 0, 'R')
+        pdf.cell(30, 8, card_profit, 1, 0, 'R')
+        pdf.ln()
     # Save PDF
     pdf.output(pdf_path)
     return pdf_path
