@@ -1376,6 +1376,139 @@ async function loadAuctionContent(button) {
                         });
                     });
                 }
+
+                // Load sealed items BEFORE bulk items
+                try {
+                    const responseSealed = await fetch(sealedUrl);
+                    const sealedData = await responseSealed.json();
+                    
+                    sealedData.forEach(sealedItem => {
+                        const sealedDiv = document.createElement('div');
+                        sealedDiv.classList.add('sealed-item');
+                        sealedDiv.setAttribute('sid', sealedItem.sid);
+                        
+                        const margin = (Number(sealedItem.market_value) - Number(sealedItem.price)).toFixed(2);
+                        const timeStamp = sealedItem.date.replace('Z', '');
+                        const date = new Date(timeStamp);
+                        let formatedDate = date.toLocaleDateString('sk-SK', { 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        });
+                        
+                        sealedDiv.innerHTML = `
+                            <p class="sealed-name">${sealedItem.name}</p>
+                            <p class="sealed-price">${sealedItem.price}€</p>
+                            <p class="sealed-market-value">${sealedItem.market_value}€</p>
+                            <p class="sealed-margin">${margin}€</p>
+                            <p class="sealed-date">${formatedDate}</p>
+                            <button class="add-to-cart-sealed" data-sid="${sealedItem.sid}">Add to cart</button>
+                            <button class="delete-sealed-item" data-sid="${sealedItem.sid}">Delete</button>
+                        `;
+                        
+                        cardsContainer.insertBefore(sealedDiv, cardsContainer.querySelector('.button-container'));
+                    });
+                    
+                    // Add event listeners for "Add to cart" buttons
+                    const addToCartButtons = cardsContainer.querySelectorAll('.add-to-cart-sealed');
+                    addToCartButtons.forEach((button) => {
+                        button.addEventListener('click', () => {
+                            const sealedDiv = button.closest('.sealed-item');
+                            const sid = sealedDiv.getAttribute('sid');
+                            const auctionId = auctionDiv.getAttribute('data-id');
+                            
+                            const sealedData = {
+                                name: sealedDiv.querySelector('.sealed-name').textContent,
+                                market_value: sealedDiv.querySelector('.sealed-market-value').textContent.replace('€', '')
+                            };
+                            
+                            addSealedToCart(sealedData, sid, auctionId);
+                        });
+                    });
+                    
+                    // Add event listeners for "Delete" buttons
+                    const deleteSealedButtons = cardsContainer.querySelectorAll('.delete-sealed-item');
+                    deleteSealedButtons.forEach((button) => {
+                        button.addEventListener('click', async () => {
+                            const sid = button.getAttribute('data-sid');
+                            const sealedDiv = button.closest('.sealed-item');
+                            
+                            if (button.textContent === 'Confirm') {
+                                const response = await fetch(`/deleteSealed/${sid}`, { method: 'DELETE' });
+                                const data = await response.json();
+                                
+                                if (data.status === 'success') {
+                                    sealedDiv.remove();
+                                }
+                            } else {
+                                button.textContent = 'Confirm';
+                                const timerID = setTimeout(() => {
+                                    button.textContent = 'Delete';
+                                }, 3000);
+                                
+                                document.addEventListener('click', function handler(e) {
+                                    if (e.target !== button) {
+                                        button.textContent = 'Delete';
+                                        document.removeEventListener('click', handler);
+                                        clearTimeout(timerID);
+                                    }
+                                });
+                            }
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('Error loading sealed items:', error);
+                }
+
+                // Load bulk items
+                try {
+                    const responseBulk = await fetch(bulkUrl);
+                    const bulkData = await responseBulk.json();
+                    bulkData.forEach(bulkItem => {
+                        const bulkDiv = document.createElement('div');
+                        bulkDiv.classList.add('bulk-item');
+                        bulkDiv.setAttribute('data-id', bulkItem.id);
+                        bulkDiv.innerHTML = `
+                            <p class="bulk-name">${bulkItem.item_type}</p>
+                            <p class="bulk-quantity">Quantity: ${bulkItem.quantity}</p>
+                            <p class="bulk-sell-price">Sell Price: ${bulkItem.total_price ? bulkItem.total_price + '€' : 'N/A'}</p>
+                            <button class="delete-bulk-item" data-id="${bulkItem.id}">Delete</button>
+                        `;
+                        cardsContainer.insertBefore(bulkDiv, cardsContainer.querySelector('.button-container'));
+                    }
+                    );
+                    const deleteBulkButtons = cardsContainer.querySelectorAll('.delete-bulk-item');
+                    deleteBulkButtons.forEach((button) => {
+                        button.addEventListener('click', async () => {
+                            const bulkId = button.getAttribute('data-id');
+                            const bulkDiv = button.closest('.bulk-item');
+                            const cardsContainer = button.closest('.cards-container');
+                            const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
+                            if (button.textContent === 'Confirm') {
+                                const deleted = await removeBulkItem(bulkId, bulkDiv);
+                                if (!deleted) return;
+                            } else {
+                                // First click: ask for confirmation
+                                button.textContent = 'Confirm';
+                                const timerID = setTimeout(() => {
+                                    button.textContent = 'Delete';
+                                }, 3000);
+                                // Remove confirmation if user clicks elsewhere
+                                document.addEventListener('click', function handler(e) {
+                                    if (e.target !== button) {
+                                        button.textContent = 'Delete';
+                                        document.removeEventListener('click', handler);
+                                        clearTimeout(timerID);
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+                } catch (error) {
+                    console.error('Error loading bulk items:', error);
+                }
             }
         } else {
             cardsContainer.style.display = 'none';
@@ -1391,6 +1524,7 @@ async function loadAuctionContent(button) {
         buttonDiv.classList.add('button-container');
         buttonDiv.innerHTML = `
                 <div><button class="add-cards-auction">Add cards</button></div>
+                <div><button class="add-sealed-auction">Add sealed</button></div>
                 <div><button class="add-bulk-auction">Add bulk</button></div>
                 <div><button class="add-holo-auction">Add holo</button></div>
                 <div><button class="save-added-cards">Save</button></div>
@@ -1436,6 +1570,42 @@ async function loadAuctionContent(button) {
                 `;
                 cardsContainer.insertBefore(newBulkDiv, cardsContainer.querySelector('.button-container'));
             }
+        });
+
+        const addSealedButton = cardsContainer.querySelector('.add-sealed-auction');
+        addSealedButton.addEventListener('click', () => {
+            cardsContainer.querySelector('.save-added-cards').hidden = false;
+            
+            // Create input form for new sealed item
+            const newSealedDiv = document.createElement('div');
+            newSealedDiv.classList.add('add-sealed-item');
+            
+            const currentDate = new Date().toISOString().split('T')[0];
+            
+            newSealedDiv.innerHTML = `
+                <input type="text" class="sealed-name-input" placeholder="Sealed item name">
+                <input type="number" class="sealed-price-input" placeholder="Price" step="0.01" min="0">
+                <input type="number" class="sealed-market-value-input" placeholder="Market value" step="0.01" min="0">
+                <input type="date" class="sealed-date-input" value="${currentDate}" max="${currentDate}">
+                <button class="remove-sealed-input">×</button>
+            `;
+            
+            cardsContainer.insertBefore(newSealedDiv, cardsContainer.querySelector('.button-container'));
+            
+            // Add remove button functionality
+            const removeBtn = newSealedDiv.querySelector('.remove-sealed-input');
+            removeBtn.addEventListener('click', () => {
+                newSealedDiv.remove();
+                
+                // Hide save button if no new items
+                const hasNewItems = cardsContainer.querySelector('.new-card') || 
+                                   cardsContainer.querySelector('.add-sealed-item') ||
+                                   cardsContainer.querySelector('.add-bulk-item') ||
+                                   cardsContainer.querySelector('.add-holo-item');
+                if (!hasNewItems) {
+                    cardsContainer.querySelector('.save-added-cards').hidden = true;
+                }
+            });
         });
 
         const addHoloButton = cardsContainer.querySelector('.add-holo-auction');
@@ -1512,6 +1682,31 @@ async function loadAuctionContent(button) {
                     itemsToAdd['holo'] = holoItems;
                 }
 
+                // Handle sealed items
+                const sealedDivs = cardsContainer.querySelectorAll('.add-sealed-item');
+                if (sealedDivs.length > 0) {
+                    const sealedItems = [];
+                    sealedDivs.forEach(sealedDiv => {
+                        const name = sealedDiv.querySelector('.sealed-name-input').value.trim() || null;
+                        const price = sealedDiv.querySelector('.sealed-price-input').value.trim() || null;
+                        const marketValue = sealedDiv.querySelector('.sealed-market-value-input').value.trim() || null;
+                        const date = sealedDiv.querySelector('.sealed-date-input').value || null;
+                        
+                        if (name !== null && marketValue !== null) {
+                            sealedItems.push({
+                                name: name,
+                                price: price,
+                                market_value: marketValue,
+                                date: date
+                            });
+                        }
+                    });
+                    
+                    if (sealedItems.length > 0) {
+                        itemsToAdd['sealed'] = sealedItems;
+                    }
+                }
+
 
                 const jsonbody = JSON.stringify(itemsToAdd);
                 const response = await fetch(`/addToExistingAuction/${auctionId}`, {
@@ -1544,54 +1739,6 @@ async function loadAuctionContent(button) {
             //this could be done better by dynamically adding the cards instead of reloading the whole auction
             window.location.reload();
         });
-    }
-
-    try {
-        const responseBulk = await fetch(bulkUrl);
-        const bulkData = await responseBulk.json();
-        bulkData.forEach(bulkItem => {
-            const bulkDiv = document.createElement('div');
-            bulkDiv.classList.add('bulk-item');
-            bulkDiv.setAttribute('data-id', bulkItem.id);
-            bulkDiv.innerHTML = `
-                <p class="bulk-name">${bulkItem.item_type}</p>
-                <p class="bulk-quantity">Quantity: ${bulkItem.quantity}</p>
-                <p class="bulk-sell-price">Sell Price: ${bulkItem.total_price ? bulkItem.total_price + '€' : 'N/A'}</p>
-                <button class="delete-bulk-item" data-id="${bulkItem.id}">Delete</button>
-            `;
-            cardsContainer.insertBefore(bulkDiv, cardsContainer.querySelector('.button-container'));
-        }
-        );
-        const deleteBulkButtons = cardsContainer.querySelectorAll('.delete-bulk-item');
-        deleteBulkButtons.forEach((button) => {
-            button.addEventListener('click', async () => {
-                const bulkId = button.getAttribute('data-id');
-                const bulkDiv = button.closest('.bulk-item');
-                const cardsContainer = button.closest('.cards-container');
-                const auctionId = cardsContainer.closest('.auction-tab').getAttribute('data-id');
-                if (button.textContent === 'Confirm') {
-                    const deleted = await removeBulkItem(bulkId, bulkDiv);
-                    if (!deleted) return;
-                } else {
-                    // First click: ask for confirmation
-                    button.textContent = 'Confirm';
-                    const timerID = setTimeout(() => {
-                        button.textContent = 'Delete';
-                    }, 3000);
-                    // Remove confirmation if user clicks elsewhere
-                    document.addEventListener('click', function handler(e) {
-                        if (e.target !== button) {
-                            button.textContent = 'Delete';
-                            document.removeEventListener('click', handler);
-                            clearTimeout(timerID);
-                        }
-                    });
-                }
-            });
-        });
-
-    } catch (error) {
-        console.error('Error loading bulk items:', error);
     }
 }
 

@@ -363,6 +363,16 @@ def loadBulk(auction_id):
         'WHERE bi.auction_id = ?', (auction_id,)).fetchall()
     return jsonify([dict(item) for item in bulk_items]),200
 
+@bp.route('/loadSealed/<int:auction_id>')
+def loadSealedByAuction(auction_id):
+    db = get_db()
+    sealed_items = db.execute(
+        "SELECT 's' || id as sid, name, price, market_value, date FROM sealed "
+        "WHERE auction_id = ? AND sale_id is NULL", 
+        (auction_id,)
+    ).fetchall()
+    return jsonify([dict(item) for item in sealed_items]), 200
+
 @bp.route('/loadAllCards/<int:auction_id>')
 def loadAllCards(auction_id):
     db = get_db()
@@ -448,6 +458,19 @@ def addToExistingAuction(auction_id):
             )
         )
         db.commit()
+
+        # Handle sealed items
+        sealed = data.get('sealed', [])
+        if sealed:
+            for item in sealed:
+                marketValue = float(item.get("market_value")) if item.get("market_value") is not None else 0
+                price = float(item.get("price")) if item.get("price") is not None else marketValue * 0.80
+                date = item.get('date') if item.get('date') is not None else datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
+                db.execute(
+                    "INSERT INTO sealed(name, price, market_value, date, auction_id) VALUES (?, ?, ?, ?, ?)",
+                    (item.get("name"), price, marketValue, date, auction_id)
+                )
+            db.commit()
 
         bulk = data.get('bulk')
         holo = data.get('holo')
