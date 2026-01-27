@@ -56,7 +56,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         ir="57310041",       # IČO
         vat_id="1130287664", # DIČ
         tax_id="SK1130287664", # IČ DPH
-        note="Osoba zapísaná v Živnostenskom registri pod číslom \n220-42582, vydal Okresný úrad Galanta dňa\n 5.11.2025. \nPlatiteľ DPH formou §66.\n Úprava zdaňovania prirážky - použitý tovar\n(§ 74 ods. 1 pism. n) zákona o DPH)",
+        note="Osoba zapísaná v Živnostenskom registri pod číslom \n220-42582, vydal Okresný úrad Galanta dňa\n 5.11.2025. \nPlatiteľ DPH formou §66.\n Úprava zdaňovania prirážky - použitý tovar\n(§ 74 ods. 1 pism. n) zákona o DPH\nsa vztahuje len na marzove polozky)",
         logo_filename=logo_path
     )
 
