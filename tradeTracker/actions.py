@@ -1222,6 +1222,7 @@ def invoice(vendor):
         # Generate the invoice and get the file path
         # Pass payment methods array (or single method for backwards compatibility)
         payment_data = recieverInfo.get('paymentMethods', [])
+        print(payment_data)
         if not payment_data and recieverInfo.get('paymentMethod'):
             # Backwards compatibility - convert single payment method to array
             payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]

@@ -69,7 +69,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         country=reciever.get("state", "").capitalize()
     )
 
-    # 3. Create the Invoice
+    # 3. Create the Invoicegene
     # Data extracted from source: 48, 67-69
     invoice = Invoice(client, provider, Creator("Dominik Forró"))
     invoice.number = invoice_num                # Invoice No.
@@ -81,11 +81,15 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
     
     # Format payment methods for display
     if payment_methods and len(payment_methods) > 0:
-        # Multiple payment methods - join them with commas (remove duplicates)
-        payment_types = [pm.get('type', '') for pm in payment_methods if pm.get('type')]
-        # Remove duplicates while preserving order
-        unique_payment_types = list(dict.fromkeys(payment_types))
-        invoice.paytype = ", ".join(unique_payment_types) if unique_payment_types else "Hotovosť"
+        print(payment_methods)
+        result = {}
+        for payment in payment_methods:
+            t = payment['type']
+            result[t] = result.get(t, 0) + payment['amount']
+    
+        unique_payment = [{'type': t, 'amount': amt} for t, amt in result.items()]
+        payment_strings = ", ".join(f"{item['type']} :{item['amount']}€ " for item in unique_payment)
+        invoice.paytype = payment_strings
     else:
         # Fallback to old single payment method for backwards compatibility
         invoice.paytype = reciever.get("paymentMethod", "Hotovosť")
