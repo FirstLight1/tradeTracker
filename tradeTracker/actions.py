@@ -496,6 +496,7 @@ def loadSoldHistory():
     sales = db.execute(
         'SELECT s.*, '
         '(COALESCE((SELECT SUM(si.profit) FROM sale_items si WHERE si.sale_id = s.id), 0) + '
+        'COALESCE((SELECT SUM(market_value - price) FROM sealed WHERE sale_id = s.id),0) + '
         'COALESCE((SELECT SUM(bs.total_price - bs.quantity * bs.unit_price) FROM bulk_sales bs WHERE bs.sale_id = s.id), 0)) as total_profit '
         'FROM sales s '
         'ORDER BY sale_date DESC'
