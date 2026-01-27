@@ -822,15 +822,29 @@ def recalculateCardPrices(auction_id, new_auction_price):
         (auction_id,)
     ).fetchall()
 
-    if not cards:
-        return jsonify({'status': 'error', 'message': 'No unsold cards found'}), 400
+    # Get unsealed items from the auction
+    sealed_items = db.execute(
+        'SELECT s.id, s.market_value, s.sale_id '
+        'FROM sealed s '
+        'WHERE s.auction_id = ?',
+        (auction_id,)
+    ).fetchall()
+
+    if not cards and not sealed_items:
+        return jsonify({'status': 'error', 'message': 'No unsold cards or sealed items found'}), 400
 
     for card in cards:
         if card["card_id"] is not None:
             return jsonify({'status': 'error', 'message': 'Some cards have already been sold'}), 400
 
-    # Calculate total market value of unsold cards
-    total_market_value = sum(card['market_value'] or 0 for card in cards)
+    # Check if any sealed items have been sold
+    for item in sealed_items:
+        if item["sale_id"] is not None:
+            return jsonify({'status': 'error', 'message': 'Some sealed items have already been sold'}), 400
+
+    # Calculate total market value of unsold cards and sealed items
+    total_market_value = sum(card['market_value'] or 0 for card in cards) + \
+                         sum(item['market_value'] or 0 for item in sealed_items)
     
     if total_market_value == 0:
         return jsonify({'status': 'error', 'message': 'Total market value is zero'}), 400
@@ -843,6 +857,13 @@ def recalculateCardPrices(auction_id, new_auction_price):
             discount = (card['market_value'] / total_market_value) * priceDiff
             new_price = round(card['market_value'] - discount, 2)
             db.execute('UPDATE cards SET card_price = ? WHERE id = ?', (new_price, card['id']))
+    
+    # Update sealed items proportionally
+    for item in sealed_items:
+        if item['market_value'] is not None and item['market_value'] > 0:
+            discount = (item['market_value'] / total_market_value) * priceDiff
+            new_price = round(item['market_value'] - discount, 2)
+            db.execute('UPDATE sealed SET price = ? WHERE id = ?', (new_price, item['id']))
     
     db.commit()
     return jsonify({'status': 'success'}), 200
