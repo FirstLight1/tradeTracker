@@ -1024,9 +1024,18 @@ function searchBar() {
 }
 
 async function search(searchPrompt) {
+    // Collect card IDs from cart
     const cart = document.querySelectorAll('.cart-content > div');
     const cartIds = Array.from(cart).map(cardDiv => parseInt(cardDiv.getAttribute('cardId')));
-    const jsonbody = JSON.stringify({ query: searchPrompt, cartIds: cartIds });
+    
+    // Collect sealed item IDs from cart (with 's' prefix)
+    const sealedCart = document.querySelectorAll('.sealed-content .sealed-item-cart');
+    const sealedIds = Array.from(sealedCart).map(sealedDiv => sealedDiv.getAttribute('sid'));
+    
+    // Combine both card IDs and sealed IDs
+    const allCartIds = [...cartIds, ...sealedIds];
+    
+    const jsonbody = JSON.stringify({ query: searchPrompt, cartIds: allCartIds });
     const response = await fetch('/searchCard',
         {
             method: 'POST',
@@ -1058,71 +1067,142 @@ function displaySearchResults(results, resultsQueue, searchInput) {
     }
 
     results.forEach(result => {
-        let card = new struct()
-        card.cardName = result.card_name;
-        card.cardNum = result.card_num;
-        card.condition = result.condition;
-        card.marketValue = result.market_value;
         const div = document.createElement('div');
         div.classList.add('search-result-item');
         div.tabIndex = 0;
 
-        // Display in desired order, with proper formatting
-        div.innerHTML = `
-            <p class="result result-card-name">${result.card_name || 'N/A'}</p>
-            <p class="result result-card-num">${result.card_num || 'N/A'}</p>
-            <p class="result result-condition ${result.condition.split(' ').join('_').toLowerCase()}">${result.condition || 'Unknown'}</p>
-            <p class="result result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
-            <p class="result result-auction-name">${result.auction_name || result.auction_id - 1}</p>
-            <button class="add-to-cart-btn">Add to cart</button>
-            <button class="view-auction" data-id="${result.auction_id}">View</button>
-        `;
-        resultsQueue.enqueue(div);
-
-        div.addEventListener('keydown', (event) => {
-            event.preventDefault();
-            if (event.key == 'ArrowDown') {
-                resultsQueue.moveNext();
-                resultsQueue.getCurrent().focus();
-            } else if (event.key == 'ArrowUp') {
-                resultsQueue.movePrev();
-                resultsQueue.getCurrent().focus();
-            } else if (event.key == 'Enter') {
-                div.click();
-                searchInput.value = '';
-                searchInput.focus();
-            }
-        });
-
-        const viewButton = div.querySelector('.view-auction');
-        viewButton.addEventListener('click', async (event) => {
-            event.stopPropagation();
-            const element = document.getElementById(`${result.auction_id}`);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
-            }
-            const auctionTab = element.closest('.auction-tab');
-            if (auctionTab) {
-                const viewButton = auctionTab.querySelector('.view-auction');
-                if (viewButton && viewButton.textContent === 'View') {
-                    await loadAuctionContent(viewButton);
+        // Check if this is a sealed item (has 'sid' field) or a card
+        const isSealed = result.hasOwnProperty('sid');
+        
+        if (isSealed) {
+            // Handle sealed item display
+            const sealed = {
+                name: result.name,
+                market_value: result.market_value
+            };
+            
+            div.innerHTML = `
+                <p class="result result-sealed-name">${result.name || 'N/A'}</p>
+                <p class="result result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
+                <p class="result result-auction-name">${result.auction_name || (result.auction_id ? result.auction_id - 1 : 'Unassigned')}</p>
+                <span class="result-type-badge sealed-badge">Sealed</span>
+                ${result.auction_id || result.auction_name ? `<p class="result result-auction-name">${result.auction_name || result.auction_id - 1}</p>` : `<p></p>`}
+                <button class="add-to-cart-btn">Add to cart</button>
+                ${result.auction_id ? `<button class="view-auction" data-id="${result.auction_id}">View</button>` : ''}
+            `;
+            
+            resultsQueue.enqueue(div);
+            
+            div.addEventListener('keydown', (event) => {
+                event.preventDefault();
+                if (event.key == 'ArrowDown') {
+                    resultsQueue.moveNext();
+                    resultsQueue.getCurrent().focus();
+                } else if (event.key == 'ArrowUp') {
+                    resultsQueue.movePrev();
+                    resultsQueue.getCurrent().focus();
+                } else if (event.key == 'Enter') {
+                    div.click();
+                    searchInput.value = '';
+                    searchInput.focus();
                 }
-                const card = auctionTab.querySelector(`.card[data-id='${result.id}']`);
-                if (card) {
-                    card.scrollIntoView({ behavior: 'smooth' });
-                    card.classList.add('highlighted-search-result');
-                    setTimeout(() => {
-                        card.classList.remove('highlighted-search-result');
-                    }, 2000);
-                }
+            });
+            
+            // View auction button (if exists)
+            if (result.auction_id) {
+                const viewButton = div.querySelector('.view-auction');
+                viewButton.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    const element = document.getElementById(`${result.auction_id}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    searchContainer.innerHTML = '';
+                });
             }
-            searchContainer.innerHTML = '';
-        });
+            
+            // Add to cart handler for sealed items
+            div.addEventListener('click', async () => {
+                addSealedToCart(sealed, result.sid, result.auction_id);
+                searchContainer.innerHTML = '';
+            });
+            
+        } else {
+            // Handle card display
+            let card = new struct()
+            card.cardName = result.card_name;
+            card.cardNum = result.card_num;
+            card.condition = result.condition;
+            card.marketValue = result.market_value;
+            
+            // Display in desired order, with proper formatting
+            div.innerHTML = `
+                <p class="result result-card-name">${result.card_name || 'N/A'}</p>
+                <p class="result result-card-num">${result.card_num || 'N/A'}</p>
+                <p class="result result-condition ${result.condition.split(' ').join('_').toLowerCase()}">${result.condition || 'Unknown'}</p>
+                <p class="result result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
+                <p class="result result-auction-name">${result.auction_name || result.auction_id - 1}</p>
+                <button class="add-to-cart-btn">Add to cart</button>
+                <button class="view-auction" data-id="${result.auction_id}">View</button>
+            `;
+            resultsQueue.enqueue(div);
 
-        div.addEventListener('click', async () => {
-            addToShoppingCart(card, result.id, result.auction_id);
-            searchContainer.innerHTML = '';
-        });
+            div.addEventListener('keydown', (event) => {
+                event.preventDefault();
+                if (event.key == 'ArrowDown') {
+                    resultsQueue.moveNext();
+                    resultsQueue.getCurrent().focus();
+                } else if (event.key == 'ArrowUp') {
+                    resultsQueue.movePrev();
+                    resultsQueue.getCurrent().focus();
+                } else if (event.key == 'Enter') {
+                    div.click();
+                    searchInput.value = '';
+                    searchInput.focus();
+                }
+            });
+
+            const viewButton = div.querySelector('.view-auction');
+            viewButton.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                const element = document.getElementById(`${result.auction_id}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }
+                const auctionTab = element.closest('.auction-tab');
+                if (auctionTab) {
+                    const viewButton = auctionTab.querySelector('.view-auction');
+                    if (viewButton && viewButton.textContent === 'View') {
+                        await loadAuctionContent(viewButton);
+                    }
+                    const card = auctionTab.querySelector(`.card[data-id='${result.id}']`);
+                    console.log(result.sid);
+                    const sealed = auctionTab.querySelector(`.sealed-item[sid='${result.sid}']`);
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth' });
+                        card.classList.add('highlighted-search-result');
+                        setTimeout(() => {
+                            card.classList.remove('highlighted-search-result');
+                        }, 2000);
+                    }
+                    console.log(sealed);
+                    if(sealed){
+                        sealed.scrollIntoView({ behavior: 'smooth' });
+                        sealed.classList.add('highlighted-search-result');
+                        setTimeout(() => {
+                            sealed.classList.remove('highlighted-search-result');
+                        }, 2000);
+                    }
+                }
+                searchContainer.innerHTML = '';
+            });
+
+            div.addEventListener('click', async () => {
+                addToShoppingCart(card, result.id, result.auction_id);
+                searchContainer.innerHTML = '';
+            });
+        }
+        
         searchContainer.appendChild(div);
     });
 }

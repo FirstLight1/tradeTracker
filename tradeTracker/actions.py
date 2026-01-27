@@ -1119,35 +1119,81 @@ def search():
         # Split search query into individual words
         search_terms = query.split()
         
-        # Build WHERE clause that checks if all search terms are present
-        where_conditions = []
-        params = []
+        # Separate cart IDs into cards and sealed items
+        card_cart_ids = []
+        sealed_cart_ids = []
+        for cart_id in cart_ids:
+            if isinstance(cart_id, str) and cart_id.startswith('s'):
+                # Remove 's' prefix and convert to int
+                sealed_cart_ids.append(int(cart_id[1:]))
+            else:
+                card_cart_ids.append(cart_id)
+        
+        # Build WHERE clause for CARDS (alias 'c')
+        card_where_conditions = []
+        card_params = []
         for term in search_terms:
-            where_conditions.append("UPPER(COALESCE(c.card_name, '') || ' ' || COALESCE(c.card_num, '')) LIKE UPPER(?)")
-            params.append(f'%{term}%')
+            card_where_conditions.append(
+                "UPPER(COALESCE(c.card_name, '') || ' ' || COALESCE(c.card_num, '')) LIKE UPPER(?)"
+            )
+            card_params.append(f'%{term}%')
         
-        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        card_where_clause = " AND ".join(card_where_conditions) if card_where_conditions else "1=1"
         
-        # Add cart exclusion if needed
-        if cart_ids:
-            placeholders = ",".join(["?"] * len(cart_ids))
-            where_clause += f" AND c.id NOT IN ({placeholders})"
-            params.extend(cart_ids)
+        # Add card cart exclusion
+        if card_cart_ids:
+            placeholders = ",".join(["?"] * len(card_cart_ids))
+            card_where_clause += f" AND c.id NOT IN ({placeholders})"
+            card_params.extend(card_cart_ids)
+        
+        # Build WHERE clause for SEALED items (alias 's')
+        sealed_where_conditions = []
+        sealed_params = []
+        for term in search_terms:
+            sealed_where_conditions.append("UPPER(COALESCE(s.name, '')) LIKE UPPER(?)")
+            sealed_params.append(f'%{term}%')
+        
+        sealed_where_clause = " AND ".join(sealed_where_conditions) if sealed_where_conditions else "1=1"
+        
+        # Add sealed cart exclusion
+        if sealed_cart_ids:
+            placeholders = ",".join(["?"] * len(sealed_cart_ids))
+            sealed_where_clause += f" AND s.id NOT IN ({placeholders})"
+            sealed_params.extend(sealed_cart_ids)
         
         db = get_db()
-        matches = db.execute(
-                f"SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c "
-                "JOIN auctions a ON c.auction_id = a.id "
-                "LEFT JOIN sale_items si ON c.id = si.card_id "
-                f"WHERE ({where_clause}) AND si.card_id IS NULL "
-                "GROUP BY UPPER(c.card_name), UPPER(c.card_num), UPPER(c.condition) ORDER BY c.id ASC LIMIT 8",
-                params).fetchall()
         
-        if matches == None or len(matches) == 0:
+        # Search cards
+        card_matches = db.execute(
+            f"SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c "
+            "JOIN auctions a ON c.auction_id = a.id "
+            "LEFT JOIN sale_items si ON c.id = si.card_id "
+            f"WHERE ({card_where_clause}) AND si.card_id IS NULL "
+            "GROUP BY UPPER(c.card_name), UPPER(c.card_num), UPPER(c.condition) ORDER BY c.id ASC LIMIT 8",
+            card_params
+        ).fetchall()
+        
+        # Search sealed items
+        sealed_matches = db.execute(
+            f"SELECT 's' || s.id as sid, s.name, s.market_value, s.auction_id, a.auction_name FROM sealed s "
+            "LEFT JOIN auctions a ON s.auction_id = a.id "
+            f"WHERE ({sealed_where_clause}) AND s.sale_id IS NULL "
+            f"GROUP BY UPPER(s.name) ORDER BY s.id ASC LIMIT 8",
+            sealed_params
+        ).fetchall()
+        
+        # Combine results and convert to dicts
+        all_matches = [dict(m) for m in card_matches] + [dict(m) for m in sealed_matches]
+        
+        # Take top 8 results (interleaved by ID-based relevance)
+        final_matches = all_matches[:8]
+
+        print(final_matches)
+        if not final_matches:
             return jsonify({'status': 'success','value': None}),200
         else:
-            print(len(matches))
-            return jsonify({'status': 'success','value': [dict(m) for m in matches]}),200
+            print(len(final_matches))
+            return jsonify({'status': 'success','value': final_matches}),200
 
 @bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
 def invoice(vendor):
