@@ -505,6 +505,112 @@ function cartValue(cartContent) {
     return sum.toFixed(2);
 }
 
+// SessionStorage helper functions for modal persistence
+function saveModalDataToSession() {
+    const modalData = {
+        clientName: document.querySelector('.client-name')?.value || '',
+        clientAddress: document.querySelector('.client-address')?.value || '',
+        clientCity: document.querySelector('.client-city')?.value || '',
+        clientCountry: document.querySelector('.client-country')?.value || '',
+        paybackDate: document.querySelector('.date-input')?.value || '',
+        price: document.querySelector('.price-input')?.value || '',
+        shippingWay: document.querySelector('.shipping-way')?.value || '',
+        shippingPrice: document.querySelector('.shipping-price')?.value || '',
+        paymentMethods: []
+    };
+
+    // Collect all payment methods
+    const paymentDivs = document.querySelectorAll('.payment-div');
+    paymentDivs.forEach(div => {
+        const paymentType = div.querySelector('.payment-type')?.value || '';
+        const amount = div.querySelector('.amount, .amunt')?.value || '';
+        modalData.paymentMethods.push({ type: paymentType, amount: amount });
+    });
+
+    sessionStorage.setItem('invoiceModalData', JSON.stringify(modalData));
+}
+
+function loadModalDataFromSession(recieverDiv) {
+    const savedData = sessionStorage.getItem('invoiceModalData');
+    if (!savedData) return;
+
+    try {
+        const modalData = JSON.parse(savedData);
+        
+        // Restore simple fields
+        const clientName = recieverDiv.querySelector('.client-name');
+        const clientAddress = recieverDiv.querySelector('.client-address');
+        const clientCity = recieverDiv.querySelector('.client-city');
+        const clientCountry = recieverDiv.querySelector('.client-country');
+        const paybackDate = recieverDiv.querySelector('.date-input');
+        const priceInput = recieverDiv.querySelector('.price-input');
+        const shippingWay = recieverDiv.querySelector('.shipping-way');
+        const shippingPrice = recieverDiv.querySelector('.shipping-price');
+
+        if (clientName) clientName.value = modalData.clientName;
+        if (clientAddress) clientAddress.value = modalData.clientAddress;
+        if (clientCity) clientCity.value = modalData.clientCity;
+        if (clientCountry) clientCountry.value = modalData.clientCountry;
+        if (paybackDate && modalData.paybackDate) paybackDate.value = modalData.paybackDate;
+        if (priceInput) priceInput.value = modalData.price;
+        if (shippingWay) shippingWay.value = modalData.shippingWay;
+        if (shippingPrice) shippingPrice.value = modalData.shippingPrice;
+
+        // Restore payment methods
+        if (modalData.paymentMethods && modalData.paymentMethods.length > 0) {
+            const paymentContainer = recieverDiv.querySelector('.payment-container');
+            const firstPaymentDiv = paymentContainer.querySelector('.payment-div');
+            
+            // Set first payment method (already exists in HTML)
+            if (firstPaymentDiv && modalData.paymentMethods[0]) {
+                const firstSelect = firstPaymentDiv.querySelector('.payment-type');
+                const firstAmount = firstPaymentDiv.querySelector('.amount');
+                if (firstSelect) firstSelect.value = modalData.paymentMethods[0].type;
+                if (firstAmount) firstAmount.value = modalData.paymentMethods[0].amount;
+            }
+
+            // Add additional payment methods (if any)
+            for (let i = 1; i < modalData.paymentMethods.length; i++) {
+                const newSelectDiv = document.createElement('div');
+                newSelectDiv.classList.add('payment-div');
+                newSelectDiv.innerHTML = `
+                    ${paymentTypeSelect('payment-type')}
+                    <input type='number' class='amount' value='${modalData.paymentMethods[i].amount}'></input>
+                `;
+                
+                // Set the payment type after adding to DOM
+                paymentContainer.append(newSelectDiv);
+                const select = newSelectDiv.querySelector('.payment-type');
+                if (select) select.value = modalData.paymentMethods[i].type;
+                
+                // Add event listeners to restored inputs
+                const newInputs = newSelectDiv.querySelectorAll('input, select');
+                newInputs.forEach(input => {
+                    input.addEventListener('input', saveModalDataToSession);
+                    input.addEventListener('change', saveModalDataToSession);
+                });
+            }
+        }
+    } catch (e) {
+        console.error('Error loading modal data from sessionStorage:', e);
+    }
+}
+
+function clearModalDataFromSession() {
+    sessionStorage.removeItem('invoiceModalData');
+}
+
+function paymentAmountSum(payments){
+    let sum = 0;
+    payments.forEach(payment => {
+        if (!payment.amount) return;
+        if (payment.type == '') return;
+        sum += Number(payment.amount);
+    });
+    return sum;
+
+}
+
 function initializeCart() {
     shoppingCart();
     addBulkToCart();
@@ -631,13 +737,12 @@ function shoppingCart() {
                     <span class="close-modal">&times;</span>
                     <div class='complete-invoice-info'>
                         <p>Forma uhrady</p>
-                        <select class='payment-type'>
-                            <option value='Peňažný prevod'>Peňažný prevod</option>
-                            <option value='Hotovosť'>Hotovosť</option>
-                            <option value='Karta'>Karta</option>
-                            <option value='Dobierka'>Dobierka</option>
-                            <option value='Internetový platobný systém'>Internetový platobný systém</option>
-                        </select>
+                        <div class='payment-container'>
+                            <div class='payment-div'>
+                                ${paymentTypeSelect('payment-type')}
+                                <input type='number' class='amount'></input>
+                            </div>
+                        </div>
                         <button class='add-another-payment-method'>Add another payment method</button>
                     </div>
                     <div>
@@ -674,26 +779,39 @@ function shoppingCart() {
                 `;
             body.append(recieverDiv);
 
+            // Load saved data from sessionStorage if exists
+            loadModalDataFromSession(recieverDiv);
+
+            // Add event listeners to save data on input
+            const modalInputs = recieverDiv.querySelectorAll('input, select');
+            modalInputs.forEach(input => {
+                input.addEventListener('input', saveModalDataToSession);
+                input.addEventListener('change', saveModalDataToSession);
+            });
+
             const closeModal = recieverDiv.querySelector('.close-modal');
             closeModal.addEventListener('click', () => {
                 recieverDiv.remove();
                 recieverDiv = null;
             });
 
-            recieverDiv.addEventListener('click', (event) => {
-                if (event.target === recieverDiv) {
-                    recieverDiv.remove();
-                    recieverDiv = null;
-                }
-            });
-
             const button = document.querySelector('.add-another-payment-method');
             button.addEventListener('click', () => {
-                const paymentDiv = document.querySelector('.complete-invoice-info');
+                const paymentContainer = document.querySelector('.payment-container');
                 const newSelectDiv = document.createElement('div');
-                newSelectDiv.innerHTML = paymentTypeSelect('payment-type');
-                //newSelectDiv.style.width = '200px';
-                paymentDiv.insertBefore(newSelectDiv, button);
+                newSelectDiv.classList.add('payment-div');
+                newSelectDiv.innerHTML = `
+                ${paymentTypeSelect('payment-type')}
+                <input type='number' class='amount'></input>                            
+                `;
+                paymentContainer.append(newSelectDiv);
+                
+                // Add event listeners to new inputs for sessionStorage
+                const newInputs = newSelectDiv.querySelectorAll('input, select');
+                newInputs.forEach(input => {
+                    input.addEventListener('input', saveModalDataToSession);
+                    input.addEventListener('change', saveModalDataToSession);
+                });
             });
 
             const dateInput = document.querySelector('.date-input');
@@ -702,42 +820,73 @@ function shoppingCart() {
 
         const generateInvoiceBtn = document.querySelector('.generate-invoice');
         {
-            let inputVals = [];
             generateInvoiceBtn.addEventListener('click', async () => {
 
-                const inputs = recieverDiv.querySelectorAll('input');
-                inputs.forEach((input) => {
-                    inputVals.push(input.value);
+                // Collect all payment methods (every time Confirm is clicked)
+                const paymentDivs = recieverDiv.querySelectorAll('.payment-div');
+                const paymentMethods = [];
+                paymentDivs.forEach(div =>{
+                    const paymentType = div.querySelector('.payment-type')?.value;
+                    if (!paymentType || paymentType === '' || paymentType === ' ') {
+                        return;
+                    }
+                    const payment = {
+                        type: paymentType,
+                        amount: parseFloat(div.querySelector('.amount')?.value) || 0
+                    };
+                    paymentMethods.push(payment);
                 })
 
-                // Collect all payment methods
-                const paymentSelects = recieverDiv.querySelectorAll('.payment-type');
-                const paymentMethods = Array.from(paymentSelects).map(select => ({
-                    type: select.value,
-                    amount: 0  // Amount will be calculated/split later if needed
-                }));
+                // Get values by specific class names (every time)
+                const clientName = recieverDiv.querySelector('.client-name')?.value || '';
+                const clientAddress = recieverDiv.querySelector('.client-address')?.value || '';
+                const clientCity = recieverDiv.querySelector('.client-city')?.value || '';
+                const clientCountry = recieverDiv.querySelector('.client-country')?.value || '';
+                const paybackDate = recieverDiv.querySelector('.date-input')?.value || '';
+                const shippingWay = recieverDiv.querySelector('.shipping-way')?.value || '';
+                const shippingPrice = recieverDiv.querySelector('.shipping-price')?.value || '';
 
-                if (!cartContent.recieverInfo) {
-                    const recieverInfo = {
-                        paymentMethods: paymentMethods,
-                        nameAndSurname: inputVals[0],
-                        address: inputVals[1],
-                        city: inputVals[2],
-                        state: inputVals[3],
-                        paybackDate: inputVals[4],
-                        total: null,
-                    };
-                    cartContent.recieverInfo = recieverInfo;
-
-                    if (inputVals[6] !== "") {
-                        const shipping = {
-                            shippingWay: inputVals[6],
-                            shippingPrice: inputVals[7].replace(',', '.'),
-                        };
-                        cartContent.shipping = shipping;
-                    }
-                }
+                // Calculate total payment amount from payment methods
+                const paymentTotal = paymentMethods.reduce((sum, payment) => sum + payment.amount, 0);
                 const cartValueInput = document.querySelector('.price-input').value || cartVal;
+                const expectedTotal = parseFloat(cartValueInput);
+
+                // Validate payment amounts match cart total
+                if (paymentMethods.length > 1) {
+                    // If multiple payment methods, check that sum matches total
+                    if (Math.abs(paymentTotal - expectedTotal) > 0.01) { // Allow 1 cent tolerance for rounding
+                        alert(`Payment amount (${paymentTotal.toFixed(2)}€) is not equal to total cart value (${expectedTotal.toFixed(2)}€)`);
+                        return;
+                    }
+                } else if (paymentMethods.length === 1) {
+                    // If single payment method, auto-set amount to cart total
+                    paymentMethods[0].amount = expectedTotal;
+                } else {
+                    alert('Please select at least one payment method');
+                    return;
+                }
+
+                // Update or create recieverInfo (always update payment methods)
+                const recieverInfo = {
+                    paymentMethods: paymentMethods,
+                    nameAndSurname: clientName,
+                    address: clientAddress,
+                    city: clientCity,
+                    state: clientCountry,
+                    paybackDate: paybackDate,
+                    total: null,
+                };
+                cartContent.recieverInfo = recieverInfo;
+
+                if (shippingWay !== "") {
+                    const shipping = {
+                        shippingWay: shippingWay,
+                        shippingPrice: shippingPrice.replace(',', '.'),
+                    };
+                    cartContent.shipping = shipping;
+                }
+
+                // Apply price adjustment if cart value was manually changed
                 if (cartValueInput != cartVal) {
                     const priceDiff = cartVal - cartValueInput;
                     for (let i = 0; i < cartContent.cards.length; i++) {
@@ -745,6 +894,7 @@ function shoppingCart() {
                         cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue - discount).toFixed(2)
                     }
                 }
+                
                 let vendorCheckBox = document.querySelector('.vendor-type').checked;
                 cartContent.recieverInfo.total = Number(cartValue(cartContent));
                 if (Object.keys(cartContent).length !== 0) {
@@ -771,6 +921,10 @@ function shoppingCart() {
                         vendorCheckBox = false;
                         recieverDiv.remove();
                         recieverDiv = null;
+                        
+                        // Clear sessionStorage on successful invoice generation
+                        clearModalDataFromSession();
+                        
                         alert(data.pdf_path)
                         //recalculate auction price and profit
                     } else if (data.status === 'error') {
