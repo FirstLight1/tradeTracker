@@ -337,8 +337,10 @@ def addSealed():
     db = get_db()
     
     for sealed in data:
-        price = float(sealed.get("market_value")) if sealed.get("market_value") is not None else 0
-        db.execute("INSERT INTO sealed(name, price, market_value, date) VALUES (?, ?, ?, ?)",(sealed.get("name"), price, sealed.get("market_value"), datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"))
+        marketValue = float(sealed.get("market_value")) if sealed.get("market_value") is not None else 0
+        price = float(sealed.get("price")) if sealed.get("price") is not None else marketValue * 0.80;
+        date = sealed.get('dateAdded') if sealed.get('dateAdded') is not None else datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
+        db.execute("INSERT INTO sealed(name, price, market_value, date) VALUES (?, ?, ?, ?)",(sealed.get("name"), price, marketValue, date))
     db.commit()
     return jsonify({'status':'success'}),200
 

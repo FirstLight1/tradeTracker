@@ -1182,8 +1182,10 @@ async function changeCardPricesBasedOnAuctionPrice(auctionTab) {
 
 async function loadAuctionContent(button) {
     const auctionId = button.getAttribute('data-id');
+    //TODO - make this into a single endpoint
     const cardsUrl = '/loadCards/' + auctionId;
     const bulkUrl = '/loadBulk/' + auctionId;
+    const sealedUrl = '/loadSealed/' + auctionId;
     const auctionDiv = button.closest('.auction-tab');
     const cardsContainer = auctionDiv.querySelector('.cards-container');
     try {
@@ -1674,7 +1676,6 @@ async function loadSealed(viewButton) {
 
 
                 const buttonsContainer = document.querySelector('.buttons-container')
-                console.log(buttonsContainer);
 
                 const addButton = buttonsContainer.querySelector('.add-sealed');
                 const date = new Date().toJSON().split('T')[0]
@@ -1684,24 +1685,50 @@ async function loadSealed(viewButton) {
                     div.classList.add('add-sealed');
                     div.innerHTML = `
                             <input type='text' placeholder='name'></input>
-                            <input type='text' placeholder='price'></input>
-                            <input type='text' placeholder='market value'></input>
+                            <input type='number' placeholder='price'></input>
+                            <input type='number' placeholder='market value'></input>
                             <p></p>
-                            <input type='date' value=${date}></input>
+                            <input type='date' value=${date} max=${date} ></input>
                         `
                     contentDiv.append(div);
 
                     const saveButton = buttonsContainer.querySelector('.save-sealed-btn');
                     saveButton.style.display = 'block';
-                    saveButton.addEventListener('click', () => {
-                        const inputDivs = contentDiv.querySelectorAll('add-sealed');
+                    saveButton.addEventListener('click',async () => {
+                        const inputDivs = contentDiv.querySelectorAll('.add-sealed');
+                        console.log(inputDivs);
                         let inputValues = []
                         inputDivs.forEach(div => {
                             const inputs = div.querySelectorAll('input');
-                            //TODO find a way to not use 2 for loops
-                            inputValues.push(inputs.map(input => input.value))
+                            const row = {};
+                            //TODO find a way to not use 2 for loops 
+                            row.name = inputs[0].value || null;
+                            row.price = inputs[1].value || null;
+                            row.market_value = inputs[2].value || null;
+                            row.dateAdded = inputs[3].value;
+                            if(row.name !== null && row.market_value !== null){
+                                inputValues.push(row);
+                            }
                         })
-                        console.log(inputValues);
+                        saveButton.style.display = 'none';
+                        if (inputValues.length > 0){
+                            const response = await fetch('/addSealed', {
+                                method : 'POST',
+                                headers: {
+                                    'Content-Type' : 'application/json'
+                                },
+                                body : JSON.stringify(inputValues)
+                            });
+                            const data = await response.json();
+                            if(data.status === 'success'){
+                                window.location.reload()
+                            } else{
+                                console.error(data.message)
+                                inputDivs.forEach(div => {
+                                    div.remove();
+                                });
+                            }
+                        }
                     })
                 });
             }
