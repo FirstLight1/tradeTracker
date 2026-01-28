@@ -55,17 +55,17 @@ export function renderField(value, inputType, classList, placeholder, datafield)
     }
 }
 
-function paymentTypeSelect(className) {
+function paymentTypeSelect(className, defaultValue = '') {
     return `
     <select class="${className}">
-        <option value=' '>Select payment method</option>
-        <option value="Hotovosť">Hotovosť</option>
-        <option value="Karta">Karta</option>
-        <option value="Barter">Barter</option>
-        <option value="Bankový prevod">Bankový prevod</option>
-        <option value="Online platba">Online platba</option>
-        <option value="Dobierka">Dobierka</option>
-        <option value="Online platobný systém">Online platobný systém</option>
+        <option value=' ' ${defaultValue === '' || defaultValue === ' ' ? 'selected' : ''}>Select payment method</option>
+        <option value="Hotovosť" ${defaultValue === 'Hotovosť' ? 'selected' : ''}>Hotovosť</option>
+        <option value="Karta" ${defaultValue === 'Karta' ? 'selected' : ''}>Karta</option>
+        <option value="Barter" ${defaultValue === 'Barter' ? 'selected' : ''}>Barter</option>
+        <option value="Bankový prevod" ${defaultValue === 'Bankový prevod' ? 'selected' : ''}>Bankový prevod</option>
+        <option value="Online platba" ${defaultValue === 'Online platba' ? 'selected' : ''}>Online platba</option>
+        <option value="Dobierka" ${defaultValue === 'Dobierka' ? 'selected' : ''}>Dobierka</option>
+        <option value="Online platobný systém" ${defaultValue === 'Online platobný systém' ? 'selected' : ''}>Online platobný systém</option>
         </select>
     `
 }
@@ -739,7 +739,7 @@ function shoppingCart() {
                         <p>Forma uhrady</p>
                         <div class='payment-container'>
                             <div class='payment-div'>
-                                ${paymentTypeSelect('payment-type')}
+                                ${paymentTypeSelect('payment-type', 'Bankový prevod')}
                                 <input type='number' class='amount'></input>
                             </div>
                         </div>
@@ -771,7 +771,7 @@ function shoppingCart() {
                     </div>
                     <div>
                     <p>Shipping</p>
-                    <input type=text placeholder="Way of shipping" class="shipping-way">
+                    <p class='shipping-way'>Doprava / Poštovné – samostatná služba</p>
                     <input type=text placeholder="Price of shipping" class="shipping-price">
                     </div>
                     <button class="generate-invoice">Confirm</button>
@@ -832,7 +832,7 @@ function shoppingCart() {
                     }
                     const payment = {
                         type: paymentType,
-                        amount: parseFloat(div.querySelector('.amount')?.value) || 0
+                        amount: parseFloat(div.querySelector('.amount')?.value.replace(',','.')) || 0
                     };
                     paymentMethods.push(payment);
                 })
@@ -843,13 +843,13 @@ function shoppingCart() {
                 const clientCity = recieverDiv.querySelector('.client-city')?.value || '';
                 const clientCountry = recieverDiv.querySelector('.client-country')?.value || '';
                 const paybackDate = recieverDiv.querySelector('.date-input')?.value || '';
-                const shippingWay = recieverDiv.querySelector('.shipping-way')?.value || '';
-                const shippingPrice = recieverDiv.querySelector('.shipping-price')?.value || '';
+                const shippingWay = recieverDiv.querySelector('.shipping-way')?.textContent|| '';
+                const shippingPrice = recieverDiv.querySelector('.shipping-price')?.value.replace(',','.')|| '';
 
                 // Calculate total payment amount from payment methods
-                const paymentTotal = paymentMethods.reduce((sum, payment) => sum + payment.amount, 0);
-                const cartValueInput = document.querySelector('.price-input').value || cartVal;
-                const expectedTotal = parseFloat(cartValueInput);
+                const paymentTotal = paymentMethods.reduce((sum, payment) => sum + payment.amount, 0) ;
+                const cartValueInput = document.querySelector('.price-input').value.replace(',','.') || cartVal;
+                const expectedTotal = parseFloat(cartValueInput) + Number(shippingPrice);
 
                 // Validate payment amounts match cart total
                 if (paymentMethods.length > 1) {
