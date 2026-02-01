@@ -82,6 +82,13 @@
     font-size: 1.1rem;
 }
 
+.shipping-way {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
 .modal-content input[type="text"],
 .modal-content input[type="date"] {
     padding: 10px 15px;

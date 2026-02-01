@@ -108,6 +108,28 @@ def loadExpansions():
 # Load the expansion sets at module import time
 all_pokemon_sets = loadExpansions()
 
+def ensureFontsAvailable():
+    """Ensure fonts are available in the correct location (for .exe deployment)."""
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe - fonts should be copied to AppData
+        app_data_fonts = os.path.join(os.environ['APPDATA'], 'TradeTracker', 'fonts')
+        os.makedirs(app_data_fonts, exist_ok=True)
+        
+        # Check if fonts need to be copied
+        font_files = ['DejaVuSans.ttf', 'DejaVuSans-Bold.ttf']
+        
+        # Get the bundled fonts directory (in the temp _MEIPASS directory)
+        bundled_fonts_dir = os.path.join(getattr(sys, '_MEIPASS', ''), 'fonts')
+        
+        for font_file in font_files:
+            dest_path = os.path.join(app_data_fonts, font_file)
+            source_path = os.path.join(bundled_fonts_dir, font_file)
+            
+            # Copy if doesn't exist or if source is newer
+            if os.path.exists(source_path) and (not os.path.exists(dest_path) or os.path.getmtime(source_path) > os.path.getmtime(dest_path)):
+                import shutil
+                shutil.copy2(source_path, dest_path)
+
 
 def migrate_payment_method(payment_method_text):
     """
@@ -573,23 +595,33 @@ def generateSoldReport():
 
 
 def generatePDF(month, year, cards, sealed,bulkAndHoloList):
+    # Ensure fonts are available (copies them from exe bundle if needed)
+    ensureFontsAvailable()
+    
     # Determine the save path based on environment
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
         app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker', 'Reports')
         os.makedirs(app_data_dir, exist_ok=True)
         pdf_path = os.path.join(app_data_dir, f'Report_{month}_{year}.pdf')
+        # Font path for exe
+        font_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker', 'fonts')
     else:
         # Running in development
         reports_dir = os.path.join(current_app.instance_path, 'reports')
         os.makedirs(reports_dir, exist_ok=True)
         pdf_path = os.path.join(reports_dir, f'Report_{month}_{year}.pdf')
+        # Font path for development
+        font_dir = os.path.join(os.path.dirname(__file__), 'fonts')
     
     # Create PDF
     pdf = fpdf.FPDF()
     pdf.add_page()
     
-    font_family = 'Courier'  # Default font
+    # Add Unicode-compatible font
+    font_family = 'DejaVu'
+    pdf.add_font(font_family, '', os.path.join(font_dir, 'DejaVuSans.ttf'), uni=True)
+    pdf.add_font(font_family, 'B', os.path.join(font_dir, 'DejaVuSans-Bold.ttf'), uni=True)
 
     # Set title
     pdf.set_font(font_family, '', 16)
@@ -606,9 +638,9 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList):
     total_sell_price = sum(card['sell_price'] or 0 for card in cards)
     total_profit = total_sell_price - total_buy_price
     
-    pdf.cell(0, 8, f'Total Buy Price: {total_buy_price:.2f}', 0, 1)
-    pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}', 0, 1)
-    pdf.cell(0, 8, f'Total Profit: {total_profit:.2f}', 0, 1)
+    pdf.cell(0, 8, f'Total Buy Price: {total_buy_price:.2f}€', 0, 1)
+    pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}€', 0, 1)
+    pdf.cell(0, 8, f'Total Profit: {total_profit:.2f}€', 0, 1)
     pdf.ln(10)
 
     # Add bulk and holo summary
@@ -626,9 +658,9 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList):
     for item in bulkAndHoloList:
         item_type = item['item_type'] or 'N/A'
         quantity = str(item['quantity']) if item['quantity'] else 'N/A'
-        buy_price = f"{item['buy_price']:.2f}" if item['buy_price'] else 'N/A'
-        total_price = f"{item['total_price']:.2f}" if item['total_price'] else 'N/A'
-        margin = f"{(item['total_price'] - (item['quantity'] * item['buy_price'])):.2f}" if item['total_price'] and item['buy_price'] else 'N/A'
+        buy_price = f"{item['buy_price']:.2f}€" if item['buy_price'] else 'N/A'
+        total_price = f"{item['total_price']:.2f}€" if item['total_price'] else 'N/A'
+        margin = f"{(item['total_price'] - (item['quantity'] * item['buy_price'])):.2f}€" if item['total_price'] and item['buy_price'] else 'N/A'
 
         pdf.cell(50, 8, item_type, 1, 0, 'L')
         pdf.cell(35, 8, quantity, 1, 0, 'C')
@@ -652,20 +684,49 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList):
     for card in cards:
         card_name = card['card_name'] or 'N/A'
         card_num = card['card_num'] or 'N/A'
-        buy_price = f"{card['card_price']:.2f}" if card['card_price'] else 'N/A'
-        sell_price = f"{card['sell_price']:.2f}" if card['sell_price'] else 'N/A'
-        card_profit = f"{(card['sell_price'] - card['card_price']):.2f}" if card['sell_price'] and card['card_price'] else 'N/A'
+        buy_price = f"{card['card_price']:.2f}€" if card['card_price'] else 'N/A'
+        sell_price = f"{card['sell_price']:.2f}€" if card['sell_price'] else 'N/A'
+        card_profit = f"{(card['sell_price'] - card['card_price']):.2f}€" if card['sell_price'] and card['card_price'] else 'N/A'
         
-        # Truncate long card names to fit
-        if len(card_name) > 45:
-            card_name = card_name[:42] + '...'
-
-        pdf.cell(50, 8, card_name, 1, 0, 'L')
-        pdf.cell(35, 8, card_num, 1, 0, 'C')
-        pdf.cell(30, 8, buy_price, 1, 0, 'R')
-        pdf.cell(30, 8, sell_price, 1, 0, 'R')
-        pdf.cell(30, 8, card_profit, 1, 0, 'R')
-        pdf.ln()
+        # Estimate height needed for card name (more conservative)
+        # With font size 9 and line height 4, approximately 25 chars per line in 50mm width
+        chars_per_line = 25
+        estimated_lines = max(1, (len(card_name) + chars_per_line - 1) // chars_per_line)
+        estimated_height = estimated_lines * 4
+        
+        # Check if we need a page break BEFORE drawing anything
+        if pdf.get_y() + estimated_height > pdf.h - pdf.b_margin - 10:
+            pdf.add_page()
+            # Redraw table header on new page
+            pdf.set_font(font_family, '', 10)
+            pdf.cell(50, 10, 'Card Name', 1, 0, 'C')
+            pdf.cell(35, 10, 'Card Number', 1, 0, 'C')
+            pdf.cell(30, 10, 'Buy Price', 1, 0, 'C')
+            pdf.cell(30, 10, 'Sell Price', 1, 0, 'C')
+            pdf.cell(30, 10, 'Margin', 1, 0, 'C')
+            pdf.ln()
+            pdf.set_font(font_family, '', 9)
+        
+        # Store starting position
+        x_start = pdf.get_x()
+        y_start = pdf.get_y()
+        
+        # Draw card name with multi_cell
+        pdf.multi_cell(50, 4, card_name, border=1, align='L')
+        
+        # Calculate actual height used
+        y_after_name = pdf.get_y()
+        actual_height = y_after_name - y_start
+        
+        # Draw other cells aligned with the card name
+        pdf.set_xy(x_start + 50, y_start)
+        pdf.cell(35, actual_height, card_num, 1, 0, 'C')
+        pdf.cell(30, actual_height, buy_price, 1, 0, 'R')
+        pdf.cell(30, actual_height, sell_price, 1, 0, 'R')
+        pdf.cell(30, actual_height, card_profit, 1, 0, 'R')
+        
+        # Move to next row
+        pdf.set_xy(x_start, y_after_name)
     
     # Table header
     pdf.set_font(font_family, '', 10)
@@ -676,22 +737,51 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList):
     pdf.ln()
     
     # Table content
+    # Sealed items   
     pdf.set_font(font_family, '', 9)
     for item in sealed:
         name = item['name'] or 'N/A'
-        buy_price = f"{item['price']:.2f}" if item['price'] else 'N/A'
-        sell_price = f"{item['market_value']:.2f}" if item['market_value'] else 'N/A'
-        card_profit = f"{(item['market_value'] - item['price']):.2f}" if item['market_value'] and item['price'] else 'N/A'
+        buy_price = f"{item['price']:.2f}€" if item['price'] else 'N/A'
+        sell_price = f"{item['market_value']:.2f}€" if item['market_value'] else 'N/A'
+        card_profit = f"{(item['market_value'] - item['price']):.2f}€" if item['market_value'] and item['price'] else 'N/A'
         
-        # Truncate long card names to fit
-        if len(name) > 80:
-            card_name = card_name[:77] + '...'
-
-        pdf.cell(85, 8, name, 1, 0, 'L')
-        pdf.cell(30, 8, buy_price, 1, 0, 'R')
-        pdf.cell(30, 8, sell_price, 1, 0, 'R')
-        pdf.cell(30, 8, card_profit, 1, 0, 'R')
-        pdf.ln()
+        # Estimate height needed for product name
+        # With font size 9 and line height 4, approximately 40 chars per line in 85mm width
+        chars_per_line = 40
+        estimated_lines = max(1, (len(name) + chars_per_line - 1) // chars_per_line)
+        estimated_height = estimated_lines * 4
+        
+        # Check if we need a page break BEFORE drawing anything
+        if pdf.get_y() + estimated_height > pdf.h - pdf.b_margin - 10:
+            pdf.add_page()
+            # Redraw table header on new page
+            pdf.set_font(font_family, '', 10)
+            pdf.cell(85, 10, 'Product Name', 1, 0, 'C')
+            pdf.cell(30, 10, 'Buy Price', 1, 0, 'C')
+            pdf.cell(30, 10, 'Sell Price', 1, 0, 'C')
+            pdf.cell(30, 10, 'Margin', 1, 0, 'C')
+            pdf.ln()
+            pdf.set_font(font_family, '', 9)
+        
+        # Store starting position
+        x_start = pdf.get_x()
+        y_start = pdf.get_y()
+        
+        # Draw product name with multi_cell
+        pdf.multi_cell(85, 4, name, border=1, align='L')
+        
+        # Calculate actual height used
+        y_after_name = pdf.get_y()
+        actual_height = y_after_name - y_start
+        
+        # Draw other cells aligned with the product name
+        pdf.set_xy(x_start + 85, y_start)
+        pdf.cell(30, actual_height, buy_price, 1, 0, 'R')
+        pdf.cell(30, actual_height, sell_price, 1, 0, 'R')
+        pdf.cell(30, actual_height, card_profit, 1, 0, 'R')
+        
+        # Move to next row
+        pdf.set_xy(x_start, y_after_name)
     # Save PDF
     pdf.output(pdf_path)
     return pdf_path
@@ -1222,7 +1312,6 @@ def invoice(vendor):
         # Generate the invoice and get the file path
         # Pass payment methods array (or single method for backwards compatibility)
         payment_data = recieverInfo.get('paymentMethods', [])
-        print(payment_data)
         if not payment_data and recieverInfo.get('paymentMethod'):
             # Backwards compatibility - convert single payment method to array
             payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]

@@ -878,7 +878,7 @@ function shoppingCart() {
                 };
                 cartContent.recieverInfo = recieverInfo;
 
-                if (shippingWay !== "") {
+                if (shippingPrice !== "") {
                     const shipping = {
                         shippingWay: shippingWay,
                         shippingPrice: shippingPrice.replace(',', '.'),
