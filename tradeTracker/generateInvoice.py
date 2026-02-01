@@ -135,7 +135,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
             count=bulk.get("quantity", 0),
             price=Decimal(str(bulk.get("unit_price", 0.01))),
             unit="ks",
-            description="Bulk cards purchase",
+            description="Common bulk cards",
             tax=Decimal("0")
         ))
     if holo:
@@ -143,7 +143,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
             count=holo.get("quantity", 0),
             price=holo.get("unit_price", 0.03),
             unit="ks",
-            description="Holo cards purchase",
+            description="Holo bulk cards",
             tax=Decimal("0")
         ))
 
