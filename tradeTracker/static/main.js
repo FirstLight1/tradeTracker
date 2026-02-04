@@ -505,15 +505,18 @@ function cartValue(cartContent) {
     return sum.toFixed(2);
 }
 
-function saveCartContentToSession(){
+const existingIDs = new Set();
+
+function saveCartContentToSession() {
     const cardsEl = document.querySelector('.cart-content').children;
     const sealedEl = document.querySelector('.sealed-content').children;
     const bulkEl = document.querySelector('.bulk-cart-content');
     const holoEl = document.querySelector('.holo-cart-content');
 
     let cardsData = [];
-    if(cardsEl.length > 0){
-        for(const item of cardsEl){
+    if (cardsEl.length > 0) {
+        for (const item of cardsEl) {
+            if (item.tagName === 'P') return;
             const card = new struct();
             const data = item.querySelectorAll('p');
             card.cardName = data[0].textContent;
@@ -525,8 +528,8 @@ function saveCartContentToSession(){
     }
 
     let sealedData = [];
-    if(sealedEl.length > 0){
-        for(const item of sealedEl){
+    if (sealedEl.length > 0) {
+        for (const item of sealedEl) {
             const sealed = {
                 name: item.querySelector('.sealed-name').textContent,
                 price: item.querySelector('.sealed-price').textContent
@@ -535,19 +538,19 @@ function saveCartContentToSession(){
         }
     }
     let bulkData = {}
-    if(bulkEl.children.length > 0){
+    if (bulkEl.children.length > 0) {
         bulkData = {
             type: 'bulk',
-            quantity: bulkEl.querySelector('.bulk-quantity').textContent,
+            quantity: bulkEl.querySelector('.bulk-quantity').textContent.replace('q: ', ''),
             price: bulkEl.querySelector('.bulk-sell-price').value || ''
         }
     }
 
     let holoData = {}
-    if(holoEl.children.length > 0){
+    if (holoEl.children.length > 0) {
         holoData = {
             type: 'holo',
-            quantity: holoEl.querySelector('.holo-quantity').textContent,
+            quantity: holoEl.querySelector('.holo-quantity').textContent.replace('q: ', ''),
             price: holoEl.querySelector('.holo-sell-price').value || ''
         }
     }
@@ -556,16 +559,18 @@ function saveCartContentToSession(){
         cards: cardsData,
         sealed: sealedData,
         bulk: bulkData,
-        holo: holoData
+        holo: holoData,
+        existingIDs: existingIDs
     };
-    
+    console.log(cartData);
+
     sessionStorage.setItem('cartData', JSON.stringify(cartData));
 }
 
-function loadCartContentFromSession(){
+function loadCartContentFromSession() {
 }
 
-function removeCartContentFromSession(){
+function removeCartContentFromSession() {
     sessionStorage.removeItem('cartData');
 }
 
@@ -600,7 +605,7 @@ function loadModalDataFromSession(recieverDiv) {
 
     try {
         const modalData = JSON.parse(savedData);
-        
+
         // Restore simple fields
         const clientName = recieverDiv.querySelector('.client-name');
         const clientAddress = recieverDiv.querySelector('.client-address');
@@ -624,7 +629,7 @@ function loadModalDataFromSession(recieverDiv) {
         if (modalData.paymentMethods && modalData.paymentMethods.length > 0) {
             const paymentContainer = recieverDiv.querySelector('.payment-container');
             const firstPaymentDiv = paymentContainer.querySelector('.payment-div');
-            
+
             // Set first payment method (already exists in HTML)
             if (firstPaymentDiv && modalData.paymentMethods[0]) {
                 const firstSelect = firstPaymentDiv.querySelector('.payment-type');
@@ -641,12 +646,12 @@ function loadModalDataFromSession(recieverDiv) {
                     ${paymentTypeSelect('payment-type')}
                     <input type='number' class='amount' value='${modalData.paymentMethods[i].amount}'></input>
                 `;
-                
+
                 // Set the payment type after adding to DOM
                 paymentContainer.append(newSelectDiv);
                 const select = newSelectDiv.querySelector('.payment-type');
                 if (select) select.value = modalData.paymentMethods[i].type;
-                
+
                 // Add event listeners to restored inputs
                 const newInputs = newSelectDiv.querySelectorAll('input, select');
                 newInputs.forEach(input => {
@@ -858,7 +863,7 @@ function shoppingCart() {
                 <input type='number' class='amount'></input>                            
                 `;
                 paymentContainer.append(newSelectDiv);
-                
+
                 // Add event listeners to new inputs for sessionStorage
                 const newInputs = newSelectDiv.querySelectorAll('input, select');
                 newInputs.forEach(input => {
@@ -878,14 +883,14 @@ function shoppingCart() {
                 // Collect all payment methods (every time Confirm is clicked)
                 const paymentDivs = recieverDiv.querySelectorAll('.payment-div');
                 const paymentMethods = [];
-                paymentDivs.forEach(div =>{
+                paymentDivs.forEach(div => {
                     const paymentType = div.querySelector('.payment-type')?.value;
                     if (!paymentType || paymentType === '' || paymentType === ' ') {
                         return;
                     }
                     const payment = {
                         type: paymentType,
-                        amount: parseFloat(div.querySelector('.amount')?.value.replace(',','.')) || 0
+                        amount: parseFloat(div.querySelector('.amount')?.value.replace(',', '.')) || 0
                     };
                     paymentMethods.push(payment);
                 })
@@ -896,12 +901,12 @@ function shoppingCart() {
                 const clientCity = recieverDiv.querySelector('.client-city')?.value || '';
                 const clientCountry = recieverDiv.querySelector('.client-country')?.value || '';
                 const paybackDate = recieverDiv.querySelector('.date-input')?.value || '';
-                const shippingWay = recieverDiv.querySelector('.shipping-way')?.textContent|| '';
-                const shippingPrice = recieverDiv.querySelector('.shipping-price')?.value.replace(',','.')|| '';
+                const shippingWay = recieverDiv.querySelector('.shipping-way')?.textContent || '';
+                const shippingPrice = recieverDiv.querySelector('.shipping-price')?.value.replace(',', '.') || '';
 
                 // Calculate total payment amount from payment methods
-                const paymentTotal = paymentMethods.reduce((sum, payment) => sum + payment.amount, 0) ;
-                const cartValueInput = document.querySelector('.price-input').value.replace(',','.') || cartVal;
+                const paymentTotal = paymentMethods.reduce((sum, payment) => sum + payment.amount, 0);
+                const cartValueInput = document.querySelector('.price-input').value.replace(',', '.') || cartVal;
                 const expectedTotal = parseFloat(cartValueInput) + Number(shippingPrice);
 
                 // Validate payment amounts match cart total
@@ -947,7 +952,7 @@ function shoppingCart() {
                         cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue - discount).toFixed(2)
                     }
                 }
-                
+
                 let vendorCheckBox = document.querySelector('.vendor-type').checked;
                 cartContent.recieverInfo.total = Number(cartValue(cartContent));
                 if (Object.keys(cartContent).length !== 0) {
@@ -974,11 +979,11 @@ function shoppingCart() {
                         vendorCheckBox = false;
                         recieverDiv.remove();
                         recieverDiv = null;
-                        
+
                         // Clear sessionStorage on successful invoice generation
                         clearModalDataFromSession();
                         removeCartContentFromSession();
-                        
+
                         alert(data.pdf_path)
                         //recalculate auction price and profit
                     } else if (data.status === 'error') {
@@ -993,9 +998,6 @@ function shoppingCart() {
         }
     });
 }
-
-
-const existingIDs = new Set();
 
 function addToShoppingCart(card, cardId, auctionId) {
     if (!existingIDs.has(cardId)) {
@@ -1116,7 +1118,10 @@ function addBulkToCart() {
                     <p class='bulk-quantity'>q: ${value}</p>
                     <input type='text' class='bulk-sell-price' style='width:70px'>
                     <button class='remove-from-cart'>Remove</button>`
+
                 contentDiv.appendChild(div);
+                const sellPriceInput = contentDiv.querySelector('.bulk-sell-price')
+                sellPriceInput.addEventListener("blur", saveCartContentToSession)
                 saveCartContentToSession();
             }
         } else {
@@ -1166,6 +1171,9 @@ function addHoloToCart() {
                     <input type='text' class='holo-sell-price' style='width:70px'>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
+                const sellPriceInput = contentDiv.querySelector('.holo-sell-price')
+                sellPriceInput.addEventListener("blur", saveCartContentToSession)
+
                 saveCartContentToSession();
             }
         } else {
@@ -1245,14 +1253,14 @@ async function search(searchPrompt) {
     // Collect card IDs from cart
     const cart = document.querySelectorAll('.cart-content > div');
     const cartIds = Array.from(cart).map(cardDiv => parseInt(cardDiv.getAttribute('cardId')));
-    
+
     // Collect sealed item IDs from cart (with 's' prefix)
     const sealedCart = document.querySelectorAll('.sealed-content .sealed-item-cart');
     const sealedIds = Array.from(sealedCart).map(sealedDiv => sealedDiv.getAttribute('sid'));
-    
+
     // Combine both card IDs and sealed IDs
     const allCartIds = [...cartIds, ...sealedIds];
-    
+
     const jsonbody = JSON.stringify({ query: searchPrompt, cartIds: allCartIds });
     const response = await fetch('/searchCard',
         {
@@ -1291,14 +1299,14 @@ function displaySearchResults(results, resultsQueue, searchInput) {
 
         // Check if this is a sealed item (has 'sid' field) or a card
         const isSealed = result.hasOwnProperty('sid');
-        
+
         if (isSealed) {
             // Handle sealed item display
             const sealed = {
                 name: result.name,
                 market_value: result.market_value
             };
-            
+
             div.innerHTML = `
                 <p class="result result-sealed-name">${result.name || 'N/A'}</p>
                 <p class="result result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
@@ -1308,9 +1316,9 @@ function displaySearchResults(results, resultsQueue, searchInput) {
                 <button class="add-to-cart-btn">Add to cart</button>
                 ${result.auction_id ? `<button class="view-auction" data-id="${result.auction_id}">View</button>` : ''}
             `;
-            
+
             resultsQueue.enqueue(div);
-            
+
             div.addEventListener('keydown', (event) => {
                 event.preventDefault();
                 if (event.key == 'ArrowDown') {
@@ -1325,7 +1333,7 @@ function displaySearchResults(results, resultsQueue, searchInput) {
                     searchInput.focus();
                 }
             });
-            
+
             // View auction button (if exists)
             if (result.auction_id) {
                 const viewButton = div.querySelector('.view-auction');
@@ -1338,14 +1346,13 @@ function displaySearchResults(results, resultsQueue, searchInput) {
                     searchContainer.innerHTML = '';
                 });
             }
-            
+
             // Add to cart handler for sealed items
             div.addEventListener('click', async () => {
                 addSealedToCart(sealed, result.sid, result.auction_id);
-                saveCartContentToSession();
                 searchContainer.innerHTML = '';
             });
-            
+
         } else {
             // Handle card display
             let card = new struct()
@@ -1353,7 +1360,7 @@ function displaySearchResults(results, resultsQueue, searchInput) {
             card.cardNum = result.card_num;
             card.condition = result.condition;
             card.marketValue = result.market_value;
-            
+
             // Display in desired order, with proper formatting
             div.innerHTML = `
                 <p class="result result-card-name">${result.card_name || 'N/A'}</p>
@@ -1405,7 +1412,7 @@ function displaySearchResults(results, resultsQueue, searchInput) {
                         }, 2000);
                     }
                     console.log(sealed);
-                    if(sealed){
+                    if (sealed) {
                         sealed.scrollIntoView({ behavior: 'smooth' });
                         sealed.classList.add('highlighted-search-result');
                         setTimeout(() => {
@@ -1418,11 +1425,10 @@ function displaySearchResults(results, resultsQueue, searchInput) {
 
             div.addEventListener('click', async () => {
                 addToShoppingCart(card, result.id, result.auction_id);
-                saveCartContentToSession();
                 searchContainer.innerHTML = '';
             });
         }
-        
+
         searchContainer.appendChild(div);
     });
 }
@@ -1447,7 +1453,7 @@ async function loadBulkHoloValues() {
 function initializeBulkHolo() {
     loadBulkHoloValues();
 }
- 
+
 
 async function loadAuctionContent(button) {
     const auctionId = button.getAttribute('data-id');
@@ -1595,7 +1601,6 @@ async function loadAuctionContent(button) {
                             const marketValueText = cardDiv.querySelector('.market-value').textContent;
                             card.marketValue = marketValueText ? marketValueText.replace('€', '') : null;
                             addToShoppingCart(card, cardId, auctionId);
-                            saveCartContentToSession();
                         });
                     });
 
@@ -1651,21 +1656,21 @@ async function loadAuctionContent(button) {
                 try {
                     const responseSealed = await fetch(sealedUrl);
                     const sealedData = await responseSealed.json();
-                    
+
                     sealedData.forEach(sealedItem => {
                         const sealedDiv = document.createElement('div');
                         sealedDiv.classList.add('sealed-item');
                         sealedDiv.setAttribute('sid', sealedItem.sid);
-                        
+
                         const margin = (Number(sealedItem.market_value) - Number(sealedItem.price)).toFixed(2);
                         const timeStamp = sealedItem.date.replace('Z', '');
                         const date = new Date(timeStamp);
-                        let formatedDate = date.toLocaleDateString('sk-SK', { 
-                            year: 'numeric', 
-                            month: '2-digit', 
-                            day: '2-digit' 
+                        let formatedDate = date.toLocaleDateString('sk-SK', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
                         });
-                        
+
                         sealedDiv.innerHTML = `
                             <p class="sealed-name">${sealedItem.name}</p>
                             <p class="sealed-price">${sealedItem.price}€</p>
@@ -1675,10 +1680,10 @@ async function loadAuctionContent(button) {
                             <button class="add-to-cart-sealed" data-sid="${sealedItem.sid}">Add to cart</button>
                             <button class="delete-sealed-item" data-sid="${sealedItem.sid}">Delete</button>
                         `;
-                        
+
                         cardsContainer.insertBefore(sealedDiv, cardsContainer.querySelector('.button-container'));
                     });
-                    
+
                     // Add event listeners for "Add to cart" buttons
                     const addToCartButtons = cardsContainer.querySelectorAll('.add-to-cart-sealed');
                     addToCartButtons.forEach((button) => {
@@ -1686,28 +1691,27 @@ async function loadAuctionContent(button) {
                             const sealedDiv = button.closest('.sealed-item');
                             const sid = sealedDiv.getAttribute('sid');
                             const auctionId = auctionDiv.getAttribute('data-id');
-                            
+
                             const sealedData = {
                                 name: sealedDiv.querySelector('.sealed-name').textContent,
                                 market_value: sealedDiv.querySelector('.sealed-market-value').textContent.replace('€', '')
                             };
-                            
+
                             addSealedToCart(sealedData, sid, auctionId);
-                            saveCartContentToSession();
                         });
                     });
-                    
+
                     // Add event listeners for "Delete" buttons
                     const deleteSealedButtons = cardsContainer.querySelectorAll('.delete-sealed-item');
                     deleteSealedButtons.forEach((button) => {
                         button.addEventListener('click', async () => {
                             const sid = button.getAttribute('data-sid');
                             const sealedDiv = button.closest('.sealed-item');
-                            
+
                             if (button.textContent === 'Confirm') {
                                 const response = await fetch(`/deleteSealed/${sid}`, { method: 'DELETE' });
                                 const data = await response.json();
-                                
+
                                 if (data.status === 'success') {
                                     sealedDiv.remove();
                                 }
@@ -1716,7 +1720,7 @@ async function loadAuctionContent(button) {
                                 const timerID = setTimeout(() => {
                                     button.textContent = 'Delete';
                                 }, 3000);
-                                
+
                                 document.addEventListener('click', function handler(e) {
                                     if (e.target !== button) {
                                         button.textContent = 'Delete';
@@ -1727,7 +1731,7 @@ async function loadAuctionContent(button) {
                             }
                         });
                     });
-                    
+
                 } catch (error) {
                     console.error('Error loading sealed items:', error);
                 }
@@ -1846,13 +1850,13 @@ async function loadAuctionContent(button) {
         const addSealedButton = cardsContainer.querySelector('.add-sealed-auction');
         addSealedButton.addEventListener('click', () => {
             cardsContainer.querySelector('.save-added-cards').hidden = false;
-            
+
             // Create input form for new sealed item
             const newSealedDiv = document.createElement('div');
             newSealedDiv.classList.add('add-sealed-item');
-            
+
             const currentDate = new Date().toISOString().split('T')[0];
-            
+
             newSealedDiv.innerHTML = `
                 <input type="text" class="sealed-name-input" placeholder="Sealed item name">
                 <input type="number" class="sealed-price-input" placeholder="Price" step="0.01" min="0">
@@ -1860,19 +1864,19 @@ async function loadAuctionContent(button) {
                 <input type="date" class="sealed-date-input" value="${currentDate}" max="${currentDate}">
                 <button class="remove-sealed-input">×</button>
             `;
-            
+
             cardsContainer.insertBefore(newSealedDiv, cardsContainer.querySelector('.button-container'));
-            
+
             // Add remove button functionality
             const removeBtn = newSealedDiv.querySelector('.remove-sealed-input');
             removeBtn.addEventListener('click', () => {
                 newSealedDiv.remove();
-                
+
                 // Hide save button if no new items
-                const hasNewItems = cardsContainer.querySelector('.new-card') || 
-                                   cardsContainer.querySelector('.add-sealed-item') ||
-                                   cardsContainer.querySelector('.add-bulk-item') ||
-                                   cardsContainer.querySelector('.add-holo-item');
+                const hasNewItems = cardsContainer.querySelector('.new-card') ||
+                    cardsContainer.querySelector('.add-sealed-item') ||
+                    cardsContainer.querySelector('.add-bulk-item') ||
+                    cardsContainer.querySelector('.add-holo-item');
                 if (!hasNewItems) {
                     cardsContainer.querySelector('.save-added-cards').hidden = true;
                 }
@@ -1962,7 +1966,7 @@ async function loadAuctionContent(button) {
                         const price = sealedDiv.querySelector('.sealed-price-input').value.trim() || null;
                         const marketValue = sealedDiv.querySelector('.sealed-market-value-input').value.trim() || null;
                         const date = sealedDiv.querySelector('.sealed-date-input').value || null;
-                        
+
                         if (name !== null && marketValue !== null) {
                             sealedItems.push({
                                 name: name,
@@ -1972,7 +1976,7 @@ async function loadAuctionContent(button) {
                             });
                         }
                     });
-                    
+
                     if (sealedItems.length > 0) {
                         itemsToAdd['sealed'] = sealedItems;
                     }
@@ -2062,7 +2066,6 @@ async function loadSealed(viewButton) {
                     const addToCart = sealedDiv.querySelector('.add-to-cart');
                     addToCart.addEventListener('click', () => {
                         addSealedToCart(sealedData, sealedData.sid)
-                        saveCartContentToSession();
                     });
 
                     const removeSealed = sealedDiv.querySelector('.delete-sealed');
@@ -2116,7 +2119,7 @@ async function loadSealed(viewButton) {
                 });
 
                 const saveButton = buttonsContainer.querySelector('.save-sealed-btn');
-                saveButton.addEventListener('click',async () => {
+                saveButton.addEventListener('click', async () => {
                     const inputDivs = contentDiv.querySelectorAll('.add-sealed');
                     let inputValues = []
                     inputDivs.forEach(div => {
@@ -2126,30 +2129,30 @@ async function loadSealed(viewButton) {
                         row.price = inputs[1].value || null;
                         row.market_value = inputs[2].value || null;
                         row.dateAdded = inputs[3].value;
-                        if(row.name !== null && row.market_value !== null){
+                        if (row.name !== null && row.market_value !== null) {
                             inputValues.push(row);
                         }
                     })
                     saveButton.style.display = 'none';
-                    if (inputValues.length > 0){
+                    if (inputValues.length > 0) {
                         const response = await fetch('/addSealed', {
-                            method : 'POST',
+                            method: 'POST',
                             headers: {
-                                'Content-Type' : 'application/json'
+                                'Content-Type': 'application/json'
                             },
-                            body : JSON.stringify(inputValues)
+                            body: JSON.stringify(inputValues)
                         });
                         const data = await response.json();
-                        if(data.status === 'success'){
+                        if (data.status === 'success') {
                             window.location.reload()
-                        } else{
+                        } else {
                             console.error(data.message)
                             inputDivs.forEach(div => {
                                 div.remove();
                             });
                         }
                     }
-            })
+                })
 
             }
             catch (e) {
