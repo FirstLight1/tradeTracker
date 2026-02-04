@@ -505,6 +505,73 @@ function cartValue(cartContent) {
     return sum.toFixed(2);
 }
 
+function saveCartContentToSession(){
+    const cardsEl = document.querySelector('.cart-content').children;
+    const sealedEl = document.querySelector('.sealed-content').children;
+    const bulkEl = document.querySelector('.bulk-cart-content');
+    const holoEl = document.querySelector('.holo-cart-content');
+
+    let cardsData = [];
+    if(cardsEl.length > 0){
+        for(const item of cardsEl){
+            const card = new struct();
+            const data = item.querySelectorAll('p');
+            card.cardName = data[0].textContent;
+            card.cardNum = data[1].textContent;
+            card.condition = data[2].textContent;
+            card.marketValue = data[3].textContent;
+            cardsData.push(card);
+        }
+    }
+
+    let sealedData = [];
+    if(sealedEl.length > 0){
+        for(const item of sealedEl){
+            const sealed = {
+                name: item.querySelector('.sealed-name').textContent,
+                price: item.querySelector('.sealed-price').textContent
+            }
+            sealedData.push(sealed);
+        }
+    }
+    let bulkData = {}
+    if(bulkEl.children.length > 0){
+        bulkData = {
+            type: 'bulk',
+            quantity: bulkEl.querySelector('.bulk-quantity').textContent,
+            price: bulkEl.querySelector('.bulk-sell-price').value || ''
+        }
+    }
+
+    let holoData = {}
+    if(holoEl.children.length > 0){
+        holoData = {
+            type: 'holo',
+            quantity: holoEl.querySelector('.holo-quantity').textContent,
+            price: holoEl.querySelector('.holo-sell-price').value || ''
+        }
+    }
+
+    const cartData = {
+        cards: cardsData,
+        sealed: sealedData,
+        bulk: bulkData,
+        holo: holoData
+    };
+    
+    sessionStorage.setItem('cartData', JSON.stringify(cartData));
+}
+
+function loadCartContentFromSession(){
+}
+
+function deleteCartItemFromSession(){
+}
+
+function deleteAllCartContentFromSession(){
+
+}
+
 // SessionStorage helper functions for modal persistence
 function saveModalDataToSession() {
     const modalData = {
@@ -598,17 +665,6 @@ function loadModalDataFromSession(recieverDiv) {
 
 function clearModalDataFromSession() {
     sessionStorage.removeItem('invoiceModalData');
-}
-
-function paymentAmountSum(payments){
-    let sum = 0;
-    payments.forEach(payment => {
-        if (!payment.amount) return;
-        if (payment.type == '') return;
-        sum += Number(payment.amount);
-    });
-    return sum;
-
 }
 
 function initializeCart() {
@@ -1278,6 +1334,7 @@ function displaySearchResults(results, resultsQueue, searchInput) {
             // Add to cart handler for sealed items
             div.addEventListener('click', async () => {
                 addSealedToCart(sealed, result.sid, result.auction_id);
+                saveCartContentToSession();
                 searchContainer.innerHTML = '';
             });
             
@@ -1353,6 +1410,7 @@ function displaySearchResults(results, resultsQueue, searchInput) {
 
             div.addEventListener('click', async () => {
                 addToShoppingCart(card, result.id, result.auction_id);
+                saveCartContentToSession();
                 searchContainer.innerHTML = '';
             });
         }
@@ -1381,38 +1439,7 @@ async function loadBulkHoloValues() {
 function initializeBulkHolo() {
     loadBulkHoloValues();
 }
-
-function groupUnnamedAuctions() {
-    const button = document.querySelector(".group-unnammed");
-    button.addEventListener('click', async () => {
-        const response = await fetch('/groupUnnamed');
-        const data = await response.json();
-        if (data.status == 'success') {
-            window.location.reload();
-            return;
-        } else {
-            console.err("There was a problem grouping auctions")
-        }
-        return;
-    });
-}
-
-async function changeCardPricesBasedOnAuctionPrice(auctionTab) {
-    const auctionId = auctionTab.getAttribute('data-id');
-    let auctionPrice = auctionTab.querySelector('.auction-price').textContent.replace('€', '');
-    const response = await fetch(`/recalculateCardPrices/${auctionId}/${auctionPrice}`, { method: 'GET' });
-    const data = await response.json();
-    if (data.status == 'success') {
-        console.log('success');
-        window.location.reload();
-    } else if (data.status == 'error') {
-        console.error('Error recalculating card prices: ' + data.message);
-    } else if (data.status == 'no_cards') {
-        alert('No cards found in this auction to recalculate prices.');
-    }
-
-}
-
+ 
 
 async function loadAuctionContent(button) {
     const auctionId = button.getAttribute('data-id');
@@ -1560,6 +1587,7 @@ async function loadAuctionContent(button) {
                             const marketValueText = cardDiv.querySelector('.market-value').textContent;
                             card.marketValue = marketValueText ? marketValueText.replace('€', '') : null;
                             addToShoppingCart(card, cardId, auctionId);
+                            saveCartContentToSession();
                         });
                     });
 
@@ -2061,7 +2089,6 @@ async function loadSealed(viewButton) {
                 const addButton = buttonsContainer.querySelector('.add-sealed');
                 const date = new Date().toJSON().split('T')[0]
                 addButton.addEventListener('click', () => {
-                    console.log('click');
                     const div = document.createElement('div');
                     div.classList.add('add-sealed');
                     div.innerHTML = `
@@ -2075,43 +2102,45 @@ async function loadSealed(viewButton) {
 
                     const saveButton = buttonsContainer.querySelector('.save-sealed-btn');
                     saveButton.style.display = 'block';
-                    saveButton.addEventListener('click',async () => {
-                        const inputDivs = contentDiv.querySelectorAll('.add-sealed');
-                        console.log(inputDivs);
-                        let inputValues = []
-                        inputDivs.forEach(div => {
-                            const inputs = div.querySelectorAll('input');
-                            const row = {};
-                            //TODO find a way to not use 2 for loops 
-                            row.name = inputs[0].value || null;
-                            row.price = inputs[1].value || null;
-                            row.market_value = inputs[2].value || null;
-                            row.dateAdded = inputs[3].value;
-                            if(row.name !== null && row.market_value !== null){
-                                inputValues.push(row);
-                            }
-                        })
-                        saveButton.style.display = 'none';
-                        if (inputValues.length > 0){
-                            const response = await fetch('/addSealed', {
-                                method : 'POST',
-                                headers: {
-                                    'Content-Type' : 'application/json'
-                                },
-                                body : JSON.stringify(inputValues)
-                            });
-                            const data = await response.json();
-                            if(data.status === 'success'){
-                                window.location.reload()
-                            } else{
-                                console.error(data.message)
-                                inputDivs.forEach(div => {
-                                    div.remove();
-                                });
-                            }
+
+                });
+
+                const saveButton = buttonsContainer.querySelector('.save-sealed-btn');
+                saveButton.addEventListener('click',async () => {
+                    const inputDivs = contentDiv.querySelectorAll('.add-sealed');
+                    let inputValues = []
+                    inputDivs.forEach(div => {
+                        const inputs = div.querySelectorAll('input');
+                        const row = {};
+                        row.name = inputs[0].value || null;
+                        row.price = inputs[1].value || null;
+                        row.market_value = inputs[2].value || null;
+                        row.dateAdded = inputs[3].value;
+                        if(row.name !== null && row.market_value !== null){
+                            inputValues.push(row);
                         }
                     })
-                });
+                    saveButton.style.display = 'none';
+                    if (inputValues.length > 0){
+                        const response = await fetch('/addSealed', {
+                            method : 'POST',
+                            headers: {
+                                'Content-Type' : 'application/json'
+                            },
+                            body : JSON.stringify(inputValues)
+                        });
+                        const data = await response.json();
+                        if(data.status === 'success'){
+                            window.location.reload()
+                        } else{
+                            console.error(data.message)
+                            inputDivs.forEach(div => {
+                                div.remove();
+                            });
+                        }
+                    }
+            })
+
             }
             catch (e) {
                 console.log('Error:', e);
@@ -2496,7 +2525,6 @@ if (document.title === "Trade Tracker") {
     initializeSealed();
     importCSV();
     soldReportBtn();
-    groupUnnamedAuctions();
     initializeCart();
     initializeBulkHolo();
     document.addEventListener('DOMContentLoaded', async () => {
