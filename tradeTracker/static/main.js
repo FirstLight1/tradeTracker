@@ -554,20 +554,175 @@ function saveCartContentToSession() {
             price: holoEl.querySelector('.holo-sell-price').value || ''
         }
     }
+    let setIds = []
 
+    existingIDs.forEach((id) => {
+        setIds.push(id);
+    });
     const cartData = {
         cards: cardsData,
         sealed: sealedData,
         bulk: bulkData,
         holo: holoData,
-        existingIDs: existingIDs
+        existingIDs: setIds
     };
-    console.log(cartData);
 
     sessionStorage.setItem('cartData', JSON.stringify(cartData));
 }
 
 function loadCartContentFromSession() {
+    const savedData = sessionStorage.getItem('cartData');
+    if (!savedData) return;
+
+    try {
+        const cartData = JSON.parse(savedData);
+
+        // Restore existingIDs Set
+        if (cartData.existingIDs) {
+            existingIDs.clear();
+            cartData.existingIDs.forEach(id => existingIDs.add(id));
+        }
+        console.log(existingIDs);
+
+        // Restore cards
+        if (cartData.cards && cartData.cards.length > 0) {
+            const contentDiv = document.querySelector('.cart-content');
+            contentDiv.innerHTML = '';
+            
+            cartData.cards.forEach((card,index) => {
+                const cardDiv = document.createElement('div');
+                cardDiv.setAttribute('cardid', cartData.existingIDs[index])
+                cardDiv.innerHTML = `
+                    <p>${card.cardName}</p>
+                    <p>${card.cardNum}</p>
+                    <p>${card.condition}</p>
+                    <p class='market-value-invoice'>${card.marketValue}</p>
+                    <button class='remove-from-cart'>Remove</button>
+                `;
+                contentDiv.appendChild(cardDiv);
+
+                // Add event listeners for market value editing
+                const marketValueInCart = cardDiv.querySelector('.market-value-invoice');
+                marketValueInCart.addEventListener('dblclick', () => {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = card.marketValue.replace('€', '');
+                    marketValueInCart.replaceWith(input);
+                    input.focus();
+                    input.addEventListener('blur', () => {
+                        let newValue = input.value.replace(',', '.');
+                        if (isNaN(newValue)) {
+                            newValue = card.marketValue;
+                        }
+                        const p = document.createElement('p');
+                        p.classList.add('market-value-invoice');
+                        p.textContent = newValue + '€';
+                        input.replaceWith(p);
+                        card.marketValue = newValue;
+                        saveCartContentToSession();
+                    });
+                    input.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter') {
+                            input.blur();
+                        }
+                    });
+                });
+
+                // Add remove button listener
+                const removeBtn = cardDiv.querySelector('.remove-from-cart');
+                removeBtn.addEventListener('click', () => {
+                    const cardId = cardDiv.getAttribute('cardid');
+                    console.log(cardId);
+                    if (cardId) {
+                        existingIDs.delete(cardId);
+                    }
+                    console.log(existingIDs);
+                    cardDiv.remove();
+                    
+                    if (contentDiv.childElementCount === 0) {
+                        contentDiv.innerHTML = '<p>Your cart is empty</p>';
+                    }
+                    saveCartContentToSession();
+                });
+            });
+        }
+
+        // Restore sealed items
+        if (cartData.sealed && cartData.sealed.length > 0) {
+            const sealedContent = document.querySelector('.sealed-content');
+            
+            cartData.sealed.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('sealed-item-cart');
+                itemDiv.innerHTML = `
+                    <p class='sealed-name'>${item.name}</p>
+                    <p class='sealed-price'>${item.price}</p>
+                    <button class='remove-from-cart'>Remove</button>
+                `;
+
+                const removeFromCart = itemDiv.querySelector('.remove-from-cart');
+                removeFromCart.addEventListener('click', () => {
+                    const sid = itemDiv.getAttribute('sid');
+                    if (sid) {
+                        existingIDs.delete(sid);
+                    }
+                    itemDiv.remove();
+                    saveCartContentToSession();
+                });
+
+                sealedContent.appendChild(itemDiv);
+            });
+        }
+
+        // Restore bulk items
+        if (cartData.bulk && !isEmpty(cartData.bulk)) {
+            const bulkCartDiv = document.querySelector('.bulk-cart-content');
+            const div = document.createElement('div');
+            div.classList.add('bulk-cart-item-bulk');
+            div.innerHTML = `
+                <p>Bulk</p>
+                <p class='bulk-quantity'>q: ${cartData.bulk.quantity}</p>
+                <input type='text' class='bulk-sell-price' style='width:70px' value='${cartData.bulk.price}'>
+                <button class='remove-from-cart'>Remove</button>
+            `;
+            bulkCartDiv.appendChild(div);
+
+            const sellPriceInput = div.querySelector('.bulk-sell-price');
+            sellPriceInput.addEventListener('blur', saveCartContentToSession);
+
+            const removeButton = div.querySelector('.remove-from-cart');
+            removeButton.addEventListener('click', () => {
+                bulkCartDiv.innerHTML = '';
+                saveCartContentToSession();
+            });
+        }
+
+        // Restore holo items
+        if (cartData.holo && !isEmpty(cartData.holo)) {
+            const holoCartDiv = document.querySelector('.holo-cart-content');
+            const div = document.createElement('div');
+            div.classList.add('holo-cart-item-holo');
+            div.innerHTML = `
+                <p>Holo</p>
+                <p class='holo-quantity'>q: ${cartData.holo.quantity}</p>
+                <input type='text' class='holo-sell-price' style='width:70px' value='${cartData.holo.price}'>
+                <button class='remove-from-cart'>Remove</button>
+            `;
+            holoCartDiv.appendChild(div);
+
+            const sellPriceInput = div.querySelector('.holo-sell-price');
+            sellPriceInput.addEventListener('blur', saveCartContentToSession);
+
+            const removeButton = div.querySelector('.remove-from-cart');
+            removeButton.addEventListener('click', () => {
+                holoCartDiv.innerHTML = '';
+                saveCartContentToSession();
+            });
+        }
+
+    } catch (e) {
+        console.error('Error loading cart data from sessionStorage:', e);
+    }
 }
 
 function removeCartContentFromSession() {
@@ -1083,7 +1238,7 @@ function addSealedToCart(sealed, sid, auctionId = null) {
 
         const removeFromCart = itemDiv.querySelector('.remove-from-cart');
         removeFromCart.addEventListener('click', () => {
-            existingIDs.remove(sid);
+            existingIDs.delete(sid);
             itemDiv.remove();
             saveCartContentToSession();
         });
@@ -1250,18 +1405,8 @@ function searchBar() {
 }
 
 async function search(searchPrompt) {
-    // Collect card IDs from cart
-    const cart = document.querySelectorAll('.cart-content > div');
-    const cartIds = Array.from(cart).map(cardDiv => parseInt(cardDiv.getAttribute('cardId')));
 
-    // Collect sealed item IDs from cart (with 's' prefix)
-    const sealedCart = document.querySelectorAll('.sealed-content .sealed-item-cart');
-    const sealedIds = Array.from(sealedCart).map(sealedDiv => sealedDiv.getAttribute('sid'));
-
-    // Combine both card IDs and sealed IDs
-    const allCartIds = [...cartIds, ...sealedIds];
-
-    const jsonbody = JSON.stringify({ query: searchPrompt, cartIds: allCartIds });
+    const jsonbody = JSON.stringify({ query: searchPrompt, cartIds: [...existingIDs] });
     const response = await fetch('/searchCard',
         {
             method: 'POST',
@@ -2540,6 +2685,7 @@ if (document.title === "Trade Tracker") {
     soldReportBtn();
     initializeCart();
     initializeBulkHolo();
+    loadCartContentFromSession();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
     }, false);

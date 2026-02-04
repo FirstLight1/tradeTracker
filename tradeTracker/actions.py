@@ -1205,7 +1205,6 @@ def search():
         card = request.get_json()
         query = card.get("query", "").strip()
         cart_ids = card.get('cartIds', [])
-        
         # Split search query into individual words
         search_terms = query.split()
         
@@ -1219,6 +1218,8 @@ def search():
             else:
                 card_cart_ids.append(cart_id)
         
+        #for id in card_cart_ids:
+        #    print(id)
         # Build WHERE clause for CARDS (alias 'c')
         card_where_conditions = []
         card_params = []
@@ -1278,11 +1279,9 @@ def search():
         # Take top 8 results (interleaved by ID-based relevance)
         final_matches = all_matches[:8]
 
-        print(final_matches)
         if not final_matches:
             return jsonify({'status': 'success','value': None}),200
         else:
-            print(len(final_matches))
             return jsonify({'status': 'success','value': final_matches}),200
 
 @bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
