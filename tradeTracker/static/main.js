@@ -565,11 +565,8 @@ function saveCartContentToSession(){
 function loadCartContentFromSession(){
 }
 
-function deleteCartItemFromSession(){
-}
-
-function deleteAllCartContentFromSession(){
-
+function removeCartContentFromSession(){
+    sessionStorage.removeItem('cartData');
 }
 
 // SessionStorage helper functions for modal persistence
@@ -980,6 +977,7 @@ function shoppingCart() {
                         
                         // Clear sessionStorage on successful invoice generation
                         clearModalDataFromSession();
+                        removeCartContentFromSession();
                         
                         alert(data.pdf_path)
                         //recalculate auction price and profit
@@ -1017,6 +1015,7 @@ function addToShoppingCart(card, cardId, auctionId) {
             <button class='remove-from-cart'>Remove</button>
             `
         contentDiv.append(cardDiv);
+        saveCartContentToSession();
         const marketValueInCart = cardDiv.querySelector('.market-value-invoice');
         marketValueInCart.addEventListener('dblclick', () => {
             const input = document.createElement('input');
@@ -1049,6 +1048,7 @@ function addToShoppingCart(card, cardId, auctionId) {
             if (contentDiv.childElementCount === 0) {
                 contentDiv.innerHTML = '<p>Your cart is empty</p>';
             }
+            saveCartContentToSession();
         });
     }
 }
@@ -1083,9 +1083,11 @@ function addSealedToCart(sealed, sid, auctionId = null) {
         removeFromCart.addEventListener('click', () => {
             existingIDs.remove(sid);
             itemDiv.remove();
+            saveCartContentToSession();
         });
 
         sealedDiv.appendChild(itemDiv);
+        saveCartContentToSession();
     }
     return;
 }
@@ -1115,6 +1117,7 @@ function addBulkToCart() {
                     <input type='text' class='bulk-sell-price' style='width:70px'>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
+                saveCartContentToSession();
             }
         } else {
             const quantityP = bulkItems.querySelectorAll('p')[1];
@@ -1122,11 +1125,13 @@ function addBulkToCart() {
             if (value && !isNaN(value)) {
                 currentQuantity += Number(value);
                 quantityP.textContent = `q: ${currentQuantity}`;
+                saveCartContentToSession();
             }
         }
         const removeButton = contentDiv.querySelector('.remove-from-cart');
         removeButton.addEventListener('click', () => {
             contentDiv.innerHTML = '';
+            saveCartContentToSession();
         });
     });
     input.addEventListener('keydown', (event) => {
@@ -1161,6 +1166,7 @@ function addHoloToCart() {
                     <input type='text' class='holo-sell-price' style='width:70px'>
                     <button class='remove-from-cart'>Remove</button>`
                 contentDiv.appendChild(div);
+                saveCartContentToSession();
             }
         } else {
             const quantityP = holoItems.querySelectorAll('p')[1];
@@ -1168,11 +1174,13 @@ function addHoloToCart() {
             if (value && !isNaN(value)) {
                 currentQuantity += Number(value);
                 quantityP.textContent = `q: ${currentQuantity}`;
+                saveCartContentToSession();
             }
         }
         const removeButton = contentDiv.querySelector('.remove-from-cart');
         removeButton.addEventListener('click', () => {
             contentDiv.innerHTML = '';
+            saveCartContentToSession();
         });
     });
     input.addEventListener('keydown', (event) => {
@@ -1685,6 +1693,7 @@ async function loadAuctionContent(button) {
                             };
                             
                             addSealedToCart(sealedData, sid, auctionId);
+                            saveCartContentToSession();
                         });
                     });
                     
@@ -2053,6 +2062,7 @@ async function loadSealed(viewButton) {
                     const addToCart = sealedDiv.querySelector('.add-to-cart');
                     addToCart.addEventListener('click', () => {
                         addSealedToCart(sealedData, sealedData.sid)
+                        saveCartContentToSession();
                     });
 
                     const removeSealed = sealedDiv.querySelector('.delete-sealed');
