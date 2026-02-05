@@ -30,13 +30,9 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         with open(env_path, 'r') as f:
             invoice_num = f.read().strip()
             if not invoice_num:
-                invoice_num = "62"
+                return jsonify({'status': 'error', 'message':'Failed to get invoice number'}), 500
     except FileNotFoundError:
-        invoice_num = "62"
-    
-    # Write incremented invoice number back
-    with open(env_path, 'w') as f:
-        f.write(str(int(invoice_num) + 1))
+        return jsonify({'status':'error', 'message': 'Failed to open env.txt'}), 500
     
     invoice_date = date.today()
     # Set language to Slovak (or English 'en') if supported by your system locale
@@ -178,6 +174,12 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
     pdf.gen(output_path, generate_qr_code=False)
 
     print(f"Successfully generated: {output_path}")
+
+
+    # Write incremented invoice number back
+    with open(env_path, 'w') as f:
+        f.write(str(int(invoice_num) + 1))
+    
     return output_path, invoice_num
 
 if __name__ == "__main__":
