@@ -516,8 +516,16 @@ function saveCartContentToSession() {
     let cardsData = [];
     if (cardsEl.length > 0) {
         for (const item of cardsEl) {
-            if (item.tagName === 'P') return;
-            const card = new struct();
+            if (item.tagName === 'P') continue;
+            console.log(item.tagName);
+            const card = {
+                cardId: item.getAttribute('cardid'),
+                auctionId: item.getAttribute('auctionid'),
+                cardName: null,
+                cardNum: null,
+                condition: null,
+                marketValue: null
+            };
             const data = item.querySelectorAll('p');
             card.cardName = data[0].textContent;
             card.cardNum = data[1].textContent;
@@ -531,6 +539,8 @@ function saveCartContentToSession() {
     if (sealedEl.length > 0) {
         for (const item of sealedEl) {
             const sealed = {
+                sid: item.getAttribute('sid'),
+                auctionId: item.getAttribute('auction_id'),
                 name: item.querySelector('.sealed-name').textContent,
                 price: item.querySelector('.sealed-price').textContent
             }
@@ -554,17 +564,12 @@ function saveCartContentToSession() {
             price: holoEl.querySelector('.holo-sell-price').value || ''
         }
     }
-    let setIds = []
 
-    existingIDs.forEach((id) => {
-        setIds.push(id);
-    });
     const cartData = {
         cards: cardsData,
         sealed: sealedData,
         bulk: bulkData,
-        holo: holoData,
-        existingIDs: setIds
+        holo: holoData
     };
 
     sessionStorage.setItem('cartData', JSON.stringify(cartData));
@@ -577,21 +582,24 @@ function loadCartContentFromSession() {
     try {
         const cartData = JSON.parse(savedData);
 
-        // Restore existingIDs Set
-        if (cartData.existingIDs) {
-            existingIDs.clear();
-            cartData.existingIDs.forEach(id => existingIDs.add(id));
-        }
-        console.log(existingIDs);
+        // Clear existingIDs - we'll rebuild it from item data
+        existingIDs.clear();
 
         // Restore cards
         if (cartData.cards && cartData.cards.length > 0) {
             const contentDiv = document.querySelector('.cart-content');
             contentDiv.innerHTML = '';
-            
-            cartData.cards.forEach((card,index) => {
+
+            cartData.cards.forEach((card) => {
                 const cardDiv = document.createElement('div');
-                cardDiv.setAttribute('cardid', cartData.existingIDs[index])
+                cardDiv.setAttribute('cardid', card.cardId);
+                cardDiv.setAttribute('auctionid', card.auctionId);
+                
+                // Add ID to existingIDs Set
+                if (card.cardId) {
+                    existingIDs.add(card.cardId);
+                }
+                
                 cardDiv.innerHTML = `
                     <p>${card.cardName}</p>
                     <p>${card.cardNum}</p>
@@ -638,7 +646,7 @@ function loadCartContentFromSession() {
                     }
                     console.log(existingIDs);
                     cardDiv.remove();
-                    
+
                     if (contentDiv.childElementCount === 0) {
                         contentDiv.innerHTML = '<p>Your cart is empty</p>';
                     }
@@ -650,10 +658,20 @@ function loadCartContentFromSession() {
         // Restore sealed items
         if (cartData.sealed && cartData.sealed.length > 0) {
             const sealedContent = document.querySelector('.sealed-content');
-            
+
             cartData.sealed.forEach(item => {
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('sealed-item-cart');
+                itemDiv.setAttribute('sid', item.sid);
+                if (item.auctionId) {
+                    itemDiv.setAttribute('auction_id', item.auctionId);
+                }
+                
+                // Add ID to existingIDs Set
+                if (item.sid) {
+                    existingIDs.add(item.sid);
+                }
+                
                 itemDiv.innerHTML = `
                     <p class='sealed-name'>${item.name}</p>
                     <p class='sealed-price'>${item.price}</p>
@@ -1200,12 +1218,19 @@ function addToShoppingCart(card, cardId, auctionId) {
 
         const removeBtn = cardDiv.querySelector('.remove-from-cart');
         removeBtn.addEventListener('click', () => {
-            existingIDs.delete(cardId);
+            console.log('here');
+            if (existingIDs.delete(cardId)) {
+                console.log('true');
+            } else {
+                console.log('false');
+            };
+            console.log(existingIDs)
             cardDiv.remove();
             if (contentDiv.childElementCount === 0) {
                 contentDiv.innerHTML = '<p>Your cart is empty</p>';
             }
             saveCartContentToSession();
+            console.log('Set after save to session', existingIDs);
         });
     }
 }
