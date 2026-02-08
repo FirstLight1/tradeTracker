@@ -1,3 +1,4 @@
+from decimal import Decimal
 import sys
 from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify, current_app
 from flask_cors import CORS
@@ -9,6 +10,7 @@ import os
 import sqlite3
 import fpdf
 import json
+import pandas as pd
 from . import generateInvoice
 
 bp = Blueprint('actions', __name__)
@@ -586,9 +588,11 @@ def generateSoldReport():
         bulkAndHoloList[i].update({'buy_price': 0.01} if item_type['item_type'] == 'bulk' else {'buy_price': 0.03})
         i += 1
 
+        xls_path = createBuyReport(month, year, db);
     try:
         pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList)
-        return jsonify({'status': 'success', 'pdf_path': pdf_path}), 200
+        xls_path = createBuyReport(month, year, db);
+        return jsonify({'status': 'success', 'pdf_path': pdf_path, 'xls_path':xls_path}), 200
     except Exception as e:
         print(f"Error generating PDF: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
@@ -786,6 +790,60 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList):
     pdf.output(pdf_path)
     return pdf_path
 
+def createBuyReport(month, year, db):
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe
+        app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker', 'Reports')
+        os.makedirs(app_data_dir, exist_ok=True)
+        xls_path = os.path.join(app_data_dir, f'Nakupy_{month}_{year}.xlsx')
+    else:
+        # Running in development
+        reports_dir = os.path.join(current_app.instance_path, 'reports')
+        os.makedirs(reports_dir, exist_ok=True)
+        xls_path = os.path.join(reports_dir, f'Nakupy_{month}_{year}.xlsx')
+
+    rows = db.execute('SELECT auction_name,auction_price, date_created, payment_method FROM auctions WHERE strftime("%Y", substr(date_created, 1, 19)) = ? AND strftime("%m", substr(date_created, 1, 19)) = ? ',(year,month)).fetchall()
+
+    bought = {
+            'Meno': [],
+            'Cena': [],
+            'Datum':[],
+            'Payment type':[],
+            'Amount':[]
+            } 
+
+    for row in rows:
+        bought['Meno'].append(row['auction_name'])
+        bought['Cena'].append(Decimal(row['auction_price']))
+        date = datetime.datetime.strptime( row['date_created'].split('T')[0], '%Y-%m-%d')
+        formatedDate = date.strftime('%d.%m.%Y')
+        bought['Datum'].append(formatedDate)
+        payments = json.loads(row['payment_method'])
+        bought['Payment type'].append(', '.join(payment['type'] for payment in payments))
+        bought['Amount'].append(', '.join(str(payment['amount']) for payment in payments))
+
+    df = pd.DataFrame(bought)
+
+    with pd.ExcelWriter(xls_path) as writer:
+        df.to_excel(writer, sheet_name='nakupy', index=False)
+
+        worksheet = writer.sheets['nakupy']
+        worksheet.column_dimensions['A'].width = 24
+        worksheet.column_dimensions['B'].width = 12
+        worksheet.column_dimensions['C'].width = 11
+        worksheet.column_dimensions['D'].width = 30
+        worksheet.column_dimensions['E'].width = 20
+
+        for row in range(2, len(df) + 2):
+            cell = worksheet[f'B{row}']
+            cell.number_format = '#,##.00 "€"'
+
+        for row in range(2, len(df) + 2):
+            cell = worksheet[f'D{row}']
+            cell.number_format = '#,##.00 "€"'
+        
+    
+    return xls_path
 
 @bp.route('/addToCollecton', methods=('GET','POST'))
 def addToCollection():

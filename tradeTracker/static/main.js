@@ -416,7 +416,7 @@ async function generateSoldReport(month, year, div) {
     if (data.status === 'success') {
         console.log('Sold report generated successfully');
         div.remove();
-        alert(data.pdf_path);
+        alert(`Sold report:\n${data.pdf_path}\n Buy report:\n${data.xls_path}`);
         // Handle successful report generation (e.g., display a success message)
     } else {
         // Handle errors (e.g., display an error message)

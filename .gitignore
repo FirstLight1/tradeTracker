@@ -12,7 +12,8 @@ htmlcov/
 dist/
 build/
 *.egg-info/
-to-do.md
+*.md
+
 data/
 run_app.spec
 text.txt

@@ -12,7 +12,7 @@ fonttools==4.60.1
 fpdf2==2.8.5
 idna==3.10
 iniconfig==2.3.0
-InvoiceGenerator @ git+https://github.com/FirstLight1/InvoiceGenerator.git@0717f2decd42c977f6012e43f3b479e82eee10d1
+InvoiceGenerator @ git+https://github.com/FirstLight1/InvoiceGenerator.git@0568f772a17b51b74dc268448b988d50ae82095b
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.2
