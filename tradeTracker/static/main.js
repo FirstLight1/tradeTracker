@@ -505,6 +505,22 @@ function cartValue(cartContent) {
     return sum.toFixed(2);
 }
 
+async function changeCardPricesBasedOnAuctionPrice(auctionTab) {
+    const auctionId = auctionTab.getAttribute('data-id');
+    let auctionPrice = auctionTab.querySelector('.auction-price').textContent.replace('€', '');
+    const response = await fetch(`/recalculateCardPrices/${auctionId}/${auctionPrice}`, { method: 'GET' });
+    const data = await response.json();
+    if (data.status == 'success') {
+        console.log('success');
+        window.location.reload();
+    } else if (data.status == 'error') {
+        console.error('Error recalculating card prices: ' + data.message);
+    } else if (data.status == 'no_cards') {
+        alert('No cards found in this auction to recalculate prices.');
+    }
+
+}
+
 const existingIDs = new Set();
 
 function saveCartContentToSession() {
