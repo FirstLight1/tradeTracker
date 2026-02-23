@@ -641,10 +641,20 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList):
     total_buy_price = sum(card['card_price'] or 0 for card in cards)
     total_sell_price = sum(card['sell_price'] or 0 for card in cards)
     total_profit = total_sell_price - total_buy_price
+    total_neg_margin = 0
+    total_pos_margin = 0
+    for card in cards:
+        curr_margin = Decimal(card['sell_price'] - card['card_price']) 
+        if curr_margin > 0:
+            total_pos_margin += curr_margin
+        else:
+            total_neg_margin += curr_margin
     
     pdf.cell(0, 8, f'Total Buy Price: {total_buy_price:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Profit: {total_profit:.2f}€', 0, 1)
+    pdf.cell(0, 8, f'Total Negative Margin: {total_neg_margin:.2f}€', 0, 1)
+    pdf.cell(0, 8, f'Total Positive Margin: {total_pos_margin:.2f}€', 0, 1)
     pdf.ln(10)
 
     # Add bulk and holo summary
