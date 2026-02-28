@@ -103,7 +103,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
     # 4. Add Items
     if items[0].get("marketValue") != '':
         for item in items:
-            market_value_decimal = Decimal(float(item.get("marketValue").replace("€", "")))
+            market_value_decimal = Decimal(float(item.get("marketValue")))
             invoice.add_item(Item(
                 count=1,
                 price=market_value_decimal,

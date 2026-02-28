@@ -47,6 +47,117 @@ class queue {
     }
 }
 
+class CartLine {
+    constructor(cardName, cardNum, condition, auctionId, auctionName, marketValue, allIds) {
+        this.cardName = cardName;
+        this.cardNum = cardNum;
+        this.condition = condition;
+        this.auctionId = auctionId;
+        this.auctionName = auctionName;
+        this.marketValue = marketValue;
+        this.cardIds = [allIds[0]];
+        this.reservableIds = allIds.slice(1);
+        this.element = null;
+    }
+
+    get quantity() { return this.cardIds.length; }
+    get canIncrement() { return this.reservableIds.length > 0; }
+    get canDecrement() { return this.cardIds.length > 0; }
+
+    increment() {
+        if (!this.canIncrement) { return null; }
+        const id = this.reservableIds.shift();
+        this.cardIds.push(id);
+        return id;
+    }
+
+    decrement() {
+        if (!this.canDecrement) { return null; }
+        const id = this.cardIds.pop();
+        this.reservableIds.unshift(id);
+        return id;
+    }
+
+    removeAll() {
+        return [...this.cardIds];
+    }
+
+    matches(cardName, cardNum, condition, auctionId) {
+        return this.cardName === cardName
+            && this.cardNum === cardNum
+            && this.condition === condition
+            && this.auctionId == auctionId;
+    }
+
+    // For sessionStorage
+    toJSON() {
+        return {
+            cardName: this.cardName,
+            cardNum: this.cardNum,
+            condition: this.condition,
+            auctionId: this.auctionId,
+            auctionName: this.auctionName,
+            marketValue: this.marketValue,
+            cardIds: this.cardIds,
+            reservableIds: this.reservableIds
+        };
+    }
+
+    // Restore from sessionStorage
+    static fromJSON(data) {
+        const line = new CartLine(
+            data.cardName, data.cardNum, data.condition,
+            data.auctionId, data.auctionName, data.marketValue,
+            [...data.cardIds, ...(data.reservableIds || [])]
+        );
+        // Override the constructor's default split
+        line.cardIds = data.cardIds;
+        line.reservableIds = data.reservableIds || [];
+        return line;
+    }
+
+    // Expand for /invoice payload
+    toInvoiceItems() {
+        return this.cardIds.map(id => ({
+            cardId: id,
+            auctionId: this.auctionId,
+            cardName: this.cardName,
+            cardNum: this.cardNum,
+            condition: this.condition,
+            marketValue: this.marketValue
+        }));
+    }
+
+    // Lazy backfill: fetch more IDs from server when reservableIds is empty
+    async backfillPool(excludeIds) {
+        if (this.reservableIds.length > 0) return;
+        try {
+            const response = await fetch('/getCardIds', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    card_name: this.cardName,
+                    card_num: this.cardNum,
+                    condition: this.condition,
+                    auction_id: this.auctionId,
+                    exclude_ids: [...excludeIds]
+                })
+            });
+            if (!response.ok) {
+                console.error('Failed to fetch card IDs:', response.status);
+                return;
+            }
+            const data = await response.json();
+            if (data.status === 'success' && data.card_ids) {
+                this.reservableIds = data.card_ids.filter(id => !this.cardIds.includes(id));
+            }
+        } catch (e) {
+            console.error('Error fetching card IDs:', e);
+        }
+    }
+}
+
+
 export function renderField(value, inputType, classList, placeholder, datafield) {
     if (value === null) {
         return `<input type="${inputType}" class="${classList.join(' ')}" placeholder="${placeholder}" data-field="${datafield}" autocomplete="off">`;
@@ -522,33 +633,135 @@ async function changeCardPricesBasedOnAuctionPrice(auctionTab) {
 }
 
 const existingIDs = new Set();
+const cartLines = [];
+
+function rebuildExistingIDs() {
+    existingIDs.clear();
+    cartLines.forEach(line => {
+        line.cardIds.forEach(id => existingIDs.add(id));
+    });
+}
+
+function renderCartLine(line) {
+    const contentDiv = document.querySelector('.cart-content');
+    if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P') {
+        contentDiv.innerHTML = '';
+    }
+
+    const cardDiv = document.createElement('div');
+    cardDiv.classList.add('cart-line');
+    line.element = cardDiv;
+
+    const updateDisplay = () => {
+        const minusDisabled = line.cardIds.length <= 1 ? 'disabled' : '';
+        const plusDisabled = !line.canIncrement ? 'disabled' : '';
+        cardDiv.innerHTML = `
+            <p class="cart-card-name">${line.cardName}</p>
+            <p class="cart-card-num">${line.cardNum}</p>
+            <p class="cart-condition">${line.condition}</p>
+            <p class='market-value-invoice'>${line.marketValue}€</p>
+            <div class="qty-controls">
+                <button class="qty-minus" ${minusDisabled}>-</button>
+                <span class="qty-display">${line.quantity}</span>
+                <button class="qty-plus" ${plusDisabled}>+</button>
+            </div>
+            <button class='remove-from-cart'>Remove</button>
+        `;
+        attachCartLineListeners(cardDiv, line, updateDisplay);
+    };
+
+    updateDisplay();
+    contentDiv.appendChild(cardDiv);
+    saveCartContentToSession();
+}
+
+function attachCartLineListeners(cardDiv, line, updateDisplay) {
+    // Market value double-click editing
+    const marketValueEl = cardDiv.querySelector('.market-value-invoice');
+    marketValueEl.addEventListener('dblclick', () => {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = String(line.marketValue).replace('€', '');
+        marketValueEl.replaceWith(input);
+        input.focus();
+        input.addEventListener('blur', () => {
+            let newValue = input.value.replace(',', '.');
+            if (isNaN(newValue) || newValue.trim() === '') {
+                newValue = line.marketValue;
+            }
+            line.marketValue = newValue;
+            updateDisplay();
+            saveCartContentToSession();
+        });
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') input.blur();
+        });
+    });
+
+    // Minus button
+    const minusBtn = cardDiv.querySelector('.qty-minus');
+    minusBtn.addEventListener('click', () => {
+        if (line.cardIds.length <= 1) {
+            // Remove entire line
+            const removedIds = line.removeAll();
+            removedIds.forEach(id => existingIDs.delete(id));
+            const idx = cartLines.indexOf(line);
+            if (idx !== -1) cartLines.splice(idx, 1);
+            cardDiv.remove();
+            const contentDiv = document.querySelector('.cart-content');
+            if (contentDiv.childElementCount === 0) {
+                contentDiv.innerHTML = '<p>Your cart is empty</p>';
+            }
+            saveCartContentToSession();
+            return;
+        }
+        const id = line.decrement();
+        if (id !== null) {
+            existingIDs.delete(id);
+            updateDisplay();
+            saveCartContentToSession();
+        }
+    });
+
+    // Plus button
+    const plusBtn = cardDiv.querySelector('.qty-plus');
+    plusBtn.addEventListener('click', async () => {
+        if (!line.canIncrement) {
+            await line.backfillPool(existingIDs);
+        }
+        if (line.canIncrement) {
+            const id = line.increment();
+            if (id !== null) {
+                existingIDs.add(id);
+                updateDisplay();
+                saveCartContentToSession();
+            }
+        }
+    });
+
+    // Remove button
+    const removeBtn = cardDiv.querySelector('.remove-from-cart');
+    removeBtn.addEventListener('click', () => {
+        const removedIds = line.removeAll();
+        removedIds.forEach(id => existingIDs.delete(id));
+        const idx = cartLines.indexOf(line);
+        if (idx !== -1) cartLines.splice(idx, 1);
+        cardDiv.remove();
+        const contentDiv = document.querySelector('.cart-content');
+        if (contentDiv.childElementCount === 0) {
+            contentDiv.innerHTML = '<p>Your cart is empty</p>';
+        }
+        saveCartContentToSession();
+    });
+}
 
 function saveCartContentToSession() {
-    const cardsEl = document.querySelector('.cart-content').children;
     const sealedEl = document.querySelector('.sealed-content').children;
     const bulkEl = document.querySelector('.bulk-cart-content');
     const holoEl = document.querySelector('.holo-cart-content');
 
-    let cardsData = [];
-    if (cardsEl.length > 0) {
-        for (const item of cardsEl) {
-            if (item.tagName === 'P') continue;
-            const card = {
-                cardId: item.getAttribute('cardid'),
-                auctionId: item.getAttribute('auctionid'),
-                cardName: null,
-                cardNum: null,
-                condition: null,
-                marketValue: null
-            };
-            const data = item.querySelectorAll('p');
-            card.cardName = data[0].textContent;
-            card.cardNum = data[1].textContent;
-            card.condition = data[2].textContent;
-            card.marketValue = data[3].textContent;
-            cardsData.push(card);
-        }
-    }
+    // Persist cartLines via toJSON
+    let cartLinesData = cartLines.map(line => line.toJSON());
 
     let sealedData = [];
     if (sealedEl.length > 0) {
@@ -581,7 +794,7 @@ function saveCartContentToSession() {
     }
 
     const cartData = {
-        cards: cardsData,
+        cartLines: cartLinesData,
         sealed: sealedData,
         bulk: bulkData,
         holo: holoData
@@ -597,75 +810,18 @@ function loadCartContentFromSession() {
     try {
         const cartData = JSON.parse(savedData);
 
-        // Clear existingIDs - we'll rebuild it from item data
+        // Clear cartLines and existingIDs - we'll rebuild from saved data
+        cartLines.length = 0;
         existingIDs.clear();
 
-        // Restore cards
-        if (cartData.cards && cartData.cards.length > 0) {
-            const contentDiv = document.querySelector('.cart-content');
-            contentDiv.innerHTML = '';
-
-            cartData.cards.forEach((card) => {
-                const cardDiv = document.createElement('div');
-                cardDiv.setAttribute('cardid', card.cardId);
-                cardDiv.setAttribute('auctionid', card.auctionId);
-                
-                // Add ID to existingIDs Set
-                if (card.cardId) {
-                    existingIDs.add(card.cardId);
-                }
-                
-                cardDiv.innerHTML = `
-                    <p>${card.cardName}</p>
-                    <p>${card.cardNum}</p>
-                    <p>${card.condition}</p>
-                    <p class='market-value-invoice'>${card.marketValue}</p>
-                    <button class='remove-from-cart'>Remove</button>
-                `;
-                contentDiv.appendChild(cardDiv);
-
-                // Add event listeners for market value editing
-                const marketValueInCart = cardDiv.querySelector('.market-value-invoice');
-                marketValueInCart.addEventListener('dblclick', () => {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.value = card.marketValue.replace('€', '');
-                    marketValueInCart.replaceWith(input);
-                    input.focus();
-                    input.addEventListener('blur', () => {
-                        let newValue = input.value.replace(',', '.');
-                        if (isNaN(newValue)) {
-                            newValue = card.marketValue;
-                        }
-                        const p = document.createElement('p');
-                        p.classList.add('market-value-invoice');
-                        p.textContent = newValue + '€';
-                        input.replaceWith(p);
-                        card.marketValue = newValue;
-                        saveCartContentToSession();
-                    });
-                    input.addEventListener('keydown', (event) => {
-                        if (event.key === 'Enter') {
-                            input.blur();
-                        }
-                    });
-                });
-
-                // Add remove button listener
-                const removeBtn = cardDiv.querySelector('.remove-from-cart');
-                removeBtn.addEventListener('click', () => {
-                    const cardId = cardDiv.getAttribute('cardid');
-                    if (cardId) {
-                        existingIDs.delete(cardId);
-                    }
-                    cardDiv.remove();
-
-                    if (contentDiv.childElementCount === 0) {
-                        contentDiv.innerHTML = '<p>Your cart is empty</p>';
-                    }
-                    saveCartContentToSession();
-                });
+        // Restore cart lines
+        if (cartData.cartLines && cartData.cartLines.length > 0) {
+            cartData.cartLines.forEach(data => {
+                const line = CartLine.fromJSON(data);
+                cartLines.push(line);
+                renderCartLine(line);
             });
+            rebuildExistingIDs();
         }
 
         // Restore sealed items
@@ -891,28 +1047,10 @@ function shoppingCart() {
         if (recieverDiv) {
             return
         }
-        const children = contentDiv.children;
-        let cards = []
-
-        Array.from(children).forEach(cardDiv => {
-            // Get the card attributes
-            const cardId = cardDiv.getAttribute("cardId");
-            const auctionId = cardDiv.getAttribute("auctionId");
-
-            // Get all paragraph elements
-            const paragraphs = cardDiv.querySelectorAll('p');
-
-            // Create card object with the data
-            const cardData = {
-                cardId: cardId,
-                auctionId: auctionId,
-                cardName: paragraphs[0]?.textContent || '',
-                cardNum: paragraphs[1]?.textContent || '',
-                condition: paragraphs[2]?.textContent || '',
-                marketValue: paragraphs[3]?.textContent.replace('€', '') || ''
-            };
-
-            cards.push(cardData);
+        // Expand cartLines into flat cards array for invoice
+        let cards = [];
+        cartLines.forEach(line => {
+            cards.push(...line.toInvoiceItems());
         });
         cartContent.cards = cards;
 
@@ -1161,6 +1299,7 @@ function shoppingCart() {
                         bulkCartContent.innerHTML = '';
                         holoCartContent.innerHTML = '';
                         loadBulkHoloValues();
+                        cartLines.length = 0;
                         existingIDs.clear();
                         vendorCheckBox = false;
                         recieverDiv.remove();
@@ -1185,78 +1324,102 @@ function shoppingCart() {
     });
 }
 
-async function addToShoppingCart(card, cardId, auctionId) {
-    if (!existingIDs.has(cardId)) {
-        existingIDs.add(cardId);
-        const contentDiv = document.querySelector(".cart-content");
-        if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P') {
-            contentDiv.innerHTML = '';
+async function addToShoppingCart(card, auctionId, cardId = null) {
+    // Entry B: From auction tab (cardId provided)
+    if (cardId !== null) {
+        if (existingIDs.has(cardId)) {
+            alert('This card is already in cart');
+            return;
         }
 
-        const body = {
-            card_name: card.cardName,
-            card_number: card.cardNum,
-            condition: card.condition,
-            ids: Array.from(existingIDs)
-        }
-        const response = await fetch('/getCardIds',{
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-        })
-        const data = await response.json()
-        if(data.status == 'success'){
-            console.log(data.ids)}
-        const cardDiv = document.createElement('div');
-        cardDiv.setAttribute("cardId", `${cardId}`)
-        cardDiv.setAttribute("auctionId", `${auctionId}`)
-        cardDiv.setAttribute("reservedIds", `${data.ids}`)
-        cardDiv.innerHTML = `
-            <p>${card.cardName}</p>
-            <p>${card.cardNum}</p>
-            <p>${card.condition}</p>
-            <input type='number' min='1' max='${data.ids.length + 1}' value='1'<input>
-            <p class='market-value-invoice'>${card.marketValue}€</p>
-            <button class='remove-from-cart'>Remove</button>
-            `
-        contentDiv.append(cardDiv);
-        saveCartContentToSession();
-        const marketValueInCart = cardDiv.querySelector('.market-value-invoice');
-        marketValueInCart.addEventListener('dblclick', () => {
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = card.marketValue.replace('€', '');
-            marketValueInCart.replaceWith(input);
-            input.focus();
-            input.addEventListener('blur', () => {
-                let newValue = input.value.replace(',', '.');
-                if (isNaN(newValue)) {
-                    newValue = card.marketValue;
-                }
-                const p = document.createElement('p');
-                p.classList.add('market-value-invoice');
-                p.textContent = newValue + '€';
-                input.replaceWith(p);
-                card.marketValue = newValue;
-            });
-            input.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    input.blur();
-                }
-            });
-        });
-
-        const removeBtn = cardDiv.querySelector('.remove-from-cart');
-        removeBtn.addEventListener('click', () => {
-            cardDiv.remove();
-            if (contentDiv.childElementCount === 0) {
-                contentDiv.innerHTML = '<p>Your cart is empty</p>';
+        // Check if a matching CartLine already exists
+        const existing = cartLines.find(l => l.matches(card.cardName, card.cardNum, card.condition, auctionId));
+        if (existing) {
+            existing.cardIds.push(cardId);
+            existingIDs.add(cardId);
+            // Update display
+            if (existing.element) {
+                const qtyDisplay = existing.element.querySelector('.qty-display');
+                if (qtyDisplay) qtyDisplay.textContent = existing.quantity;
+                // Update +/- button states
+                const plusBtn = existing.element.querySelector('.qty-plus');
+                if (plusBtn) plusBtn.disabled = !existing.canIncrement;
             }
             saveCartContentToSession();
-            console.log('Set after save to session', existingIDs);
+        } else {
+            // Create new CartLine with just this one cardId, empty pool
+            const line = new CartLine(
+                card.cardName, card.cardNum, card.condition,
+                auctionId, card.auctionName || '', card.marketValue || '',
+                [cardId]
+            );
+            cartLines.push(line);
+            existingIDs.add(cardId);
+            renderCartLine(line);
+        }
+        return;
+    }
+
+    // Entry A: From search results (no cardId)
+    const existing = cartLines.find(l => l.matches(card.cardName, card.cardNum, card.condition, auctionId));
+    if (existing) {
+        // Try to increment existing line
+        if (!existing.canIncrement) {
+            await existing.backfillPool(existingIDs);
+        }
+        if (existing.canIncrement) {
+            const id = existing.increment();
+            if (id !== null) {
+                existingIDs.add(id);
+                if (existing.element) {
+                    const qtyDisplay = existing.element.querySelector('.qty-display');
+                    if (qtyDisplay) qtyDisplay.textContent = existing.quantity;
+                    const plusBtn = existing.element.querySelector('.qty-plus');
+                    if (plusBtn) plusBtn.disabled = !existing.canIncrement;
+                    const minusBtn = existing.element.querySelector('.qty-minus');
+                    if (minusBtn) minusBtn.disabled = existing.cardIds.length <= 1;
+                }
+                saveCartContentToSession();
+            }
+        } else {
+            alert('No more available copies of this card');
+        }
+        return;
+    }
+
+    // No existing line — fetch full pool from server
+    try {
+        const response = await fetch('/getCardIds', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                card_name: card.cardName,
+                card_num: card.cardNum,
+                condition: card.condition,
+                auction_id: auctionId,
+                exclude_ids: [...existingIDs]
+            })
         });
+        if (!response.ok) {
+            alert('Failed to fetch card IDs');
+            return;
+        }
+        const data = await response.json();
+        if (data.status !== 'success' || !data.card_ids || data.card_ids.length === 0) {
+            alert('Card no longer available');
+            return;
+        }
+        const line = new CartLine(
+            card.cardName, card.cardNum, card.condition,
+            auctionId, card.auctionName || '', card.marketValue || '',
+            data.card_ids
+        );
+        cartLines.push(line);
+        existingIDs.add(line.cardIds[0]);
+        renderCartLine(line);
+    } catch (e) {
+        console.error('Error adding card to cart:', e);
+        alert('Error adding card to cart');
     }
 }
 
@@ -1488,7 +1651,6 @@ function displaySearchResults(results, resultsQueue, searchInput) {
     }
 
     results.forEach(result => {
-        console.log(result);
         const div = document.createElement('div');
         div.classList.add('search-result-item');
         div.tabIndex = 0;
@@ -1618,7 +1780,7 @@ function displaySearchResults(results, resultsQueue, searchInput) {
             });
 
             div.addEventListener('click', async () => {
-                addToShoppingCart(card, result.id, result.auction_id);
+                await addToShoppingCart(card, result.auction_id);
                 searchContainer.innerHTML = '';
             });
         }
@@ -1784,7 +1946,7 @@ async function loadAuctionContent(button) {
 
                     const addToCartButtons = cardsContainer.querySelectorAll('.add-to-cart');
                     addToCartButtons.forEach((button) => {
-                        button.addEventListener('click', () => {
+                        button.addEventListener('click', async () => {
                             const cardDiv = button.closest('.card');
                             const cardId = cardDiv.getAttribute('data-id');
                             const auctionId = auctionDiv.getAttribute('data-id');
@@ -1794,7 +1956,7 @@ async function loadAuctionContent(button) {
                             card.condition = cardDiv.querySelector('.condition').textContent;
                             const marketValueText = cardDiv.querySelector('.market-value').textContent;
                             card.marketValue = marketValueText ? marketValueText.replace('€', '') : null;
-                            addToShoppingCart(card, cardId, auctionId);
+                            await addToShoppingCart(card, auctionId, cardId);
                         });
                     });
 

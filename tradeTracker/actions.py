@@ -1353,27 +1353,46 @@ def search():
             return jsonify({'status': 'success','value': final_matches}),200
 
 
-@bp.route('/getCardIds/', methods=('POST',))
+@bp.route('/getCardIds', methods=('POST',))
 def getCardIds():
     if request.method == 'POST':
-        card = request.get_json()
+        data = request.get_json()
+        if not data:
+            return jsonify({'status': 'error', 'message': 'Invalid input'}), 400
+
+        card_name = data.get('card_name')
+        card_num = data.get('card_num')
+        condition = data.get('condition')
+        auction_id = data.get('auction_id')
+        exclude_ids = data.get('exclude_ids', [])
+
+        if not card_name or not card_num or not condition:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+
         db = get_db()
 
-        placeholders = ','.join("?" for _ in card['ids'])
-        cardIds = db.execute('SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id '
-                   'WHERE c.card_name = ? '
-                   'AND c.card_num = ? '
-                   'AND c.condition = ? '
-                   'AND si.card_id IS NULL '
-                   f"AND c.id NOT IN ({placeholders})"
-                   ,(card['card_name'],card['card_number'], card['condition'], *card.get('ids'))).fetchall()
+        query = ('SELECT c.id FROM cards c '
+                 'LEFT JOIN sale_items si ON c.id = si.card_id '
+                 'WHERE c.card_name = ? '
+                 'AND c.card_num = ? '
+                 'AND c.condition = ? '
+                 'AND si.card_id IS NULL')
+        params = [card_name, card_num, condition]
 
-        ids = []
-        for id in cardIds:
-            temp = dict(id)
-            ids.append(temp['id'])
-        print(ids)
-        return jsonify({'status': 'success', 'ids': ids}), 200
+        if auction_id is not None:
+            query += ' AND c.auction_id = ?'
+            params.append(auction_id)
+
+        if exclude_ids:
+            placeholders = ','.join('?' for _ in exclude_ids)
+            query += f' AND c.id NOT IN ({placeholders})'
+            params.extend(exclude_ids)
+
+        query += ' ORDER BY c.id ASC'
+
+        cardIds = db.execute(query, params).fetchall()
+        ids = [dict(row)['id'] for row in cardIds]
+        return jsonify({'status': 'success', 'card_ids': ids}), 200
 
 
 @bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
