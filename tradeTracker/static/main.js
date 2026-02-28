@@ -533,7 +533,6 @@ function saveCartContentToSession() {
     if (cardsEl.length > 0) {
         for (const item of cardsEl) {
             if (item.tagName === 'P') continue;
-            console.log(item.tagName);
             const card = {
                 cardId: item.getAttribute('cardid'),
                 auctionId: item.getAttribute('auctionid'),
@@ -656,11 +655,9 @@ function loadCartContentFromSession() {
                 const removeBtn = cardDiv.querySelector('.remove-from-cart');
                 removeBtn.addEventListener('click', () => {
                     const cardId = cardDiv.getAttribute('cardid');
-                    console.log(cardId);
                     if (cardId) {
                         existingIDs.delete(cardId);
                     }
-                    console.log(existingIDs);
                     cardDiv.remove();
 
                     if (contentDiv.childElementCount === 0) {
@@ -1188,20 +1185,39 @@ function shoppingCart() {
     });
 }
 
-function addToShoppingCart(card, cardId, auctionId) {
+async function addToShoppingCart(card, cardId, auctionId) {
     if (!existingIDs.has(cardId)) {
         existingIDs.add(cardId);
         const contentDiv = document.querySelector(".cart-content");
         if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P') {
             contentDiv.innerHTML = '';
         }
+
+        const body = {
+            card_name: card.cardName,
+            card_number: card.cardNum,
+            condition: card.condition,
+            ids: Array.from(existingIDs)
+        }
+        const response = await fetch('/getCardIds',{
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        })
+        const data = await response.json()
+        if(data.status == 'success'){
+            console.log(data.ids)}
         const cardDiv = document.createElement('div');
         cardDiv.setAttribute("cardId", `${cardId}`)
         cardDiv.setAttribute("auctionId", `${auctionId}`)
+        cardDiv.setAttribute("reservedIds", `${data.ids}`)
         cardDiv.innerHTML = `
             <p>${card.cardName}</p>
             <p>${card.cardNum}</p>
             <p>${card.condition}</p>
+            <input type='number' min='1' max='${data.ids.length + 1}' value='1'<input>
             <p class='market-value-invoice'>${card.marketValue}€</p>
             <button class='remove-from-cart'>Remove</button>
             `
@@ -1234,13 +1250,6 @@ function addToShoppingCart(card, cardId, auctionId) {
 
         const removeBtn = cardDiv.querySelector('.remove-from-cart');
         removeBtn.addEventListener('click', () => {
-            console.log('here');
-            if (existingIDs.delete(cardId)) {
-                console.log('true');
-            } else {
-                console.log('false');
-            };
-            console.log(existingIDs)
             cardDiv.remove();
             if (contentDiv.childElementCount === 0) {
                 contentDiv.innerHTML = '<p>Your cart is empty</p>';
@@ -1479,6 +1488,7 @@ function displaySearchResults(results, resultsQueue, searchInput) {
     }
 
     results.forEach(result => {
+        console.log(result);
         const div = document.createElement('div');
         div.classList.add('search-result-item');
         div.tabIndex = 0;
@@ -1588,7 +1598,6 @@ function displaySearchResults(results, resultsQueue, searchInput) {
                         await loadAuctionContent(viewButton);
                     }
                     const card = auctionTab.querySelector(`.card[data-id='${result.id}']`);
-                    console.log(result.sid);
                     const sealed = auctionTab.querySelector(`.sealed-item[sid='${result.sid}']`);
                     if (card) {
                         card.scrollIntoView({ behavior: 'smooth' });
@@ -1597,7 +1606,6 @@ function displaySearchResults(results, resultsQueue, searchInput) {
                             card.classList.remove('highlighted-search-result');
                         }, 2000);
                     }
-                    console.log(sealed);
                     if (sealed) {
                         sealed.scrollIntoView({ behavior: 'smooth' });
                         sealed.classList.add('highlighted-search-result');
@@ -2626,7 +2634,6 @@ async function loadAuctions() {
 
                 input.addEventListener('blur', async (blurEvent) => {
                     let value = blurEvent.target.value;
-                    console.log(value);
                     const auctionDiv = blurEvent.target.closest('.auction-tab');
                     const auctionId = auctionDiv.getAttribute('data-id');
                     if (!Boolean(value)) {

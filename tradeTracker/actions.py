@@ -1314,7 +1314,7 @@ def search():
         
         # Search cards
         card_matches = db.execute(
-            f"SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id, a.auction_name FROM cards c "
+            f"SELECT c.card_name, c.card_num, c.condition, c.market_value, c.id, c.auction_id,COUNT(*) as available_count, a.auction_name FROM cards c "
             "JOIN auctions a ON c.auction_id = a.id "
             "LEFT JOIN sale_items si ON c.id = si.card_id "
             f"WHERE ({card_where_clause}) AND si.card_id IS NULL "
@@ -1324,7 +1324,7 @@ def search():
         
         # Search sealed items
         sealed_matches = db.execute(
-            f"SELECT 's' || s.id as sid, s.name, s.market_value, s.auction_id, a.auction_name FROM sealed s "
+            f"SELECT 's' || s.id as sid, s.name, s.market_value, s.auction_id,COUNT(*) as available_count, a.auction_name FROM sealed s "
             "LEFT JOIN auctions a ON s.auction_id = a.id "
             f"WHERE ({sealed_where_clause}) AND s.sale_id IS NULL "
             f"GROUP BY UPPER(s.name) ORDER BY s.id ASC LIMIT 8",
@@ -1341,6 +1341,30 @@ def search():
             return jsonify({'status': 'success','value': None}),200
         else:
             return jsonify({'status': 'success','value': final_matches}),200
+
+
+@bp.route('/getCardIds/', methods=('POST',))
+def getCardIds():
+    if request.method == 'POST':
+        card = request.get_json()
+        db = get_db()
+
+        placeholders = ','.join("?" for _ in card['ids'])
+        cardIds = db.execute('SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id '
+                   'WHERE c.card_name = ? '
+                   'AND c.card_num = ? '
+                   'AND c.condition = ? '
+                   'AND si.card_id IS NULL '
+                   f"AND c.id NOT IN ({placeholders})"
+                   ,(card['card_name'],card['card_number'], card['condition'], *card.get('ids'))).fetchall()
+
+        ids = []
+        for id in cardIds:
+            temp = dict(id)
+            ids.append(temp['id'])
+        print(ids)
+        return jsonify({'status': 'success', 'ids': ids}), 200
+
 
 @bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
 def invoice(vendor):
