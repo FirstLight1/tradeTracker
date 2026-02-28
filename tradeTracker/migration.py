@@ -38,6 +38,8 @@ def migrate_database(db_path):
         add_bulk_sales_table(db_path)
         # Migration 6: Add sealed products table
         addSealedProductsTable(db_path)
+        # Migration 7: Add shipping info collumn to sales table
+        addShippingInfoColumn(db_path)
         
         print("Database migration check complete.")
     except sqlite3.Error as e:
@@ -168,3 +170,28 @@ def addSealedProductsTable(db_path):
 
     except sqlite3.Error as e:
         print(f"Error checking for table: {e}")
+
+
+def addShippingInfoColumn(db_path):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Check if the column already exists
+        cursor.execute("PRAGMA table_info(sales)")
+        columns = [info[1] for info in cursor.fetchall()]
+        if 'shipping_info' not in columns:
+            print("Applying migration: Adding 'shipping_info' to 'sales' table...")
+            cursor.execute("ALTER TABLE sales ADD COLUMN shipping_info TEXT")
+            print("'shipping_info' column added successfully.")
+        else:
+            print("'shipping_info' column already exists in 'sales' table.")
+    except sqlite3.Error as e:
+        # This can happen if the table doesn't exist yet, which is fine.
+        if "no such table: sales" in str(e):
+            print("'sales' table not found, skipping 'shipping_info' column migration.")
+        else:
+            raise e
+
+
+

@@ -65,7 +65,8 @@ CREATE TABLE sales (
     invoice_number TEXT UNIQUE NOT NULL,
     sale_date TEXT NOT NULL,
     total_amount REAL,
-    notes TEXT
+    notes TEXT,
+    shipping_info TEXT
 );
 
 CREATE INDEX idx_sales_invoice ON sales(invoice_number);

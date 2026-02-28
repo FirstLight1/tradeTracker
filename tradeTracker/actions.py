@@ -577,7 +577,14 @@ def generateSoldReport():
         'WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ?'
         ' GROUP BY bs.item_type',
         (year, month)).fetchall()
+
+    shipping = db.execute('SELECT shipping_info FROM sales WHERE strftime("%Y", sale_date) = ? AND strftime("%m", sale_date) = ?', 
+        (year, month)).fetchall() 
     
+    shipping_list = []
+    for s in shipping:
+        temp = dict(s)
+        shipping_list.append(temp['shipping_info']) if temp['shipping_info'] is not None else 0
     # Convert to list of dicts for easier processing
     cards_list = [dict(card) for card in cards]
 
@@ -588,17 +595,16 @@ def generateSoldReport():
         bulkAndHoloList[i].update({'buy_price': 0.01} if item_type['item_type'] == 'bulk' else {'buy_price': 0.03})
         i += 1
 
-        xls_path = createBuyReport(month, year, db);
+    pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList, shipping_list)
+    xls_path = createBuyReport(month, year, db);
     try:
-        pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList)
-        xls_path = createBuyReport(month, year, db);
         return jsonify({'status': 'success', 'pdf_path': pdf_path, 'xls_path':xls_path}), 200
     except Exception as e:
         print(f"Error generating PDF: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
-def generatePDF(month, year, cards, sealed,bulkAndHoloList):
+def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
     # Ensure fonts are available (copies them from exe bundle if needed)
     ensureFontsAvailable()
     
@@ -643,18 +649,30 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList):
     total_profit = total_sell_price - total_buy_price
     total_neg_margin = 0
     total_pos_margin = 0
+    total_shipping_with_VAT = 0
+    total_shipping_without_VAT = 0
+    total_shipping_VAT = 0
     for card in cards:
         curr_margin = Decimal(card['sell_price'] - card['card_price']) 
         if curr_margin > 0:
             total_pos_margin += curr_margin
         else:
             total_neg_margin += curr_margin
+
+    for s in shipping:
+        s = float(s)
+        total_shipping_with_VAT += s
+        total_shipping_without_VAT += ((s/123) * 100)
+        total_shipping_VAT += (s/123) * 23
     
     pdf.cell(0, 8, f'Total Buy Price: {total_buy_price:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Profit: {total_profit:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Negative Margin: {total_neg_margin:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Positive Margin: {total_pos_margin:.2f}€', 0, 1)
+    pdf.cell(0, 8, f'Shipping + DPH: {total_shipping_with_VAT:.2f}€', 0, 1)
+    pdf.cell(0, 8, f'Shipping: {total_shipping_without_VAT:.2f}€', 0, 1)
+    pdf.cell(0, 8, f'Shipping DPH: {total_shipping_VAT:.2f}€', 0, 1)
     pdf.ln(10)
 
     # Add bulk and holo summary
@@ -828,9 +846,14 @@ def createBuyReport(month, year, db):
         date = datetime.datetime.strptime( row['date_created'].split('T')[0], '%Y-%m-%d')
         formatedDate = date.strftime('%d.%m.%Y')
         bought['Datum'].append(formatedDate)
-        payments = json.loads(row['payment_method'])
-        bought['Payment type'].append(', '.join(payment['type'] for payment in payments))
-        bought['Amount'].append(', '.join(str(payment['amount']) for payment in payments))
+        print(row['payment_method'])
+        if row['payment_method'] != None:
+            payments = json.loads(row['payment_method'])
+            bought['Payment type'].append(', '.join(payment['type'] for payment in payments))
+            bought['Amount'].append(', '.join(str(payment['amount']) for payment in payments))
+        else:
+            bought['Payment type'] = None
+            bought['Amount'] = 0
 
     df = pd.DataFrame(bought)
 
@@ -1428,10 +1451,11 @@ def invoice(vendor):
         
         pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []),sealed , bulk, holo, payment_data, cartContent.get("shipping"))
         
+        print(cartContent.get('shipping')['shippingPrice']) 
         # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()
-        cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount, notes) VALUES (?, ?, ?, ?)',
-                   (invoice_num, sale_date, recieverInfo.get('total'), recieverInfo.get('nameAndSurname')))
+        cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount, notes, shipping_info) VALUES (?, ?, ?, ?,?)',
+                   (invoice_num, sale_date, recieverInfo.get('total'), recieverInfo.get('nameAndSurname'),cartContent.get('shipping')['shippingPrice'] ))
         sale_id = cursor.lastrowid
         
         # Add sale items
