@@ -1,4 +1,5 @@
 import {createNewCard, struct} from './addAuction.js'
+import {renderAlert} from './main.js'
 
 const cardsArr = [];
 const saveButton = document.querySelector('.save-btn')
@@ -55,7 +56,7 @@ saveButton.addEventListener('click', () => {
                 }
             })
                 .catch(error => {
-                    console.error('Error:', error);
+                    renderAlert('Error: ' + error, 'error');
                 });
         }
 });

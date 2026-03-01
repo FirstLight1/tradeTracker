@@ -1,4 +1,5 @@
 import { updateCollectionValue } from "./collection.js";
+import { renderAlert } from "./main.js";
 
 function createNewCard(newCard){
      newCard.querySelectorAll('input').forEach(el =>{
@@ -83,7 +84,7 @@ saveButton.addEventListener('click', () => {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        renderAlert('Error: ' + error, 'error');
     });
 });
 

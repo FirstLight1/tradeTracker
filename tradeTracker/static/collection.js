@@ -1,4 +1,4 @@
-import {renderField, replaceWithPElement} from './main.js';
+import {renderField, replaceWithPElement, renderAlert} from './main.js';
 
 function appendEuroSign(value, dataset){
     if (dataset === 'card_num' || dataset === 'card_name'){
@@ -21,11 +21,11 @@ async function removeCard(id, div){
             div.remove();
             return true;
         }else{
-            console.error('failed to remove card', data);
+            renderAlert('Failed to remove card: ' + JSON.stringify(data), 'error');
             return false;
         }
     }catch(err){
-        console.error(err);
+        renderAlert('Error removing card: ' + err, 'error');
         return false;
     }
 }
@@ -56,7 +56,7 @@ async function getCollectionValue(){
         const data = await response.json();
         return data.value;
     } catch(e){
-        console.error(e);
+        renderAlert('Error loading collection value: ' + e, 'error');
     }
 }
 
@@ -187,7 +187,7 @@ async function fetchCollection(){
 
 
     } catch(err){
-        console.error(err);
+        renderAlert('Error loading collection: ' + err, 'error');
     }
 
 }

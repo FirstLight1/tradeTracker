@@ -20,6 +20,24 @@ p{
     align-items: center;
 }
 
+.alert-div{
+    text-align:center;
+    margin:5px;
+}
+
+
+.alert-error{
+    background-color: #D0342C ;
+    border-radius: 15px;
+    border: 2px solid red;
+}
+
+.alert-message{
+    background-color: #3B82F6;
+    border-radius: 10px;
+    border: 2px solid blue ;
+}
+
 .header-container{
     display: flex;
     justify-content: center;

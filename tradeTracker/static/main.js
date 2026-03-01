@@ -144,7 +144,7 @@ class CartLine {
                 })
             });
             if (!response.ok) {
-                console.error('Failed to fetch card IDs:', response.status);
+                renderAlert('Failed to fetch card IDs: ' + response.status, 'error');
                 return;
             }
             const data = await response.json();
@@ -152,7 +152,7 @@ class CartLine {
                 this.reservableIds = data.card_ids.filter(id => !this.cardIds.includes(id));
             }
         } catch (e) {
-            console.error('Error fetching card IDs:', e);
+            renderAlert('Error fetching card IDs: ' + e, 'error');
         }
     }
 }
@@ -164,6 +164,30 @@ export function renderField(value, inputType, classList, placeholder, datafield)
     } else {
         return `<p class=" ${classList.join(' ')}" data-field="${datafield}">${value}</p>`;
     }
+}
+
+export function renderAlert(text, type){
+    const alertDiv = document.querySelector('.alert-div');
+
+    if(type === 'error'){
+        alertDiv.classList.add('alert-error')
+    }else{
+        alertDiv.classList.add('alert-message')
+    }
+
+    const escaped = String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\r\n|\r|\n/g, '<br>');
+
+    alertDiv.innerHTML = escaped;
+    setTimeout(() => {
+        alertDiv.innerHTML = '';
+        alertDiv.classList.remove(...alertDiv.classList)
+    }, 4000)
+
 }
 
 function paymentTypeSelect(className, defaultValue = '') {
@@ -283,7 +307,7 @@ async function updatePaymentMethod(auctionId, payments) {
         }
     }
     catch (error) {
-        console.error('Error updating payment method: ' + error)
+        renderAlert('Error updating payment method: ' + error, 'error');
         return false;
     }
 }
@@ -346,13 +370,13 @@ async function updateSoldStatus(cardId, isChecked, field) {
         });
         const data = await response.json();
         if (!(data.status === 'success')) {
-            console.error('Error updating sold status:', data);
+            renderAlert('Error updating sold status: ' + JSON.stringify(data), 'error');
             return;
         } else {
             return
         }
     } catch (e) {
-        console.error('Error updating sold status:', e);
+        renderAlert('Error updating sold status: ' + e, 'error');
         return;
     }
 }
@@ -378,13 +402,13 @@ async function patchValue(id, value, dataset) {
         });
         const data = await response.json();
         if (!(data.status === 'success')) {
-            console.error('failed to update:', dataset)
+            renderAlert('Failed to update: ' + dataset, 'error');
             return;
         } else {
             return
         }
     } catch (e) {
-        console.error('Error updating value:', e);
+        renderAlert('Error updating value: ' + e, 'error');
     }
 }
 
@@ -397,11 +421,11 @@ function deleteAuction(id, div) {
             if (data.status === 'success') {
                 div.remove();
             } else {
-                console.error('Error deleting auction:', data);
+                renderAlert('Error deleting auction: ' + JSON.stringify(data), 'error');
             }
         })
         .catch(error => {
-            console.error('Error deleting auction:', error);
+            renderAlert('Error deleting auction: ' + error, 'error');
         });
 }
 
@@ -429,11 +453,11 @@ async function removeCard(id, div) {
             div.remove();
             return true;
         } else {
-            console.error('Error deleting card:', data);
+            renderAlert('Error deleting card: ' + JSON.stringify(data), 'error');
             return false;
         }
     } catch (error) {
-        console.error('Error deleting card:', error);
+        renderAlert('Error deleting card: ' + error, 'error');
         return false;
     }
 }
@@ -448,11 +472,11 @@ async function removeBulkItem(bulkId, bulkDiv) {
             bulkDiv.remove();
             return true;
         } else {
-            console.error('Error deleting bulk item:', data);
+            renderAlert('Error deleting bulk item: ' + JSON.stringify(data), 'error');
             return false;
         }
     } catch (error) {
-        console.error('Error deleting bulk item:', error);
+        renderAlert('Error deleting bulk item: ' + error, 'error');
         return false;
     }
 }
@@ -468,13 +492,13 @@ async function updateAuction(auctionId, value, field) {
         });
         const data = await response.json();
         if (!(data.status === 'success')) {
-            console.error('Error updating auction:', data);
+            renderAlert('Error updating auction: ' + JSON.stringify(data), 'error');
             return;
         } else {
             return
         }
     } catch (error) {
-        console.error('Error updating auction:', error);
+        renderAlert('Error updating auction: ' + error, 'error');
         return
     }
 }
@@ -527,11 +551,11 @@ async function generateSoldReport(month, year, div) {
     if (data.status === 'success') {
         console.log('Sold report generated successfully');
         div.remove();
-        alert(`Sold report:\n${data.pdf_path}\n Buy report:\n${data.xls_path}`);
+        renderAlert(`Sold report:\n${data.pdf_path}\n Buy report:\n${data.xls_path}`, 'message');
         // Handle successful report generation (e.g., display a success message)
     } else {
         // Handle errors (e.g., display an error message)
-        console.error('Error generating sold report:', data.message);
+        renderAlert(`Error generating sold report: ${data.message}`, 'error');
     }
 }
 
@@ -553,16 +577,16 @@ function importCSV() {
                     window.location.reload()
                     break;
                 case "missing":
-                    alert('No file uploaded')
+                    renderAlert('No file uploaded', 'error')
                     break;
                 case "file":
-                    alert('No file selected')
+                    renderAlert('No file selected', 'error')
                     break;
                 case "extension":
-                    alert('Please upload valid CSV file')
+                    renderAlert('Please upload valid CSV file', 'error')
                     break;
                 case "duplicate":
-                    alert('File already uploaded')
+                    renderAlert('File already uploaded', 'error')
                     break;
             }
         }
@@ -575,7 +599,7 @@ async function getInventoryValue() {
         const data = await response.json();
         return data.value;
     } catch (e) {
-        console.error(e);
+        renderAlert('Error loading inventory value: ' + e, 'error');
     }
 }
 
@@ -625,9 +649,9 @@ async function changeCardPricesBasedOnAuctionPrice(auctionTab) {
         console.log('success');
         window.location.reload();
     } else if (data.status == 'error') {
-        console.error('Error recalculating card prices: ' + data.message);
+        renderAlert('Error recalculating card prices: ' + data.message, 'error');
     } else if (data.status == 'no_cards') {
-        alert('No cards found in this auction to recalculate prices.');
+        renderAlert('No cards found in this auction to recalculate prices.', 'message');
     }
 
 }
@@ -908,7 +932,7 @@ function loadCartContentFromSession() {
         }
 
     } catch (e) {
-        console.error('Error loading cart data from sessionStorage:', e);
+        renderAlert('Error loading cart data from sessionStorage: ' + e, 'error');
     }
 }
 
@@ -1003,7 +1027,7 @@ function loadModalDataFromSession(recieverDiv) {
             }
         }
     } catch (e) {
-        console.error('Error loading modal data from sessionStorage:', e);
+        renderAlert('Error loading modal data from sessionStorage: ' + e, 'error');
     }
 }
 
@@ -1237,14 +1261,14 @@ function shoppingCart() {
                 if (paymentMethods.length > 1) {
                     // If multiple payment methods, check that sum matches total
                     if (Math.abs(paymentTotal - expectedTotal) > 0.01) { // Allow 1 cent tolerance for rounding
-                        alert(`Payment amount (${paymentTotal.toFixed(2)}€) is not equal to total cart value (${expectedTotal.toFixed(2)}€)`);
+                        renderAlert(`Payment amount (${paymentTotal.toFixed(2)}€) is not equal to total cart value (${expectedTotal.toFixed(2)}€)`, 'error');
                         return;
                     }
                 } else if (paymentMethods.length === 1) {
                     // If single payment method, auto-set amount to cart total
                     paymentMethods[0].amount = expectedTotal;
                 } else {
-                    alert('Please select at least one payment method');
+                    renderAlert('Please select at least one payment method', 'error');
                     return;
                 }
 
@@ -1309,14 +1333,13 @@ function shoppingCart() {
                         clearModalDataFromSession();
                         removeCartContentFromSession();
 
-                        alert(data.pdf_path)
+                        renderAlert(data.pdf_path, 'message')
                         //recalculate auction price and profit
                     } else if (data.status === 'error') {
                         // Display error message for insufficient inventory
-                        alert('Error: ' + data.message);
-                        console.error('Invoice generation failed:', data.message);
+                        renderAlert('Error: ' + data.message, 'error');
                     } else {
-                        console.error("something went wrong")
+                        renderAlert('Something went wrong generating the invoice', 'error');
                     }
                 }
             });
@@ -1328,7 +1351,7 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
     // Entry B: From auction tab (cardId provided)
     if (cardId !== null) {
         if (existingIDs.has(cardId)) {
-            alert('This card is already in cart');
+            renderAlert('This card is already in cart', 'error');
             return;
         }
 
@@ -1382,7 +1405,7 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
                 saveCartContentToSession();
             }
         } else {
-            alert('No more available copies of this card');
+            renderAlert('No more available copies of this card', 'error');
         }
         return;
     }
@@ -1401,12 +1424,12 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
             })
         });
         if (!response.ok) {
-            alert('Failed to fetch card IDs');
+            renderAlert('Failed to fetch card IDs', 'error');
             return;
         }
         const data = await response.json();
         if (data.status !== 'success' || !data.card_ids || data.card_ids.length === 0) {
-            alert('Card no longer available');
+            renderAlert('Card no longer available', 'error');
             return;
         }
         const line = new CartLine(
@@ -1418,8 +1441,7 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
         existingIDs.add(line.cardIds[0]);
         renderCartLine(line);
     } catch (e) {
-        console.error('Error adding card to cart:', e);
-        alert('Error adding card to cart');
+        renderAlert('Error adding card to cart: ' + e, 'error');
     }
 }
 
@@ -1473,7 +1495,7 @@ function addBulkToCart() {
         const inventorySize = document.querySelector('.bulk-value').textContent;
         const maxBulk = Number(inventorySize);
         if (Number(value) + currentCartValue('bulk') > maxBulk) {
-            alert(`You can not add more than ${maxBulk} bulk items to the cart`);
+            renderAlert(`You can not add more than ${maxBulk} bulk items to the cart`, 'error');
             return;
         }
 
@@ -1525,7 +1547,7 @@ function addHoloToCart() {
         const inventorySize = document.querySelector('.holo-value').textContent;
         const maxHolo = Number(inventorySize);
         if (Number(value) + currentCartValue('holo') > maxHolo) {
-            alert(`You can not add more than ${maxHolo} holo items to the cart`);
+            renderAlert(`You can not add more than ${maxHolo} holo items to the cart`, 'error');
             return;
         }
 
@@ -1633,7 +1655,7 @@ async function search(searchPrompt) {
     if (data.status == "success") {
         return data.value;
     } else {
-        console.error('Search failed');
+        renderAlert('Search failed', 'error');
     }
 }
 
@@ -1799,10 +1821,10 @@ async function loadBulkHoloValues() {
             bulkVal.textContent = data.bulk_counter;
             holoVal.textContent = data.holo_counter;
         } else {
-            console.error("There was a problem loading bulk and holo values")
+            renderAlert('There was a problem loading bulk and holo values', 'error');
         }
     } catch (e) {
-        console.error(e);
+        renderAlert('Error loading bulk/holo values: ' + e, 'error');
     }
 }
 
@@ -2089,7 +2111,7 @@ async function loadAuctionContent(button) {
                     });
 
                 } catch (error) {
-                    console.error('Error loading sealed items:', error);
+                    renderAlert('Error loading sealed items: ' + error, 'error');
                 }
 
                 // Load bulk items
@@ -2138,7 +2160,7 @@ async function loadAuctionContent(button) {
                     });
 
                 } catch (error) {
-                    console.error('Error loading bulk items:', error);
+                    renderAlert('Error loading bulk items: ' + error, 'error');
                 }
             }
         } else {
@@ -2146,7 +2168,7 @@ async function loadAuctionContent(button) {
             button.textContent = 'View';
         }
     } catch (error) {
-        console.error('Error loading cards:', error);
+        renderAlert('Error loading cards: ' + error, 'error');
     }
 
     // Only add button container if it doesn't exist
@@ -2349,7 +2371,7 @@ async function loadAuctionContent(button) {
                 });
                 const data = await response.json();
                 if (!(data.status === 'success')) {
-                    console.error('Error saving new cards:', data);
+                    renderAlert('Error saving new cards: ' + JSON.stringify(data), 'error');
                     return;
                 }
                 if (auctionSingles) {
@@ -2364,7 +2386,7 @@ async function loadAuctionContent(button) {
 
                 newCards.forEach(card => card.classList.remove('new-card'));
             } catch (error) {
-                console.error('Error saving new cards:', error);
+                renderAlert('Error saving new cards: ' + error, 'error');
                 return;
             }
             //this could be done better by dynamically adding the cards instead of reloading the whole auction
@@ -2397,7 +2419,7 @@ async function loadSealed(viewButton) {
                 const response = await fetch('/loadSealed');
                 const data = await response.json();
                 if (data.status != 'success') {
-                    console.error('Failed to load sealed products');
+                    renderAlert('Failed to load sealed products', 'error');
                     return;
                 }
 
@@ -2502,7 +2524,7 @@ async function loadSealed(viewButton) {
                         if (data.status === 'success') {
                             window.location.reload()
                         } else {
-                            console.error(data.message)
+                            renderAlert(data.message, 'error');
                             inputDivs.forEach(div => {
                                 div.remove();
                             });
@@ -2605,7 +2627,7 @@ async function loadAuctions() {
                         if (rowsContainer.children.length > 1) {
                             btn.closest('.payment-row').remove();
                         } else {
-                            alert('At least one payment row is required');
+                            renderAlert('At least one payment row is required', 'error');
                         }
                     };
                 });
@@ -2636,14 +2658,14 @@ async function loadAuctions() {
                 });
 
                 if (hasEmptyType && paymentsArray.length === 0) {
-                    alert('Please select at least one payment type');
+                    renderAlert('Please select at least one payment type', 'error');
                     return;
                 }
 
                 // Validate payments
                 const validation = validatePayments(paymentsArray);
                 if (!validation.valid) {
-                    alert(validation.error);
+                    renderAlert(validation.error, 'error');
                     return;
                 }
 
@@ -2659,7 +2681,7 @@ async function loadAuctions() {
                     // Re-attach listener to new edit button
                     paymentContainer.querySelector('.edit-payments-btn').addEventListener('click', handleEditPayment);
                 } else {
-                    alert('Failed to update payment methods. Please try again.');
+                    renderAlert('Failed to update payment methods. Please try again.', 'error');
                 }
             });
 
@@ -2881,7 +2903,7 @@ async function loadAuctions() {
             });
         });
     } catch (error) {
-        console.error('Error loading auctions:', error);
+        renderAlert('Error loading auctions: ' + error, 'error');
     }
 }
 

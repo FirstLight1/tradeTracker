@@ -1,4 +1,4 @@
-import {updateInventoryValueAndTotalProfit} from "./main.js";
+import {updateInventoryValueAndTotalProfit, renderAlert} from "./main.js";
 
 const ALLOWED_PAYMENT_TYPES = new Set([
     'Hotovosť',
@@ -110,7 +110,7 @@ saveButton.addEventListener('click', () =>{
     if (auction.payments) {
         const validation = validatePayments(auction.payments);
         if (!validation.valid) {
-            alert('Payment validation error: ' + validation.error);
+            renderAlert('Payment validation error: ' + validation.error, 'error');
             return;
         }
     }
@@ -174,12 +174,11 @@ saveButton.addEventListener('click', () =>{
             if (data.status === 'success') {
                 window.location.href = '/';
             } else {
-                alert('Error: ' + (data.message || 'Unknown error'));
+                renderAlert('Error: ' + (data.message || 'Unknown error'), 'error');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to save auction: ' + error.message);
+            renderAlert('Failed to save auction: ' + error.message, 'error');
         });
     }
 })
@@ -223,7 +222,7 @@ function attachRemoveListener(row) {
         if (paymentRowsContainer.children.length > 1) {
             row.remove();
         } else {
-            alert('At least one payment row is required');
+            renderAlert('At least one payment row is required', 'error');
         }
     });
 }
