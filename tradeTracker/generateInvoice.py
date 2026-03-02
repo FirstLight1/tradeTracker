@@ -66,18 +66,19 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
     )
 
     # 3. Create the Invoicegene
-    # Data extracted from source: 48, 67-69
     invoice = Invoice(client, provider, Creator("Dominik Forró"))
     invoice.number = invoice_num                # Invoice No.
     invoice.variable_symbol = invoice_num       # VS
-    invoice.currency = "EUR"
+    invoice.currency = u'€'
+    invoice.currency_locale = 'en_US.UTF-8'
+    invoice.currency_code = 'EUR'
     invoice.date = invoice_date          # Date of exposure (Dátum vystavenia)
+
 
     invoice.note = "Uplatnený osobitný režim zdaňovania podľa §66 zákona o DPH – daň z pridanej hodnoty je zahrnutá v marži.\nPredmet plnenia je použitý zberateľský tovar – individuálne ocenené kusy.\nReklamácia je možná výlučne pri preukázateľnej neautenticite alebo nesúlade s deklarovaným stavom.\nKupujúci nemá nárok na vrátenie tovaru bez uvedenia dôvodu.\nÚprava zdaňovania prirážky - použitý tovar (§ 74 ods. 1 písm. n) zákona o DPH)"
     
     # Format payment methods for display
     if payment_methods and len(payment_methods) > 0:
-        print(payment_methods)
         result = {}
         for payment in payment_methods:
             t = payment['type']
@@ -99,18 +100,18 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         invoice.payback = datetime.strptime(payback_str, "%Y-%m-%d").date()
     else:
         invoice.payback = invoice_date  # Default to today if not provided
-    print((items[0].get("marketValue") != ''))
     # 4. Add Items
-    if items[0].get("marketValue") != '':
-        for item in items:
-            market_value_decimal = Decimal(float(item.get("marketValue")))
-            invoice.add_item(Item(
-                count=1,
-                price=market_value_decimal,
-                unit="ks",
-                description=item.get("cardName") + " " + item.get("cardNum"),
-                tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
-            ))
+    if len(items) > 0:
+        if items[0].get("marketValue") != '':
+            for item in items:
+                market_value_decimal = Decimal(float(item.get("marketValue")))
+                invoice.add_item(Item(
+                    count=1,
+                    price=market_value_decimal,
+                    unit="ks",
+                    description=item.get("cardName") + " " + item.get("cardNum"),
+                    tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
+                ))
            
     if sealed:
         for item in sealed:
@@ -171,7 +172,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         output_filename = f"Invoice_{invoice_date.strftime('%Y%m%d')}_{reciever.get('nameAndSurname', 'client').replace(' ', '_')}.pdf"
         output_path = os.path.join(invoices_dir, output_filename)
     
-    pdf.gen(output_path, generate_qr_code=False)
+    pdf.gen(output_path, generate_qr_code=True)
 
     print(f"Successfully generated: {output_path}")
 

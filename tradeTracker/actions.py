@@ -1458,18 +1458,18 @@ def invoice(vendor):
         # vendor == 0 means CardMarket, vendor == 1 means other platform
         sold_cm_value = 1 if vendor == 1 else 0
         sold_value = 0 if vendor == 1 else 1
-        
-        if cartContent.get('cards', [])[0].get('marketValue') != '':
-            for card in cartContent.get('cards', []):
-                sell_price = float(card.get('marketValue', 0))
-                db.execute('UPDATE cards SET sold_date = ? WHERE id = ?',
-                        (sale_date, card.get('cardId')))
+        if len(cartContent.get('cards')) > 0:
+            if cartContent.get('cards', [])[0].get('marketValue') != '':
+                for card in cartContent.get('cards', []):
+                    sell_price = float(card.get('marketValue', 0))
+                    db.execute('UPDATE cards SET sold_date = ? WHERE id = ?',
+                            (sale_date, card.get('cardId')))
                     
-                db.execute(
-                    'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
-                    'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
-                    (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
-                )
+                    db.execute(
+                        'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
+                        'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
+                        (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
+                    )
 
         if sealed:
             for item in sealed:
