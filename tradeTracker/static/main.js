@@ -166,12 +166,12 @@ export function renderField(value, inputType, classList, placeholder, datafield)
     }
 }
 
-export function renderAlert(text, type){
-    const alertDiv = document.querySelector('.alert-div');
+export function renderAlert(text, type) {
+    const alertDiv = document.querySelector('#alert-div');
 
-    if(type === 'error'){
+    if (type === 'error') {
         alertDiv.classList.add('alert-error')
-    }else{
+    } else {
         alertDiv.classList.add('alert-message')
     }
 
@@ -186,7 +186,7 @@ export function renderAlert(text, type){
     setTimeout(() => {
         alertDiv.innerHTML = '';
         alertDiv.classList.remove(...alertDiv.classList)
-    }, 4000)
+    }, 6000)
 
 }
 
@@ -859,12 +859,12 @@ function loadCartContentFromSession() {
                 if (item.auctionId) {
                     itemDiv.setAttribute('auction_id', item.auctionId);
                 }
-                
+
                 // Add ID to existingIDs Set
                 if (item.sid) {
                     existingIDs.add(item.sid);
                 }
-                
+
                 itemDiv.innerHTML = `
                     <p class='sealed-name'>${item.name}</p>
                     <p class='sealed-price'>${item.price}</p>
@@ -1419,7 +1419,6 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
                 card_name: card.cardName,
                 card_num: card.cardNum,
                 condition: card.condition,
-                auction_id: auctionId,
                 exclude_ids: [...existingIDs]
             })
         });

@@ -595,9 +595,9 @@ def generateSoldReport():
         bulkAndHoloList[i].update({'buy_price': 0.01} if item_type['item_type'] == 'bulk' else {'buy_price': 0.03})
         i += 1
 
-    pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList, shipping_list)
-    xls_path = createBuyReport(month, year, db);
     try:
+        pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList, shipping_list)
+        xls_path = createBuyReport(month, year, db);
         return jsonify({'status': 'success', 'pdf_path': pdf_path, 'xls_path':xls_path}), 200
     except Exception as e:
         print(f"Error generating PDF: {e}")
@@ -1386,7 +1386,6 @@ def getCardIds():
         card_name = data.get('card_name')
         card_num = data.get('card_num')
         condition = data.get('condition')
-        auction_id = data.get('auction_id')
         exclude_ids = data.get('exclude_ids', [])
 
         if not card_name or not card_num or not condition:
@@ -1401,10 +1400,6 @@ def getCardIds():
                  'AND c.condition = ? '
                  'AND si.card_id IS NULL')
         params = [card_name, card_num, condition]
-
-        if auction_id is not None:
-            query += ' AND c.auction_id = ?'
-            params.append(auction_id)
 
         if exclude_ids:
             placeholders = ','.join('?' for _ in exclude_ids)
@@ -1448,14 +1443,15 @@ def invoice(vendor):
         if not payment_data and recieverInfo.get('paymentMethod'):
             # Backwards compatibility - convert single payment method to array
             payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]
-        
+
         pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []),sealed , bulk, holo, payment_data, cartContent.get("shipping"))
-        
-        print(cartContent.get('shipping')['shippingPrice']) 
-        # Create sale record - ensure we have a valid date
+
+        shippingPrice = cartContent.get('shipping', {}).get('shippingPrice')
+        if shippingPrice is None:
+            shippingPrice = 0       # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()
         cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount, notes, shipping_info) VALUES (?, ?, ?, ?,?)',
-                   (invoice_num, sale_date, recieverInfo.get('total'), recieverInfo.get('nameAndSurname'),cartContent.get('shipping')['shippingPrice'] ))
+                   (invoice_num, sale_date, recieverInfo.get('total'), recieverInfo.get('nameAndSurname'),shippingPrice ))
         sale_id = cursor.lastrowid
         
         # Add sale items
