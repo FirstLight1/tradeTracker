@@ -631,7 +631,7 @@ function cartValue(cartContent) {
 
 
     if (cartContent.bulkItem) {
-        sum += Number(sum) + Number(cartContent.bulkItem.sell_price);
+        sum += Number(cartContent.bulkItem.sell_price);
     }
 
     if (cartContent.holoItem) {
@@ -1103,7 +1103,10 @@ function shoppingCart() {
         const holoCartContent = document.querySelector(".holo-cart-content");
         const holoItems = holoCartContent.querySelector('.holo-cart-item-holo');
         if (bulkItems) {
-            const bulkQuantity = Number(bulkItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
+            let bulkQuantity = Number(bulkItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
+            if (bulkQuantity === 0){
+                bulkQuantity = 1
+            }
 
             //this is bad I need to think about this shit cause no way this is correct
 
@@ -1111,7 +1114,7 @@ function shoppingCart() {
             const bulk = {
                 counter_name: 'bulk',
                 quantity: bulkQuantity,
-                unit_price: sellPriceInput / bulkQuantity ? (Number(sellPriceInput) / bulkQuantity).toFixed(2) : 0.01,
+                unit_price: sellPriceInput && bulkQuantity ? (Number(sellPriceInput) / bulkQuantity).toFixed(2) : 0.01,
                 sell_price: sellPriceInput ? Number(sellPriceInput) : 0.01,
                 buy_price: 0.01
             };
@@ -1119,12 +1122,13 @@ function shoppingCart() {
         }
 
         if (holoItems) {
-            const holoQuantity = Number(holoItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
+            let holoQuantity = Number(holoItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
+            holoQuantity = holoQuantity === 0 ? 1 : holoQuantity;
             const sellPriceInput = holoItems.querySelector('.holo-sell-price').value.replace(',', '.');
             const holo = {
                 counter_name: 'holo',
                 quantity: holoQuantity,
-                unit_price: sellPriceInput / holoQuantity ? (Number(sellPriceInput) / holoQuantity).toFixed(2) : 0.03,
+                unit_price: sellPriceInput && holoQuantity ? (Number(sellPriceInput) / holoQuantity).toFixed(2) : 0.03,
                 sell_price: sellPriceInput ? Number(sellPriceInput) : 0.03,
                 buy_price: 0.03
             };
@@ -1294,15 +1298,31 @@ function shoppingCart() {
 
                 // Apply price adjustment if cart value was manually changed
                 if (cartValueInput != cartVal) {
-                    const priceDiff = cartVal - cartValueInput;
-                    for (let i = 0; i < cartContent.cards.length; i++) {
-                        const discount = ((cartContent.cards[i].marketValue / cartVal) * priceDiff);
-                        cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue - discount).toFixed(2)
-                    }
-                }
+                    const fixedSubtotal = cartContent.bulkItem.sell_price + cartContent.holoItem.sell_price + cartContent.shipping.shippingPrice;
+                    const cardsSub = cartContent.cards ? cartContent.cards.marketValue.reduce((sum,c) =>{return sum+c}, 0) : 0;
+                    const sealedSub = cartContent.sealed ? cartContent.sealed.marketValue.reduce((sum,c) => { return sum + c},0) : 0;
 
-                let vendorCheckBox = document.querySelector('.vendor-type').checked;
-                cartContent.recieverInfo.total = Number(cartValue(cartContent));
+                    const adjustableSubtotal = cardsSub + sealedSub; 
+                    const targetAdjustable = cartValueInput - fixedSubtotal;
+
+                    if (adjustableSubtotal > 0) {
+                        const scale = targetAdjustable / adjustableSubtotal;
+
+                        if (cartContent.cards) {
+                            for (let i = 0; i < cartContent.cards.length; i++) {
+                                cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue * scale).toFixed(2);
+                            }
+                        }
+
+                        if (cartContent.sealed) {
+                            for (let i = 0; i < cartContent.sealed.length; i++) {
+                                cartContent.sealed[i].marketValue = (cartContent.sealed[i].marketValue * scale).toFixed(2);
+                            }
+                        }
+                    }
+
+                    let vendorCheckBox = document.querySelector('.vendor-type').checked;
+                    cartContent.recieverInfo.total = Number(cartValue(cartContent));
                 if (Object.keys(cartContent).length !== 0) {
                     const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
                         {

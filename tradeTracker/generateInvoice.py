@@ -26,13 +26,16 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         logo_path = os.path.join(os.path.dirname(__file__), 'static', 'images', 'logo.png')
     
     # Read or create env.txt with invoice_num
+    ## TODO error handling
     try:
         with open(env_path, 'r') as f:
             invoice_num = f.read().strip()
             if not invoice_num:
-                return jsonify({'status': 'error', 'message':'Failed to get invoice number'}), 500
+                return 
+                #return jsonify({'status': 'error', 'message':'Failed to get invoice number'}), 500
     except FileNotFoundError:
-        return jsonify({'status':'error', 'message': 'Failed to open env.txt'}), 500
+        return
+        #return jsonify({'status':'error', 'message': 'Failed to open env.txt'}), 500
     
     invoice_date = date.today()
     # Set language to Slovak (or English 'en') if supported by your system locale
@@ -55,11 +58,16 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         note="Osoba zapísaná v Živnostenskom registri pod číslom \n220-42582, vydal Okresný úrad Galanta dňa\n 5.11.2025. \nPlatiteľ DPH formou §66.\n Úprava zdaňovania prirážky - použitý tovar\n(§ 74 ods. 1 pism. n) zákona o DPH\nsa vztahuje len na marzove polozky)",
         logo_filename=logo_path
     )
-
+    
+    try:
+        nameAndSurname = "".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")])
+    except:
+        ##TODO - change this to an error message
+        nameAndSurname = 'Error'
     # 2. Define the Client
     # Data extracted from source: 50-51
     client = Client(
-        summary=" ".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")]), 
+        summary = nameAndSurname,
         address=reciever.get("address").capitalize(), # Full street address was missing in the snippet
         city=reciever.get("city").capitalize(),
         country=reciever.get("state", "").capitalize()
@@ -102,15 +110,14 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         invoice.payback = invoice_date  # Default to today if not provided
     # 4. Add Items
     if len(items) > 0:
-        if items[0].get("marketValue") != '':
-            for item in items:
-                market_value_decimal = Decimal(float(item.get("marketValue")))
-                invoice.add_item(Item(
-                    count=1,
-                    price=market_value_decimal,
-                    unit="ks",
-                    description=item.get("cardName") + " " + item.get("cardNum"),
-                    tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
+        for item in items:
+            market_value_decimal = Decimal(str(item.get("marketValue")))
+            invoice.add_item(Item(
+                count=1,
+                price=market_value_decimal,
+                unit="ks",
+                description=item.get("cardName") + " " + item.get("cardNum"),
+                tax=Decimal("0") # Neplatiteľ DPH (Non-VAT payer)
                 ))
            
     if sealed:
@@ -121,7 +128,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
                 tax = Decimal("0")
             invoice.add_item(Item(
                 count=1,
-                price=Decimal(float(item.get("marketValue").replace("€",""))),
+                price=Decimal(str(item.get("marketValue").replace("€",""))),
                 unit="ks",
                 description=item.get("sealedName"),
                 tax=tax
@@ -145,7 +152,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         ))
 
     if shipping:
-        shippingPrice = (float(shipping.get('shippingPrice'))/123) * 100
+        shippingPrice = (Decimal(str(shipping.get('shippingPrice'))/1.23))
         invoice.add_item(Item(
             count=1,
             price=shippingPrice,
@@ -163,13 +170,13 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
         # Running as compiled exe
         app_data_dir = os.path.join(os.environ['APPDATA'], 'TradeTracker', 'Invoices')
         os.makedirs(app_data_dir, exist_ok=True)
-        output_filename = f"Invoice_{invoice_date.strftime('%Y%m%d')}_{reciever.get('nameAndSurname', 'client').replace(' ', '_')}.pdf"
+        output_filename = f"{invoice_num}_Invoice_{invoice_date.strftime('%Y%m%d')}_{reciever.get('nameAndSurname', 'client').replace(' ', '_')}.pdf"
         output_path = os.path.join(app_data_dir, output_filename)
     else:
         # Running in development
         invoices_dir = os.path.join(current_app.instance_path, 'invoices')
         os.makedirs(invoices_dir, exist_ok=True)
-        output_filename = f"Invoice_{invoice_date.strftime('%Y%m%d')}_{reciever.get('nameAndSurname', 'client').replace(' ', '_')}.pdf"
+        output_filename = f"{invoice_num}_Invoice_{invoice_date.strftime('%Y%m%d')}_{reciever.get('nameAndSurname', 'client').replace(' ', '_')}.pdf"
         output_path = os.path.join(invoices_dir, output_filename)
     
     pdf.gen(output_path, generate_qr_code=True)
