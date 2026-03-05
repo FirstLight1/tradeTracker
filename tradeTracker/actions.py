@@ -60,8 +60,11 @@ def validate_and_sanitize_payments(payments):
             return False, None, 'Invalid payment object'
         
         payment_type = payment.get('type', '').strip()
-        amount = payment.get('amount').replace(',','.')
-        
+        amount = 0
+        try:
+            amount = payment.get('amount').replace(',','.')
+        except:
+            amount = payment.get('amount')
         # Validate payment type against whitelist
         if payment_type not in ALLOWED_PAYMENT_TYPES:
             return False, None, f'Invalid payment type: {payment_type}'
@@ -361,8 +364,8 @@ def addSealed():
     db = get_db()
     
     for sealed in data:
-        marketValue = float(sealed.get("market_value")) if sealed.get("market_value") is not None else 0
-        price = float(sealed.get("price")) if sealed.get("price") is not None else marketValue * 0.80;
+        marketValue = float(sealed.get("market_value").replace(',','.')) if sealed.get("market_value") is not None else 0
+        price = float(sealed.get("price").replace(',','.')) if sealed.get("price") is not None else marketValue * 0.80;
         date = sealed.get('dateAdded') if sealed.get('dateAdded') is not None else datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
         db.execute("INSERT INTO sealed(name, price, market_value, date) VALUES (?, ?, ?, ?)",(sealed.get("name"), price, marketValue, date))
     db.commit()
@@ -488,8 +491,8 @@ def addToExistingAuction(auction_id):
         sealed = data.get('sealed', [])
         if sealed:
             for item in sealed:
-                marketValue = Decimal(item.get("market_value").replace(',','.')) if item.get("market_value") is not None else 0
-                price = Decimal(item.get("price").replace(',','.')) if item.get("price") is not None else marketValue * 0.80
+                marketValue = float(item.get("market_value").replace(',','.')) if item.get("market_value") is not None else 0
+                price = float(item.get("price").replace(',','.')) if item.get("price") is not None else marketValue * 0.80
                 date = item.get('date') if item.get('date') is not None else datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
                 db.execute(
                     "INSERT INTO sealed(name, price, market_value, date, auction_id) VALUES (?, ?, ?, ?, ?)",
@@ -508,10 +511,11 @@ def addToExistingAuction(auction_id):
 def bulkCounterValue():
     db = get_db()
     cur = db.cursor()
-    counters = cur.execute('SELECT sum(quantity) FROM bulk_items GROUP BY item_type ORDER BY item_type').fetchall()
-    bulk_counter = counters[0][0] if len(counters) > 0 else 0
-    holo_counter = counters[1][0] if len(counters) > 1 else 0
-    
+    result = cur.execute('SELECT sum(quantity) as total, item_type FROM bulk_items GROUP BY item_type ORDER BY item_type').fetchall()
+    counters = {row['item_type']: row['total'] for row in result}
+    bulk_counter = counters.get('bulk', 0)
+    holo_counter = counters.get('holo', 0)  
+   
     return jsonify({'status': 'success','bulk_counter': bulk_counter, 'holo_counter': holo_counter}),200
 
 @bp.route('/loadSoldHistory')
@@ -569,7 +573,7 @@ def generateSoldReport():
         'WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ?', 
         (year, month)).fetchall()
    
-    sealed = db.execute('SELECT se.name, se.price, se.market_value FROM sealed se JOIN sales s ON se.sale_id = s.id WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ? ',
+    sealed = db.execute('SELECT se.name, se.price, se.market_value, se.auction_id FROM sealed se JOIN sales s ON se.sale_id = s.id WHERE strftime("%Y", s.sale_date) = ? AND strftime("%m", s.sale_date) = ? ',
                         (year, month)).fetchall()
     sealedList = [dict(item) for item in sealed]
 
@@ -642,7 +646,7 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
     
     # Add summary
     pdf.set_font(font_family, '', 12)
-    pdf.cell(0, 10, f'Total Cards Sold: {len(cards) + sum(item["quantity"] for item in bulkAndHoloList)}', 0, 1)
+    pdf.cell(0, 10, f'Total Cards Sold: {len(cards) + sum(item["quantity"] for item in bulkAndHoloList) + len(sealed)}', 0, 1)
     pdf.ln(5)
     
     # Calculate totals
@@ -661,11 +665,25 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
         else:
             total_neg_margin += curr_margin
 
+    for item in sealed:
+        if item['auction_id'] is not None:
+            curr_margin = Decimal(item['market_value'] - item['price'])
+            if curr_margin > 0:
+                total_pos_margin += curr_margin
+            else:
+                total_neg_margin += curr_margin
+
+    for item in bulkAndHoloList:
+        if item['type'] == 'bulk':
+            total_pos_margin += item['total_price'] -  item['quantity'] * 0.01
+        else:
+            total_pos_margin += item['total_price'] -  item['quantity'] * 0.03
+
     for s in shipping:
-        s = float(s)
+        s = Decimal(s)
         total_shipping_with_VAT += s
-        total_shipping_without_VAT += s / 1.23
-        total_shipping_VAT += s * (123 / 23)
+        total_shipping_without_VAT += Decimal(s / 1.23)
+        total_shipping_VAT += Decimal(s - (s / 1.23))
     
     pdf.cell(0, 8, f'Total Buy Price: {total_buy_price:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}€', 0, 1)
@@ -856,8 +874,8 @@ def createBuyReport(month, year, db):
             bought['Payment type'].append(', '.join(payment['type'] for payment in payments))
             bought['Amount'].append(', '.join(str(payment['amount']) for payment in payments))
         else:
-            bought['Payment type'].append(None)
-            bought['Amount'].append(0)
+            bought['Payment type'].append('')
+            bought['Amount'].append('')
 
     df = pd.DataFrame(bought)
 
@@ -1427,84 +1445,85 @@ def invoice(vendor):
         sealed = cartContent.get('sealed') 
         # Validate inventory before processing
         db = get_db()
-        try:
-            if bulk and bulk.get('quantity', 0) > 0:
-                if not _check_bulk_inventory(db, 'bulk', bulk.get('quantity', 0)):
-                    return jsonify({
-                        'status': 'error',
-                        'message': f'Insufficient bulk inventory. Requested: {bulk.get("quantity", 0)}'
-                    }), 400
+        #try:
+        if bulk and bulk.get('quantity', 0) > 0:
+            if not _check_bulk_inventory(db, 'bulk', bulk.get('quantity', 0)):
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Insufficient bulk inventory. Requested: {bulk.get("quantity", 0)}'
+                }), 401
+        
+        if holo and holo.get('quantity', 0) > 0:
+            if not _check_bulk_inventory(db, 'holo', holo.get('quantity', 0)):
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Insufficient holo inventory. Requested: {holo.get("quantity", 0)}'
+                }), 402
+        # Generate the invoice and get the file path
+        # Pass payment methods array (or single method for backwards compatibility)
+        payment_data, valid, err, pdf_path = None, None, None, None
+        if len(recieverInfo.get('paymentMethods')) > 0:
+            valid, payment_data, err = validate_and_sanitize_payments(recieverInfo.get('paymentMethods'))
+            print(valid,payment_data, err)
+        if not payment_data and recieverInfo.get('paymentMethod'):
+            # Backwards compatibility - convert single payment method to array
+            payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]
+        if err != None:
+            return jsonify({'status': 'error', 'message': f'There was an error while validating payments {err}'}), 400
+        if valid:
+            pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []),sealed , bulk, holo, payment_data, cartContent.get("shipping"))
+
+        shippingPrice = cartContent.get('shipping', {}).get('shippingPrice')
+        print(recieverInfo.get('total'))
+        if shippingPrice == None:
+            shippingPrice = 0       # Create sale record - ensure we have a valid date
+        sale_date = datetime.date.today().isoformat()
+        total_amount = float(recieverInfo.get('total')) + float(shippingPrice)
+        cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount, notes, shipping_info) VALUES (?, ?, ?, ?,?)',
+                (invoice_num, sale_date, total_amount, recieverInfo.get('nameAndSurname'),shippingPrice ))
+        sale_id = cursor.lastrowid
+        
+        # Add sale items
+        # vendor == 0 means CardMarket, vendor == 1 means other platform
+        sold_cm_value = 1 if vendor == 1 else 0
+        sold_value = 0 if vendor == 1 else 1
+        if len(cartContent.get('cards')) > 0:
+            for card in cartContent.get('cards', []):
+                sell_price = float(card.get('marketValue', 0))
+                db.execute('UPDATE cards SET sold_date = ? WHERE id = ?',
+                            (sale_date, card.get('cardId')))
+
+                db.execute(
+                        'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
+                        'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
+                        (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
+                        )
+
+        if sealed:
+            for item in sealed:
+                print(item.get('sid'))
+                db.execute('UPDATE sealed SET sale_id = ? WHERE id = ?',(sale_id, item.get("sid").replace('s','')))
+
+        if bulk:
+            db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
+                (sale_id, 'bulk', bulk.get('quantity', 0), bulk.get('unit_price', 0.01), bulk.get('sell_price', 0)))
+            # I am pretty sure the execudes are not needed
+            db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "bulk"', (bulk.get('quantity', 0),))
+            # Deduct from bulk_items using FIFO
+            _deduct_bulk_items_fifo(db, 'bulk', bulk.get('quantity', 0))
             
-            if holo and holo.get('quantity', 0) > 0:
-                if not _check_bulk_inventory(db, 'holo', holo.get('quantity', 0)):
-                    return jsonify({
-                        'status': 'error',
-                        'message': f'Insufficient holo inventory. Requested: {holo.get("quantity", 0)}'
-                    }), 400
-            
-            # Generate the invoice and get the file path
-            # Pass payment methods array (or single method for backwards compatibility)
-            payment_data = None
-            if len(recieverInfo.get('paymentMethods')) > 0:
-               valid, payment_data, err = validate_and_sanitize_payments(recieverInfo.get('paymentMethods'))
-            if not payment_data and recieverInfo.get('paymentMethod'):
-                # Backwards compatibility - convert single payment method to array
-                payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]
-            if err != None:
-                return jsonify({'status': 'error', 'message': f'There was an error while validating payments {err}'})
-            if valid:
-                pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []),sealed , bulk, holo, payment_data, cartContent.get("shipping"))
+        if holo:
+            db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
+                (sale_id, 'holo', holo.get('quantity', 0), holo.get('unit_price', 0.03), holo.get('sell_price', 0)))
+            db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "holo"', (holo.get('quantity', 0),))
+            # Deduct from bulk_items using FIFO
+            _deduct_bulk_items_fifo(db, 'holo', holo.get('quantity', 0))
 
-            shippingPrice = cartContent.get('shipping', {}).get('shippingPrice')
-            if shippingPrice is None:
-                shippingPrice = 0       # Create sale record - ensure we have a valid date
-            sale_date = datetime.date.today().isoformat()
-            total_amount = Decimal(recieverInfo.get('total')) + shippingPrice
-            cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount, notes, shipping_info) VALUES (?, ?, ?, ?,?)',
-                    (invoice_num, sale_date, total_amount, recieverInfo.get('nameAndSurname'),shippingPrice ))
-            sale_id = cursor.lastrowid
-            
-            # Add sale items
-            # vendor == 0 means CardMarket, vendor == 1 means other platform
-            sold_cm_value = 1 if vendor == 1 else 0
-            sold_value = 0 if vendor == 1 else 1
-            if len(cartContent.get('cards')) > 0:
-                for card in cartContent.get('cards', []):
-                    sell_price = float(card.get('marketValue', 0))
-                    db.execute('UPDATE cards SET sold_date = ? WHERE id = ?',
-                                (sale_date, card.get('cardId')))
-
-                    db.execute(
-                            'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
-                            'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
-                            (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
-                            )
-
-            if sealed:
-                for item in sealed:
-                    print(item.get('sid'))
-                    db.execute('UPDATE sealed SET sale_id = ? WHERE id = ?',(sale_id, item.get("sid").replace('s','')))
-
-            if bulk:
-                db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
-                    (sale_id, 'bulk', bulk.get('quantity', 0), bulk.get('unit_price', 0.01), bulk.get('sell_price', 0)))
-                # I am pretty sure the execudes are not needed
-                db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "bulk"', (bulk.get('quantity', 0),))
-                # Deduct from bulk_items using FIFO
-                _deduct_bulk_items_fifo(db, 'bulk', bulk.get('quantity', 0))
-                
-            if holo:
-                db.execute('INSERT INTO bulk_sales (sale_id, item_type, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
-                    (sale_id, 'holo', holo.get('quantity', 0), holo.get('unit_price', 0.03), holo.get('sell_price', 0)))
-                db.execute('UPDATE bulk_counter SET counter = counter - ? WHERE counter_name = "holo"', (holo.get('quantity', 0),))
-                # Deduct from bulk_items using FIFO
-                _deduct_bulk_items_fifo(db, 'holo', holo.get('quantity', 0))
-
-            db.commit()
-            
-            # Send the PDF file as a download
-            return jsonify({'status': 'success', 'pdf_path': pdf_path}), 200
-        except Exception as e:
-            db.rollback()
-            return jsonify({'status': 'error', 'message': f'There was an error {e}'})
+        db.commit()
+        
+        # Send the PDF file as a download
+        return jsonify({'status': 'success', 'pdf_path': pdf_path}), 200
+        #except Exception as e:
+        #    db.rollback()
+        #    return jsonify({'status': 'error', 'message': f'There was an error {e}'}), 400
 

@@ -10,7 +10,7 @@ from InvoiceGenerator.api import Invoice, Item, Client, Provider, Creator
 from InvoiceGenerator.pdf import SimpleInvoice
 from flask import current_app
 
-def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, payment_methods=None, shipping=None):
+def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, payment_methods=None, shipping=None):
     # Read invoice number from env.txt
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
@@ -68,9 +68,9 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
     # Data extracted from source: 50-51
     client = Client(
         summary = nameAndSurname,
-        address=reciever.get("address").capitalize(), # Full street address was missing in the snippet
-        city=reciever.get("city").capitalize(),
-        country=reciever.get("state", "").capitalize()
+        address=reciever.get("address").capitalize() if reciever.get("address") is not None else ' ',
+        city=reciever.get("city").capitalize() if reciever.get("city") is not None else ' ',
+        country=reciever.get("state", "").capitalize() if reciever.get("state") is not None else ' '
     )
 
     # 3. Create the Invoicegene
@@ -92,7 +92,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
             t = payment['type']
             result[t] = result.get(t, 0) + payment['amount']
     
-        unique_payment = [{'type': t, 'amount': amt} for t, amt in result.items()]
+        unique_payment = [{'type': t, 'amount': round(amt, 2)} for t, amt in result.items()]
         payment_strings = ", ".join(f"{item['type']} :{item['amount']}€ " for item in unique_payment)
         invoice.paytype = payment_strings
     else:
@@ -109,9 +109,12 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
     else:
         invoice.payback = invoice_date  # Default to today if not provided
     # 4. Add Items
-    if len(items) > 0:
+    if len(items) > 0 and items is not None:
         for item in items:
-            market_value_decimal = Decimal(str(item.get("marketValue")))
+            mv = item.get("marketValue")
+            if mv is None or str(mv) == "":
+                continue
+            market_value_decimal = Decimal(str(mv))
             invoice.add_item(Item(
                 count=1,
                 price=market_value_decimal,
@@ -145,14 +148,14 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
     if holo:
         invoice.add_item(Item(
             count=holo.get("quantity", 0),
-            price=holo.get("unit_price", 0.03),
+            price=Decimal(str(holo.get("unit_price", 0.03))),
             unit="ks",
             description="Holo bulk cards",
             tax=Decimal("0")
         ))
 
     if shipping:
-        shippingPrice = (Decimal(str(shipping.get('shippingPrice'))/1.23))
+        shippingPrice = Decimal(str(shipping.get('shippingPrice'))) / Decimal('1.23')
         invoice.add_item(Item(
             count=1,
             price=shippingPrice,
@@ -160,7 +163,7 @@ def generate_invoice(reciever, items, sealed=None , bulk=None, holo=None, paymen
             unit="ks",
             tax=Decimal("23")
         ))
-
+    print(f"Invoice items: {invoice.items}")
 
     # 5. Generate PDF
     pdf = SimpleInvoice(invoice)

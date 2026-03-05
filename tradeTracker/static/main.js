@@ -617,15 +617,17 @@ export async function updateInventoryValueAndTotalProfit() {
 
 function cartValue(cartContent) {
     let sum = 0.0;
-    cartContent.cards.forEach(card => {
-        if (card.marketValue) {
-            sum += Number(card.marketValue);
-        }
-    });
+    if(cartContent.cards){
+        cartContent.cards.forEach(card => {
+            if (card.marketValue) {
+                sum += Number(card.marketValue);
+            }
+        });
+    }
 
     if (cartContent.sealed) {
         cartContent.sealed.forEach(item => {
-            sum += Number(item.marketValue.replace("€", ""));
+            sum += Number(item.marketValue);
         })
     };
 
@@ -1091,7 +1093,7 @@ function shoppingCart() {
                     sid: sid,
                     auctionId: auctionId,
                     sealedName: paragraphs[0]?.textContent || '',
-                    marketValue: paragraphs[1]?.textContent || ''
+                    marketValue: paragraphs[1]?.textContent.replace('€', '').replace(',', '.').trim() || ''
                 };
                 sealed.push(sealedData);
             });
@@ -1298,9 +1300,11 @@ function shoppingCart() {
 
                 // Apply price adjustment if cart value was manually changed
                 if (cartValueInput != cartVal) {
-                    const fixedSubtotal = cartContent.bulkItem.sell_price + cartContent.holoItem.sell_price + cartContent.shipping.shippingPrice;
-                    const cardsSub = cartContent.cards ? cartContent.cards.marketValue.reduce((sum,c) =>{return sum+c}, 0) : 0;
-                    const sealedSub = cartContent.sealed ? cartContent.sealed.marketValue.reduce((sum,c) => { return sum + c},0) : 0;
+                    const bulkSub = cartContent.bulkItem ? Number(cartContent.bulkItem.sell_price) : 0;
+                    const holoSub = cartContent.holoItem ? Number(cartContent.holoItem.sell_price) : 0;
+                    const fixedSubtotal = bulkSub + holoSub;
+                    const cardsSub = cartContent.cards ? cartContent.cards.reduce((sum, c) => sum + Number(c.marketValue), 0) : 0;
+                    const sealedSub = cartContent.sealed ? cartContent.sealed.reduce((sum, c) => sum + Number(c.marketValue.replace('€','')), 0) : 0;
 
                     const adjustableSubtotal = cardsSub + sealedSub; 
                     const targetAdjustable = cartValueInput - fixedSubtotal;
@@ -1320,7 +1324,7 @@ function shoppingCart() {
                             }
                         }
                     }
-
+                }
                     let vendorCheckBox = document.querySelector('.vendor-type').checked;
                     cartContent.recieverInfo.total = Number(cartValue(cartContent));
                 if (Object.keys(cartContent).length !== 0) {
@@ -1342,6 +1346,7 @@ function shoppingCart() {
                         contentDiv.innerHTML = 'Your cart is empty';
                         bulkCartContent.innerHTML = '';
                         holoCartContent.innerHTML = '';
+                        sealedContent.innerHTML = '';
                         loadBulkHoloValues();
                         cartLines.length = 0;
                         existingIDs.clear();
