@@ -163,7 +163,6 @@ def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, p
             unit="ks",
             tax=Decimal("23")
         ))
-    print(f"Invoice items: {invoice.items}")
 
     # 5. Generate PDF
     pdf = SimpleInvoice(invoice)

@@ -290,7 +290,6 @@ def _add_bulk_items_helper(db, auction_id, bulk=None, holo=None):
     items = [dict(bulk) if bulk is not None else None, dict(holo) if holo is not None else None]
     
     for item in items:
-        print(item)
         if item is None:
             continue
         db.execute(
@@ -354,8 +353,6 @@ def loadSealed():
     db = get_db()
 
     sealed_products =  db.execute("SELECT 's' || id as sid, name, price, market_value, date FROM sealed WHERE sale_id is NULL AND auction_id is NULL").fetchall()
-    for s in sealed_products:
-        print(dict(s))
     return jsonify({'status':'success', 'data' : [dict(product) for product in sealed_products]})
 
 @bp.route('/addSealed', methods=('POST',))
@@ -502,7 +499,6 @@ def addToExistingAuction(auction_id):
 
         bulk = data.get('bulk')
         holo = data.get('holo')
-        print(type(bulk), type(holo))
         _add_bulk_items_helper(db, auction_id, bulk, holo)
         db.commit()
         return jsonify({'status': 'success'}), 201
@@ -1464,7 +1460,6 @@ def invoice(vendor):
         payment_data, valid, err, pdf_path = None, None, None, None
         if len(recieverInfo.get('paymentMethods')) > 0:
             valid, payment_data, err = validate_and_sanitize_payments(recieverInfo.get('paymentMethods'))
-            print(valid,payment_data, err)
         if not payment_data and recieverInfo.get('paymentMethod'):
             # Backwards compatibility - convert single payment method to array
             payment_data = [{'type': recieverInfo.get('paymentMethod'), 'amount': 0}]
@@ -1474,7 +1469,6 @@ def invoice(vendor):
             pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []),sealed , bulk, holo, payment_data, cartContent.get("shipping"))
 
         shippingPrice = cartContent.get('shipping', {}).get('shippingPrice')
-        print(recieverInfo.get('total'))
         if shippingPrice == None:
             shippingPrice = 0       # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()

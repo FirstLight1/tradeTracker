@@ -1338,7 +1338,6 @@ function shoppingCart() {
                         });
                     const data = await response.json();
                     if (data.status === 'success') {
-                        console.log("success")
                         cards = [];
                         for (const key in cartContent) {
                             delete cartContent[key];
