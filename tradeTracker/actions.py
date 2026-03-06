@@ -71,7 +71,7 @@ def validate_and_sanitize_payments(payments):
         
         # Validate amount is a number
         try:
-            amount = float(amount)
+            amount = Decimal(amount)
             if amount < 0:
                 return False, None, 'Payment amount cannot be negative'
             if amount > 1000000:  # Reasonable limit
@@ -81,7 +81,7 @@ def validate_and_sanitize_payments(payments):
         
         sanitized.append({
             'type': payment_type,
-            'amount': Decimal(amount)  # Ensure 2 decimal places
+            'amount': amount  # Ensure 2 decimal places
         })
     
     return True, sanitized, None

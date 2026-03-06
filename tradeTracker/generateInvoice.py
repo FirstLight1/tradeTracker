@@ -63,7 +63,7 @@ def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, p
         nameAndSurname = "".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")])
     except:
         ##TODO - change this to an error message
-        nameAndSurname = 'Error'
+        nameAndSurname = ' '
     # 2. Define the Client
     # Data extracted from source: 50-51
     client = Client(
@@ -81,11 +81,13 @@ def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, p
     invoice.currency_locale = 'en_US.UTF-8'
     invoice.currency_code = 'EUR'
     invoice.date = invoice_date          # Date of exposure (Dátum vystavenia)
+    invoice.qr_due_date = invoice_date 
 
 
     invoice.note = "Uplatnený osobitný režim zdaňovania podľa §66 zákona o DPH – daň z pridanej hodnoty je zahrnutá v marži.\nPredmet plnenia je použitý zberateľský tovar – individuálne ocenené kusy.\nReklamácia je možná výlučne pri preukázateľnej neautenticite alebo nesúlade s deklarovaným stavom.\nKupujúci nemá nárok na vrátenie tovaru bez uvedenia dôvodu.\nÚprava zdaňovania prirážky - použitý tovar (§ 74 ods. 1 písm. n) zákona o DPH)"
     
     # Format payment methods for display
+    print(payment_methods)
     if payment_methods and len(payment_methods) > 0:
         result = {}
         for payment in payment_methods:
