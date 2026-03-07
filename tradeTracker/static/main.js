@@ -2607,10 +2607,10 @@ async function loadAuctions() {
             `;
             auctionContainer.appendChild(auctionDiv);
 
-            // Store payments data on the div for later use
+            // Store payments data on the div for la
             auctionDiv.paymentsData = payments;
+            
         });
-
         // Handle payment editing - define as named function to allow re-attachment
         const handleEditPayment = (event) => {
             const auctionDiv = event.target.closest('.auction-tab');
@@ -2629,7 +2629,8 @@ async function loadAuctions() {
                 });
             } else {
                 // Add one empty row if no payments
-                rowsContainer.innerHTML += paymentTypeRow();
+                const auctionPrice = auctionDiv.querySelector('.auction-price').textContent.replace('€','')
+                rowsContainer.innerHTML += paymentTypeRow('Bankový prevod', auctionPrice);
             }
 
             // Add control buttons (create elements instead of innerHTML to preserve rowsContainer reference)
@@ -2886,6 +2887,7 @@ async function loadAuctions() {
         });
 
 
+        //TODO - investigate if this does something, look like not
         const auctionTab = document.querySelectorAll('.auction-tab');
         auctionTab.forEach((tab) => {
             const paymentMethodSelects = tab.querySelectorAll('.payment-method-select');
