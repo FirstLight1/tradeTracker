@@ -1406,18 +1406,27 @@ def getCardIds():
         condition = data.get('condition')
         exclude_ids = data.get('exclude_ids', [])
 
-        if not card_name or not card_num or not condition:
+        if not card_name or not condition:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
         db = get_db()
 
-        query = ('SELECT c.id FROM cards c '
-                 'LEFT JOIN sale_items si ON c.id = si.card_id '
-                 'WHERE c.card_name = ? '
-                 'AND c.card_num = ? '
-                 'AND c.condition = ? '
-                 'AND si.card_id IS NULL')
-        params = [card_name, card_num, condition]
+        if card_num is None:
+            query = ('SELECT c.id FROM cards c '
+                     'LEFT JOIN sale_items si ON c.id = si.card_id '
+                     'WHERE c.card_name = ? '
+                     'AND c.card_num IS NULL '
+                     'AND c.condition = ? '
+                     'AND si.card_id IS NULL')
+            params = [card_name, condition]
+        else:
+            query = ('SELECT c.id FROM cards c '
+                     'LEFT JOIN sale_items si ON c.id = si.card_id '
+                     'WHERE c.card_name = ? '
+                     'AND c.card_num = ? '
+                     'AND c.condition = ? '
+                     'AND si.card_id IS NULL')
+            params = [card_name, card_num, condition]
 
         if exclude_ids:
             placeholders = ','.join('?' for _ in exclude_ids)
