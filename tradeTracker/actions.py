@@ -556,6 +556,35 @@ def loadSoldCards(sale_id):
 
     return jsonify(response)
 
+@bp.route('/orderReturn/<int:saleId>')
+def orderReturn(saleId):
+    db = get_db()
+
+    #try:
+    if True:
+        db.execute('UPDATE cards SET sold_date = NULL WHERE id IN (SELECT card_id FROM sale_items WHERE sale_id = ?)',(saleId, ))
+        bulk_sales_rows = db.execute(
+            'SELECT item_type, quantity FROM bulk_sales WHERE sale_id = ?', (saleId,)
+        ).fetchall()
+        for bs_row in bulk_sales_rows:
+            target = db.execute(
+                'SELECT id FROM bulk_items WHERE item_type = ? ORDER BY auction_id DESC LIMIT 1',
+                (bs_row['item_type'],)
+            ).fetchone()
+            if target:
+                db.execute(
+                    'UPDATE bulk_items SET quantity = quantity + ? WHERE id = ?',
+                    (bs_row['quantity'], target['id'])
+                )
+        db.execute('DELETE FROM sales WHERE id = ?', (saleId, ))
+    #except:
+    #     db.rollback()
+    #     return jsonify({'status': 'error', 'message': 'There was an error while creating a return'}), 400 
+    
+    db.commit()
+    return jsonify({'status': 'success'}),200
+
+
 @bp.route('/generateSoldReport', methods=('GET',))
 def generateSoldReport():
     db = get_db()

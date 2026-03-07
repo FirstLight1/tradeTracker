@@ -1,4 +1,4 @@
-import { renderField } from "./main.js";
+import { renderField, renderAlert } from "./main.js";
 
 async function loadContent(button, soldDate){
     const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
@@ -46,6 +46,7 @@ async function loadContent(button, soldDate){
                     ${renderField(card.invoice_sell_price ? card.invoice_sell_price + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
                     <p>${card.invoice_sell_price && card.card_price ? (card.invoice_sell_price - card.card_price).toFixed(2) + '€' : 'Unknown'}</p>
                     <p>${formattedDate}</p>
+                    
                     <span hidden class = "card-id">${card.id}</span>
                 `;
                 cardsContainer.appendChild(cardElement);
@@ -116,20 +117,49 @@ async function loadHistory(){
             <p>Marža: ${sale.total_profit ? sale.total_profit.toFixed(2) : '0.00'}€</p>
             <p>${sale.notes ? sale.notes : 'None'}</p>
             <button class="view-auction" data-id="${sale.id}">View</button>
+            <button class="return" data-id="${sale.id}" >Return</button>
             <div class="cards-container">
-                <!-- Cards will be loaded here -->
+            <!-- Cards will be loaded here -->
             </div>
-        `;
+            `;
         historyContainer.appendChild(saleElement);
-        
+
         const viewButton = saleElement.querySelector('.view-auction');
         viewButton.addEventListener('click', () => {
             loadContent(viewButton, saleDate);
         });
         saleElement.addEventListener('click', (event) => {
             if(event.target !== viewButton){
-                loadContent(viewButton);
+                loadContent(viewButton, saleDate);
             }
+        });
+
+        const returnButton = saleElement.querySelector('.return');
+        returnButton.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            const saleId = returnButton.getAttribute('data-id');
+            if (returnButton.textContent === 'Confirm') {
+                const response = await fetch(`/orderReturn/${saleId}`);
+                const data = await response.json();
+                if (data.status !== 'success'){
+                   console.error(data.message) 
+                } else{
+                    window.location.reload();
+                }
+            } else {
+                returnButton.textContent = 'Confirm';
+                const timerID = setTimeout(() => {
+                    returnButton.textContent = 'Return';
+                }, 3000);
+                // Remove confirmation if user clicks elsewhere
+                document.addEventListener('click', function handler(e) {
+                    if (e.target !== returnButton) {
+                        returnButton.textContent = 'Delete';
+                        document.removeEventListener('click', handler);
+                        clearTimeout(timerID);
+                    }
+                });
+            } 
         });
     });
 }
