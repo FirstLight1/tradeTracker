@@ -111,11 +111,18 @@ async function loadHistory(){
         saleElement.setAttribute('data-id', sale.id);
         const saleDate = new Date(sale.sale_date);
         const formattedDate = `${saleDate.getDate().toString().padStart(2, '0')}.${(saleDate.getMonth() + 1).toString().padStart(2, '0')}.${saleDate.getFullYear()}`;
+        let name = "";
+        try{
+            const recieverInfo = JSON.parse(sale.notes);
+            name = recieverInfo.nameAndSurname;
+        } catch (e){
+            name = sale.notes;
+        }
         saleElement.innerHTML = `
             <p class="auction-name">Invoice #${sale.invoice_number} - ${formattedDate}</p>
             <p class="auction-price">Celková suma: ${sale.total_amount}€</p>
             <p>Marža: ${sale.total_profit ? sale.total_profit.toFixed(2) : '0.00'}€</p>
-            <p>${sale.notes ? sale.notes : 'None'}</p>
+            <p>${name}</p>
             <button class="view-auction" data-id="${sale.id}">View</button>
             <button class="return" data-id="${sale.id}" >Return</button>
             <div class="cards-container">
@@ -139,27 +146,47 @@ async function loadHistory(){
             event.stopPropagation();
             const saleId = returnButton.getAttribute('data-id');
             if (returnButton.textContent === 'Confirm') {
-                const response = await fetch(`/orderReturn/${saleId}`);
-                const data = await response.json();
-                if (data.status !== 'success'){
-                   console.error(data.message) 
-                } else{
+                returnButton.disabled = true;
+                returnButton.textContent = 'Processing...';
+                try {
+                    const cnResponse = await fetch(`/generateCreditNote/${saleId}`);
+                    const cnData = await cnResponse.json();
+                    console.log(cnData);
+                    if (cnData.status !== 'success') {
+                        renderAlert('Error generating credit note: ' + cnData.message, 'error');
+                        returnButton.disabled = false;
+                        returnButton.textContent = 'Return';
+                        return;
+                    }
+                    const returnResponse = await fetch(`/orderReturn/${saleId}`);
+                    const returnData = await returnResponse.json();
+                    if (returnData.status !== 'success') {
+                        renderAlert('Error processing return: ' + returnData.message, 'error');
+                        returnButton.disabled = false;
+                        returnButton.textContent = 'Return';
+                        return;
+                    }
+                    alert(`${cnData.pdf_path}`);
+                    //TODO - improve this, cause rn you can barely see the alert let alone copy it
                     window.location.reload();
+                } catch (e) {
+                    renderAlert('Error processing return: ' + e, 'error');
+                    returnButton.disabled = false;
+                    returnButton.textContent = 'Return';
                 }
             } else {
                 returnButton.textContent = 'Confirm';
                 const timerID = setTimeout(() => {
                     returnButton.textContent = 'Return';
                 }, 3000);
-                // Remove confirmation if user clicks elsewhere
                 document.addEventListener('click', function handler(e) {
                     if (e.target !== returnButton) {
-                        returnButton.textContent = 'Delete';
+                        returnButton.textContent = 'Return';
                         document.removeEventListener('click', handler);
                         clearTimeout(timerID);
                     }
                 });
-            } 
+            }
         });
     });
 }

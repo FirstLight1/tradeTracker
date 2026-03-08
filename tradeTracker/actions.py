@@ -560,8 +560,7 @@ def loadSoldCards(sale_id):
 def orderReturn(saleId):
     db = get_db()
 
-    #try:
-    if True:
+    try:
         db.execute('UPDATE cards SET sold_date = NULL WHERE id IN (SELECT card_id FROM sale_items WHERE sale_id = ?)',(saleId, ))
         bulk_sales_rows = db.execute(
             'SELECT item_type, quantity FROM bulk_sales WHERE sale_id = ?', (saleId,)
@@ -577,12 +576,84 @@ def orderReturn(saleId):
                     (bs_row['quantity'], target['id'])
                 )
         db.execute('DELETE FROM sales WHERE id = ?', (saleId, ))
-    #except:
-    #     db.rollback()
-    #     return jsonify({'status': 'error', 'message': 'There was an error while creating a return'}), 400 
+    except:
+         db.rollback()
+         return jsonify({'status': 'error', 'message': 'There was an error while creating a return'}), 400 
     
     db.commit()
     return jsonify({'status': 'success'}),200
+
+
+@bp.route('/generateCreditNote/<int:saleId>')
+def generate_credit_note(saleId):
+    db = get_db()
+
+    # Load the sale record (contains receiver info in notes and invoice_number)
+    sale = db.execute('SELECT * FROM sales WHERE id = ?', (saleId,)).fetchone()
+    if sale is None:
+        return jsonify({'status': 'error', 'message': 'Sale not found'}), 404
+
+    # Parse receiver info stored as JSON in the notes column
+    try:
+        reciever = json.loads(sale['notes']) if sale['notes'] else {}
+    except (json.JSONDecodeError, TypeError):
+        reciever = {}
+
+    original_invoice_num = sale['invoice_number']
+
+    # Load cards
+    cards_rows = db.execute(
+        'SELECT c.card_name, c.card_num, si.sell_price as marketValue '
+        'FROM cards c '
+        'JOIN sale_items si ON c.id = si.card_id '
+        'WHERE si.sale_id = ?',
+        (saleId,)
+    ).fetchall()
+    items = [{'cardName': r['card_name'], 'cardNum': r['card_num'], 'marketValue': r['marketValue']} for r in cards_rows]
+
+    # Load sealed items
+    sealed_rows = db.execute('SELECT * FROM sealed WHERE sale_id = ?', (saleId,)).fetchall()
+    sealed = [{'sealedName': r['name'], 'marketValue': r['market_value'], 'auctionId': r['auction_id']} for r in sealed_rows]
+
+    # Load bulk/holo sales
+    bulk_rows = db.execute('SELECT * FROM bulk_sales WHERE sale_id = ?', (saleId,)).fetchall()
+    bulk = None
+    holo = None
+    for b in bulk_rows:
+        if b['item_type'] == 'bulk':
+            bulk = {'quantity': b['quantity'], 'unit_price': b['unit_price']}
+        elif b['item_type'] == 'holo':
+            holo = {'quantity': b['quantity'], 'unit_price': b['unit_price']}
+
+    # Load shipping info
+    shipping = None
+    if sale['shipping_info'] and float(sale['shipping_info']) > 0:
+        shipping = {
+            'shippingWay': 'Doprava / Poštovné – samostatná služba',
+            'shippingPrice': sale['shipping_info']
+        }
+
+    # Reconstruct payment methods from receiver info if available
+    payment_methods = reciever.get('paymentMethods') or []
+    if not payment_methods and reciever.get('paymentMethod'):
+        payment_methods = [{'type': reciever.get('paymentMethod'), 'amount': 0}]
+
+   #try:
+    if True:
+        pdf_path, cn_num = generateInvoice.generateCreditNote(
+            reciever,
+            items if items else None,
+            sealed if sealed else None,
+            bulk,
+            holo,
+            payment_methods if payment_methods else None,
+            shipping,
+            original_invoice_num
+        )
+    #except Exception as e:
+     #   return jsonify({'status': 'error', 'message': str(e)}), 500
+
+    return jsonify({'status': 'success', 'pdf_path': pdf_path, 'cn_num': cn_num}), 200
 
 
 @bp.route('/generateSoldReport', methods=('GET',))
@@ -1507,12 +1578,13 @@ def invoice(vendor):
             pdf_path, invoice_num = generateInvoice.generate_invoice(recieverInfo, cartContent.get('cards', []),sealed , bulk, holo, payment_data, cartContent.get("shipping"))
 
         shippingPrice = cartContent.get('shipping', {}).get('shippingPrice')
+        recieverInfoJson = json.dumps(recieverInfo)
         if shippingPrice == None:
             shippingPrice = 0       # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()
         total_amount = float(recieverInfo.get('total')) + float(shippingPrice)
         cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount, notes, shipping_info) VALUES (?, ?, ?, ?,?)',
-                (invoice_num, sale_date, total_amount, recieverInfo.get('nameAndSurname'),shippingPrice ))
+                (invoice_num, sale_date, total_amount, recieverInfoJson ,shippingPrice ))
         sale_id = cursor.lastrowid
         
         # Add sale items
