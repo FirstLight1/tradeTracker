@@ -12,6 +12,7 @@ import fpdf
 import json
 import pandas as pd
 from . import generateInvoice
+import traceback
 
 bp = Blueprint('actions', __name__)
 CORS(bp)
@@ -702,6 +703,7 @@ def generateSoldReport():
         xls_path = createBuyReport(month, year, db);
         return jsonify({'status': 'success', 'pdf_path': pdf_path, 'xls_path':xls_path}), 200
     except Exception as e:
+        traceback.print_exc()
         print(f"Error generating PDF: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
@@ -746,7 +748,7 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
     pdf.ln(5)
     
     # Calculate totals
-    total_buy_price = sum(card['card_price'] or 0 for card in cards) + sum(item['price'] or 0 for item in sealed) + sum(item['quantity'] * 0.01 if item['type'] == 'bulk' else item['quantity'] * 0.03 for item in bulkAndHoloList)
+    total_buy_price = sum(card['card_price'] or 0 for card in cards) + sum(item['price'] or 0 for item in sealed) + sum(item['quantity'] * 0.01 if item['item_type'] == 'bulk' else item['quantity'] * 0.03 for item in bulkAndHoloList)
     total_sell_price = sum(card['sell_price'] or 0 for card in cards) + sum(item['market_value'] or 0 for item in sealed) + sum(item['total_price'] or 0 for item in bulkAndHoloList)
     total_profit = total_sell_price - total_buy_price
     total_neg_margin = 0
@@ -770,10 +772,10 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
                 total_neg_margin += curr_margin
 
     for item in bulkAndHoloList:
-        if item['type'] == 'bulk':
-            total_pos_margin += item['total_price'] -  item['quantity'] * 0.01
+        if item['item_type'] == 'bulk':
+            total_pos_margin += Decimal(item['total_price'] -  item['quantity'] * 0.01)
         else:
-            total_pos_margin += item['total_price'] -  item['quantity'] * 0.03
+            total_pos_margin += Decimal(item['total_price'] -  item['quantity'] * 0.03)
 
     for s in shipping:
         s = Decimal(s)
