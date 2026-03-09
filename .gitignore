@@ -19,3 +19,4 @@ run_app.spec
 text.txt
 tradeTracker/env.txt
 nul
+*.bat

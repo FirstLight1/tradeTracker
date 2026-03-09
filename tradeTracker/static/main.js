@@ -648,7 +648,6 @@ async function changeCardPricesBasedOnAuctionPrice(auctionTab) {
     const response = await fetch(`/recalculateCardPrices/${auctionId}/${auctionPrice}`, { method: 'GET' });
     const data = await response.json();
     if (data.status == 'success') {
-        console.log('success');
         window.location.reload();
     } else if (data.status == 'error') {
         renderAlert('Error recalculating card prices: ' + data.message, 'error');
@@ -697,6 +696,8 @@ function renderCartLine(line) {
     };
 
     updateDisplay();
+    contentDiv.appendChild(cardDiv);
+    contentDiv.scrollTop = contentDiv.scrollHeight;
     contentDiv.appendChild(cardDiv);
     saveCartContentToSession();
 }

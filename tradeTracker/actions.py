@@ -12,7 +12,6 @@ import fpdf
 import json
 import pandas as pd
 from . import generateInvoice
-import traceback
 
 bp = Blueprint('actions', __name__)
 CORS(bp)
@@ -703,7 +702,6 @@ def generateSoldReport():
         xls_path = createBuyReport(month, year, db);
         return jsonify({'status': 'success', 'pdf_path': pdf_path, 'xls_path':xls_path}), 200
     except Exception as e:
-        traceback.print_exc()
         print(f"Error generating PDF: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
