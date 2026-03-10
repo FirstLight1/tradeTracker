@@ -222,7 +222,7 @@ def generateCreditNote(reciever, items=None, sealed=None, bulk=None, holo=None, 
     )
 
     try:
-        nameAndSurname = "".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")])
+        nameAndSurname = " ".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")])
     except:
         nameAndSurname = ' '
 
