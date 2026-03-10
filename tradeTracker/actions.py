@@ -1582,7 +1582,7 @@ def invoice(vendor):
         if shippingPrice == None:
             shippingPrice = 0       # Create sale record - ensure we have a valid date
         sale_date = datetime.date.today().isoformat()
-        total_amount = float(recieverInfo.get('total')) + float(shippingPrice)
+        total_amount = round(float(recieverInfo.get('total')) + float(shippingPrice),2)
         cursor = db.execute('INSERT INTO sales (invoice_number, sale_date, total_amount, notes, shipping_info) VALUES (?, ?, ?, ?,?)',
                 (invoice_num, sale_date, total_amount, recieverInfoJson ,shippingPrice ))
         sale_id = cursor.lastrowid
