@@ -48,11 +48,10 @@ class queue {
 }
 
 class CartLine {
-    constructor(cardName, cardNum, condition, auctionId, auctionName, marketValue, allIds) {
+    constructor(cardName, cardNum, condition, auctionName, marketValue, allIds) {
         this.cardName = cardName;
         this.cardNum = cardNum;
         this.condition = condition;
-        this.auctionId = auctionId;
         this.auctionName = auctionName;
         this.marketValue = marketValue;
         this.cardIds = [allIds[0]];
@@ -82,11 +81,10 @@ class CartLine {
         return [...this.cardIds];
     }
 
-    matches(cardName, cardNum, condition, auctionId) {
+    matches(cardName, cardNum, condition) {
         return this.cardName === cardName
             && this.cardNum === cardNum
-            && this.condition === condition
-            && this.auctionId == auctionId;
+            && this.condition === condition;
     }
 
     // For sessionStorage
@@ -95,7 +93,6 @@ class CartLine {
             cardName: this.cardName,
             cardNum: this.cardNum,
             condition: this.condition,
-            auctionId: this.auctionId,
             auctionName: this.auctionName,
             marketValue: this.marketValue,
             cardIds: this.cardIds,
@@ -107,7 +104,7 @@ class CartLine {
     static fromJSON(data) {
         const line = new CartLine(
             data.cardName, data.cardNum, data.condition,
-            data.auctionId, data.auctionName, data.marketValue,
+            data.auctionName, data.marketValue,
             [...data.cardIds, ...(data.reservableIds || [])]
         );
         // Override the constructor's default split
@@ -120,7 +117,6 @@ class CartLine {
     toInvoiceItems() {
         return this.cardIds.map(id => ({
             cardId: id,
-            auctionId: this.auctionId,
             cardName: this.cardName,
             cardNum: this.cardNum,
             condition: this.condition,
@@ -139,7 +135,6 @@ class CartLine {
                     card_name: this.cardName,
                     card_num: this.cardNum,
                     condition: this.condition,
-                    auction_id: this.auctionId,
                     exclude_ids: [...excludeIds]
                 })
             });
@@ -1381,7 +1376,7 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
         }
 
         // Check if a matching CartLine already exists
-        const existing = cartLines.find(l => l.matches(card.cardName, card.cardNum, card.condition, auctionId));
+        const existing = cartLines.find(l => l.matches(card.cardName, card.cardNum, card.condition ));
         if (existing) {
             existing.cardIds.push(cardId);
             existingIDs.add(cardId);
@@ -1398,7 +1393,7 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
             // Create new CartLine with just this one cardId, empty pool
             const line = new CartLine(
                 card.cardName, card.cardNum, card.condition,
-                auctionId, card.auctionName || '', card.marketValue || '',
+                card.auctionName || '', card.marketValue || '',
                 [cardId]
             );
             cartLines.push(line);
@@ -1409,7 +1404,7 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
     }
 
     // Entry A: From search results (no cardId)
-    const existing = cartLines.find(l => l.matches(card.cardName, card.cardNum, card.condition, auctionId));
+    const existing = cartLines.find(l => l.matches(card.cardName, card.cardNum, card.condition));
     if (existing) {
         // Try to increment existing line
         if (!existing.canIncrement) {
@@ -1458,7 +1453,7 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
         }
         const line = new CartLine(
             card.cardName, card.cardNum, card.condition,
-            auctionId, card.auctionName || '', card.marketValue || '',
+            card.auctionName || '', card.marketValue || '',
             data.card_ids
         );
         cartLines.push(line);
@@ -1764,6 +1759,10 @@ function displaySearchResults(results, resultsQueue, searchInput) {
             card.cardNum = result.card_num;
             card.condition = result.condition;
             card.marketValue = result.market_value;
+            console.log(result)
+
+            const availableCount = result.available_count ? result.available_count : 1;
+            let pendingQty = 1;
 
             // Display in desired order, with proper formatting
             div.innerHTML = `
@@ -1771,13 +1770,14 @@ function displaySearchResults(results, resultsQueue, searchInput) {
                 <p class="result result-card-num">${result.card_num || 'N/A'}</p>
                 <p class="result result-condition ${result.condition.split(' ').join('_').toLowerCase()}">${result.condition || 'Unknown'}</p>
                 <p class="result result-market-value">${result.market_value ? result.market_value + '€' : 'N/A'}</p>
+                <p class="result result-quantity">${pendingQty} / ${availableCount}</p>
                 <p class="result result-auction-name">${result.auction_name || result.auction_id - 1}</p>
                 <button class="add-to-cart-btn">Add to cart</button>
                 <button class="view-auction" data-id="${result.auction_id}">View</button>
             `;
             resultsQueue.enqueue(div);
 
-            div.addEventListener('keydown', (event) => {
+            div.addEventListener('keydown', async (event) => {
                 event.preventDefault();
                 if (event.key == 'ArrowDown') {
                     resultsQueue.moveNext();
@@ -1785,10 +1785,19 @@ function displaySearchResults(results, resultsQueue, searchInput) {
                 } else if (event.key == 'ArrowUp') {
                     resultsQueue.movePrev();
                     resultsQueue.getCurrent().focus();
+                } else if (event.key == 'ArrowRight') {
+                    pendingQty = Math.min(pendingQty + 1, availableCount);
+                    div.querySelector('.result-quantity').textContent = `${pendingQty} / ${availableCount}`;
+                } else if (event.key == 'ArrowLeft') {
+                    pendingQty = Math.max(pendingQty - 1, 1);
+                    div.querySelector('.result-quantity').textContent = `${pendingQty} / ${availableCount}`;
                 } else if (event.key == 'Enter') {
-                    div.click();
+                    for (let i = 0; i < pendingQty; i++) {
+                        await addToShoppingCart(card);
+                    }
                     searchInput.value = '';
                     searchInput.focus();
+                    document.querySelector('.search-results').innerHTML = '';
                 }
             });
 
@@ -1826,7 +1835,7 @@ function displaySearchResults(results, resultsQueue, searchInput) {
             });
 
             div.addEventListener('click', async () => {
-                await addToShoppingCart(card, result.auction_id);
+                await addToShoppingCart(card);
                 searchContainer.innerHTML = '';
             });
         }
