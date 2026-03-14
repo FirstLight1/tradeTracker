@@ -1239,6 +1239,14 @@ def cardMarketTable():
             print("DB error:", e)
             return jsonify({'status': 'error'}), 500
 
+@bp.route('/cardMarketOrder', methods=('POST',))
+def cardMarketOrder():
+    db = get_db()
+    data = request.get_json()
+    print(data)
+    return jsonify({'status': 'success'}), 201
+
+
 def createDicts(lines):
     zipped = list(zip(*[line.split(';') for line in lines]))
 

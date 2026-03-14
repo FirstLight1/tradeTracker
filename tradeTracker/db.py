@@ -136,7 +136,7 @@ CREATE TABLE sealed(
     );
 
 CREATE INDEX idx_sealed_name ON sealed(name);
-CREATE INDEX idx_sealed_name ON sealed(auction_id);
+CREATE INDEX idx_sealed_auction_id ON sealed(auction_id);
 
 CREATE TABLE collection(
     id INTEGER PRIMARY KEY AUTOINCREMENT,

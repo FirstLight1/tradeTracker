@@ -2035,9 +2035,7 @@ async function loadAuctionContent(button) {
                                         cardsContainer.insertBefore(p, cardsContainer.querySelector('.button-container'));
                                     }
                                 } else {
-                                    await changeCardPricesBasedOnAuctionPrice(auctionDiv);
                                     await updateInventoryValueAndTotalProfit();
-
                                 }
                                 if (cardsContainer.childElementCount < 3) {
                                     if (!(auctionDiv.classList.contains('singles'))) {
