@@ -409,7 +409,8 @@ def invertoryValue():
     cur = db.cursor()
     cardMarketValue = cur.execute('SELECT SUM(market_value) FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE si.card_id IS NULL').fetchone()[0]
     bulkValue = cur.execute('SELECT SUM(total_price) FROM bulk_items').fetchone()[0]
-    value = (cardMarketValue if cardMarketValue is not None else 0) + (bulkValue if bulkValue is not None else 0)
+    sealedValue = cur.execute('SELECT SUM(market_value) FROM sealed WHERE sale_id IS NULL').fetchone()[0]
+    value = (cardMarketValue if cardMarketValue is not None else 0) + (bulkValue if bulkValue is not None else 0) + (sealedValue if sealedValue is not None else 0)
 
     return jsonify({'status': 'success','value': value}),200
 
@@ -499,7 +500,8 @@ def addToExistingAuction(auction_id):
 
         bulk = data.get('bulk')
         holo = data.get('holo')
-        _add_bulk_items_helper(db, auction_id, bulk, holo)
+        if not bulk or not holo:
+            _add_bulk_items_helper(db, auction_id, bulk, holo)
         db.commit()
         return jsonify({'status': 'success'}), 201
 

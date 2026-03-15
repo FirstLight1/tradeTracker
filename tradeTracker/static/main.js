@@ -307,10 +307,20 @@ async function updatePaymentMethod(auctionId, payments) {
     }
 }
 
-function calculateAuctionBuyPrice(cards) {
+function calculateCardBuyPrice(cards) {
     let totalBuyPrice = 0;
     cards.forEach(card => {
         const buyPrice = Number(card.querySelector('.card-price').textContent.replace('€', '').trim());
+        totalBuyPrice += buyPrice;
+    });
+    return totalBuyPrice.toFixed(2);
+}
+
+function calculateSealedBuyPrice(sealed) {
+    let totalBuyPrice = 0;
+    console.log(sealed);
+    sealed.forEach(s => {
+        const buyPrice = Number(s.price);
         totalBuyPrice += buyPrice;
     });
     return totalBuyPrice.toFixed(2);
@@ -426,9 +436,11 @@ function deleteAuction(id, div) {
 
 
 
-async function setAuctionBuyPrice(cards, auctionTab) {
+async function setAuctionBuyPrice(cards, sealed, auctionTab) {
     const auctionBuyPriceElement = auctionTab.querySelector('.auction-price');
-    const newAuctionBuyPrice = calculateAuctionBuyPrice(cards);
+    const cardBuyPrice = calculateCardBuyPrice(cards);
+    const sealedCardPrice = calculateSealedBuyPrice(sealed);
+    const newAuctionBuyPrice = Number(cardBuyPrice) + Number(sealedCardPrice);
     auctionBuyPriceElement.textContent = appendEuroSign(newAuctionBuyPrice, 'auction-price');
     const auctionId = auctionTab.getAttribute('data-id');
     await updateAuction(auctionId, newAuctionBuyPrice, 'auction_price');
@@ -2315,7 +2327,7 @@ async function loadAuctionContent(button) {
             const auctionId = auctionDiv.getAttribute('data-id');
             let cardsArray = [];
             const newCards = cardsContainer.querySelectorAll('.new-card');
-            try {
+            //try {
                 newCards.forEach(async (card) => {
                     let cardObj = new struct();
                     cardObj.cardName = card.querySelector('input.card-name').value.trim().toUpperCase() || null;
@@ -2391,7 +2403,6 @@ async function loadAuctionContent(button) {
                     }
                 }
 
-
                 const jsonbody = JSON.stringify(itemsToAdd);
                 const response = await fetch(`/addToExistingAuction/${auctionId}`, {
                     method: 'POST',
@@ -2410,16 +2421,16 @@ async function loadAuctionContent(button) {
                 } else {
                     const auctionTab = cardsContainer.closest('.auction-tab');
                     const cards = cardsContainer.querySelectorAll('.card');
-                    await setAuctionBuyPrice(cards, auctionTab);
+                    await setAuctionBuyPrice(cards, itemsToAdd['sealed'], auctionTab);
 
                     await updateInventoryValueAndTotalProfit();
                 }
 
                 newCards.forEach(card => card.classList.remove('new-card'));
-            } catch (error) {
-                renderAlert('Error saving new cards: ' + error, 'error');
-                return;
-            }
+            //} catch (error) {
+            //    renderAlert('Error saving new cards: ' + error, 'error');
+            //    return;
+           // }
             //this could be done better by dynamically adding the cards instead of reloading the whole auction
             window.location.reload();
         });
