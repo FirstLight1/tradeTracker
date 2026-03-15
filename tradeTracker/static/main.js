@@ -789,6 +789,13 @@ function attachCartLineListeners(cardDiv, line, updateDisplay) {
     });
 }
 
+const source = new EventSource('/stream');
+source.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    console.log(data);
+};
+
+
 function saveCartContentToSession() {
     const sealedEl = document.querySelector('.sealed-content').children;
     const bulkEl = document.querySelector('.bulk-cart-content');

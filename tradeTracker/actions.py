@@ -1,6 +1,6 @@
 from decimal import Decimal
 import sys
-from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify, current_app
+from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify, current_app, Response
 from flask_cors import CORS
 from tradeTracker.db import get_db
 import datetime
@@ -12,12 +12,14 @@ import fpdf
 import json
 import pandas as pd
 from . import generateInvoice
+from queue import Queue
 
 bp = Blueprint('actions', __name__)
 CORS(bp)
 dictKeys = ['Product ID', 'Name', 'Condition', 'Price', 'Card Number']
 li = []
 dataList = []
+listeners = []
 
 conditionDict = {
     'MT' : "Mint",
@@ -1243,11 +1245,31 @@ def cardMarketTable():
 
 @bp.route('/cardMarketOrder', methods=('POST',))
 def cardMarketOrder():
-    db = get_db()
     data = request.get_json()
-    print(data)
+    
+    for q in listeners:
+        q.put(data)
     return jsonify({'status': 'success'}), 201
 
+@bp.route('/stream')
+def stream():
+    def event_stream():
+        q = Queue();
+        listeners.append(q)
+
+        while True:
+            data = q.get()
+            shipping_info = data['shipping_info']
+            cards = data['cards']
+            cards[0]['id'] = 3;
+            sealed = data['sealed']
+            orderInfo = {
+                    "shipping_info" : shipping_info,
+                    "cards" : cards,
+                    "sealed" : sealed
+                    }
+            yield f'data: {json.dumps(orderInfo)}\n\n'
+    return Response(event_stream(), mimetype="text/event-stream")
 
 def createDicts(lines):
     zipped = list(zip(*[line.split(';') for line in lines]))
