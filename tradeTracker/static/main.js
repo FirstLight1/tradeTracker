@@ -624,7 +624,7 @@ export async function updateInventoryValueAndTotalProfit() {
 
 function cartValue(cartContent) {
     let sum = 0.0;
-    if(cartContent.cards){
+    if (cartContent.cards) {
         cartContent.cards.forEach(card => {
             if (card.marketValue) {
                 sum += Number(card.marketValue);
@@ -788,13 +788,6 @@ function attachCartLineListeners(cardDiv, line, updateDisplay) {
         saveCartContentToSession();
     });
 }
-
-const source = new EventSource('/stream');
-source.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    console.log(data);
-};
-
 
 function saveCartContentToSession() {
     const sealedEl = document.querySelector('.sealed-content').children;
@@ -1121,7 +1114,7 @@ function shoppingCart() {
         const holoItems = holoCartContent.querySelector('.holo-cart-item-holo');
         if (bulkItems) {
             let bulkQuantity = Number(bulkItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
-            if (bulkQuantity === 0){
+            if (bulkQuantity === 0) {
                 bulkQuantity = 1
             }
 
@@ -1319,9 +1312,9 @@ function shoppingCart() {
                     const holoSub = cartContent.holoItem ? Number(cartContent.holoItem.sell_price) : 0;
                     const fixedSubtotal = bulkSub + holoSub;
                     const cardsSub = cartContent.cards ? cartContent.cards.reduce((sum, c) => sum + Number(c.marketValue), 0) : 0;
-                    const sealedSub = cartContent.sealed ? cartContent.sealed.reduce((sum, c) => sum + Number(c.marketValue.replace('€','')), 0) : 0;
+                    const sealedSub = cartContent.sealed ? cartContent.sealed.reduce((sum, c) => sum + Number(c.marketValue.replace('€', '')), 0) : 0;
 
-                    const adjustableSubtotal = cardsSub + sealedSub; 
+                    const adjustableSubtotal = cardsSub + sealedSub;
                     const targetAdjustable = cartValueInput - fixedSubtotal;
 
                     if (adjustableSubtotal > 0) {
@@ -1340,8 +1333,8 @@ function shoppingCart() {
                         }
                     }
                 }
-                    let vendorCheckBox = document.querySelector('.vendor-type').checked;
-                    cartContent.recieverInfo.total = Number(cartValue(cartContent));
+                let vendorCheckBox = document.querySelector('.vendor-type').checked;
+                cartContent.recieverInfo.total = Number(cartValue(cartContent));
                 if (Object.keys(cartContent).length !== 0) {
                     const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
                         {
@@ -1395,7 +1388,7 @@ async function addToShoppingCart(card, auctionId, cardId = null) {
         }
 
         // Check if a matching CartLine already exists
-        const existing = cartLines.find(l => l.matches(card.cardName, card.cardNum, card.condition ));
+        const existing = cartLines.find(l => l.matches(card.cardName, card.cardNum, card.condition));
         if (existing) {
             existing.cardIds.push(cardId);
             existingIDs.add(cardId);
@@ -1625,6 +1618,32 @@ function addHoloToCart() {
         }
     });
 }
+
+setInterval(async () => {
+    try {
+        const response = await fetch('/getLatest');
+        const data = await response.json()
+        if (data.status === 'success') {
+            const shippingInfo = data.message.shippingInfo;
+            const cards = data.message.cards;
+            const sealed = data.message.sealed;
+
+            saveModalDataToSession();
+
+            cards.forEach((card) => {
+                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, card.id)
+
+            })
+            console.log(data.message)
+
+        }
+
+
+    } catch (error) {
+        renderAlert(error, 'error');
+    }
+}, 5000);
+
 
 function addResultScrollingWithArrows(searchInput, resultsQueue) {
     searchInput.addEventListener('keydown', (event) => {
@@ -2335,109 +2354,109 @@ async function loadAuctionContent(button) {
             let cardsArray = [];
             const newCards = cardsContainer.querySelectorAll('.new-card');
             //try {
-                newCards.forEach(async (card) => {
-                    let cardObj = new struct();
-                    cardObj.cardName = card.querySelector('input.card-name').value.trim().toUpperCase() || null;
-                    cardObj.cardNum = card.querySelector('input.card-num').value.trim().toUpperCase() || null;
-                    cardObj.condition = card.querySelector('select.condition').value || null;
-                    cardObj.buyPrice = card.querySelector('input.card-price').value.replace(',', '.').trim() || null;
-                    cardObj.marketValue = card.querySelector('input.market-value').value.replace(',', '.').trim() || null;
-                    cardObj.sellPrice = card.querySelector('input.sell-price').value.replace(',', '.').trim() || null;
-                    cardObj.soldDate = null;
+            newCards.forEach(async (card) => {
+                let cardObj = new struct();
+                cardObj.cardName = card.querySelector('input.card-name').value.trim().toUpperCase() || null;
+                cardObj.cardNum = card.querySelector('input.card-num').value.trim().toUpperCase() || null;
+                cardObj.condition = card.querySelector('select.condition').value || null;
+                cardObj.buyPrice = card.querySelector('input.card-price').value.replace(',', '.').trim() || null;
+                cardObj.marketValue = card.querySelector('input.market-value').value.replace(',', '.').trim() || null;
+                cardObj.sellPrice = card.querySelector('input.sell-price').value.replace(',', '.').trim() || null;
+                cardObj.soldDate = null;
 
-                    if (cardObj.buyPrice === null) cardObj.buyPrice = cardObj.marketValue * 0.85;
-                    if (cardObj.sellPrice === null) cardObj.sellPrice = cardObj.marketValue;
-                    if (cardObj.cardName !== null && cardObj.marketValue !== null) {
-                        cardsArray.push(cardObj);
-                    } else {
-                        card.remove();
-                    }
-                });
-
-                itemsToAdd['cards'] = cardsArray;
-
-                const auctionSingles = auctionDiv.classList.contains('singles') ? true : false;
-                for (let i = 0; i < cardsArray.length; i++) {
-                    let j = 0;
-                    for (const [key, value] of Object.entries(cardsArray[i])) {
-                        if (key === 'soldDate') continue;
-                        const cardElement = newCards[i].children;
-                        replaceWithPElement(cardElement[j].dataset.field, value, cardElement[j]);
-                        j++;
-                    }
-                }
-
-                const bulkDiv = cardsContainer.querySelector('.add-bulk-item');
-                if (bulkDiv) {
-                    const bulkItems = { 'item_type': 'bulk', 'quantity': null, 'total_price': null };
-                    bulkItems.quantity = bulkDiv.querySelector('.bulk-quantity-input').value.trim() || null;
-                    bulkItems.total_price = bulkDiv.querySelector('.bulk-sell-price-input').value.trim() || null;
-                    bulkItems.unit_price = bulkItems.total_price / bulkItems.quantity || null;
-                    itemsToAdd['bulk'] = bulkItems;
-                }
-
-                const holoDiv = cardsContainer.querySelector('.add-holo-item');
-                if (holoDiv) {
-                    const holoItems = { 'item_type': 'holo', 'quantity': null, 'total_price': null };
-                    holoItems.quantity = holoDiv.querySelector('.holo-quantity-input').value.trim() || null;
-                    holoItems.total_price = holoDiv.querySelector('.holo-sell-price-input').value.trim() || null;
-                    holoItems.unit_price = holoItems.total_price / holoItems.quantity || null;
-                    itemsToAdd['holo'] = holoItems;
-                }
-
-                // Handle sealed items
-                const sealedDivs = cardsContainer.querySelectorAll('.add-sealed-item');
-                if (sealedDivs.length > 0) {
-                    const sealedItems = [];
-                    sealedDivs.forEach(sealedDiv => {
-                        const name = sealedDiv.querySelector('.sealed-name-input').value.trim() || null;
-                        const price = sealedDiv.querySelector('.sealed-price-input').value.trim() || null;
-                        const marketValue = sealedDiv.querySelector('.sealed-market-value-input').value.trim() || null;
-                        const date = sealedDiv.querySelector('.sealed-date-input').value || null;
-
-                        if (name !== null && marketValue !== null) {
-                            sealedItems.push({
-                                name: name,
-                                price: price,
-                                market_value: marketValue,
-                                date: date
-                            });
-                        }
-                    });
-
-                    if (sealedItems.length > 0) {
-                        itemsToAdd['sealed'] = sealedItems;
-                    }
-                }
-
-                const jsonbody = JSON.stringify(itemsToAdd);
-                const response = await fetch(`/addToExistingAuction/${auctionId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: jsonbody
-                });
-                const data = await response.json();
-                if (!(data.status === 'success')) {
-                    renderAlert('Error saving new cards: ' + JSON.stringify(data), 'error');
-                    return;
-                }
-                if (auctionSingles) {
-                    await updateInventoryValueAndTotalProfit();
+                if (cardObj.buyPrice === null) cardObj.buyPrice = cardObj.marketValue * 0.85;
+                if (cardObj.sellPrice === null) cardObj.sellPrice = cardObj.marketValue;
+                if (cardObj.cardName !== null && cardObj.marketValue !== null) {
+                    cardsArray.push(cardObj);
                 } else {
-                    const auctionTab = cardsContainer.closest('.auction-tab');
-                    const cards = cardsContainer.querySelectorAll('.card');
-                    await setAuctionBuyPrice(cards, itemsToAdd['sealed'], auctionTab);
-
-                    await updateInventoryValueAndTotalProfit();
+                    card.remove();
                 }
+            });
 
-                newCards.forEach(card => card.classList.remove('new-card'));
+            itemsToAdd['cards'] = cardsArray;
+
+            const auctionSingles = auctionDiv.classList.contains('singles') ? true : false;
+            for (let i = 0; i < cardsArray.length; i++) {
+                let j = 0;
+                for (const [key, value] of Object.entries(cardsArray[i])) {
+                    if (key === 'soldDate') continue;
+                    const cardElement = newCards[i].children;
+                    replaceWithPElement(cardElement[j].dataset.field, value, cardElement[j]);
+                    j++;
+                }
+            }
+
+            const bulkDiv = cardsContainer.querySelector('.add-bulk-item');
+            if (bulkDiv) {
+                const bulkItems = { 'item_type': 'bulk', 'quantity': null, 'total_price': null };
+                bulkItems.quantity = bulkDiv.querySelector('.bulk-quantity-input').value.trim() || null;
+                bulkItems.total_price = bulkDiv.querySelector('.bulk-sell-price-input').value.trim() || null;
+                bulkItems.unit_price = bulkItems.total_price / bulkItems.quantity || null;
+                itemsToAdd['bulk'] = bulkItems;
+            }
+
+            const holoDiv = cardsContainer.querySelector('.add-holo-item');
+            if (holoDiv) {
+                const holoItems = { 'item_type': 'holo', 'quantity': null, 'total_price': null };
+                holoItems.quantity = holoDiv.querySelector('.holo-quantity-input').value.trim() || null;
+                holoItems.total_price = holoDiv.querySelector('.holo-sell-price-input').value.trim() || null;
+                holoItems.unit_price = holoItems.total_price / holoItems.quantity || null;
+                itemsToAdd['holo'] = holoItems;
+            }
+
+            // Handle sealed items
+            const sealedDivs = cardsContainer.querySelectorAll('.add-sealed-item');
+            if (sealedDivs.length > 0) {
+                const sealedItems = [];
+                sealedDivs.forEach(sealedDiv => {
+                    const name = sealedDiv.querySelector('.sealed-name-input').value.trim() || null;
+                    const price = sealedDiv.querySelector('.sealed-price-input').value.trim() || null;
+                    const marketValue = sealedDiv.querySelector('.sealed-market-value-input').value.trim() || null;
+                    const date = sealedDiv.querySelector('.sealed-date-input').value || null;
+
+                    if (name !== null && marketValue !== null) {
+                        sealedItems.push({
+                            name: name,
+                            price: price,
+                            market_value: marketValue,
+                            date: date
+                        });
+                    }
+                });
+
+                if (sealedItems.length > 0) {
+                    itemsToAdd['sealed'] = sealedItems;
+                }
+            }
+
+            const jsonbody = JSON.stringify(itemsToAdd);
+            const response = await fetch(`/addToExistingAuction/${auctionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: jsonbody
+            });
+            const data = await response.json();
+            if (!(data.status === 'success')) {
+                renderAlert('Error saving new cards: ' + JSON.stringify(data), 'error');
+                return;
+            }
+            if (auctionSingles) {
+                await updateInventoryValueAndTotalProfit();
+            } else {
+                const auctionTab = cardsContainer.closest('.auction-tab');
+                const cards = cardsContainer.querySelectorAll('.card');
+                await setAuctionBuyPrice(cards, itemsToAdd['sealed'], auctionTab);
+
+                await updateInventoryValueAndTotalProfit();
+            }
+
+            newCards.forEach(card => card.classList.remove('new-card'));
             //} catch (error) {
             //    renderAlert('Error saving new cards: ' + error, 'error');
             //    return;
-           // }
+            // }
             //this could be done better by dynamically adding the cards instead of reloading the whole auction
             window.location.reload();
         });
@@ -2635,7 +2654,7 @@ async function loadAuctions() {
 
             // Store payments data on the div for la
             auctionDiv.paymentsData = payments;
-            
+
         });
         // Handle payment editing - define as named function to allow re-attachment
         const handleEditPayment = (event) => {
@@ -2655,7 +2674,7 @@ async function loadAuctions() {
                 });
             } else {
                 // Add one empty row if no payments
-                const auctionPrice = auctionDiv.querySelector('.auction-price').textContent.replace('€','')
+                const auctionPrice = auctionDiv.querySelector('.auction-price').textContent.replace('€', '')
                 rowsContainer.innerHTML += paymentTypeRow('Bankový prevod', auctionPrice);
             }
 
@@ -2957,8 +2976,6 @@ async function loadAuctions() {
         renderAlert('Error loading auctions: ' + error, 'error');
     }
 }
-
-
 
 if (document.title === "Trade Tracker") {
     searchBar();

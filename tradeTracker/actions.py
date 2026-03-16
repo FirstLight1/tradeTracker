@@ -1,6 +1,6 @@
 from decimal import Decimal
 import sys
-from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify, current_app, Response
+from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify, current_app
 from flask_cors import CORS
 from tradeTracker.db import get_db
 import datetime
@@ -12,14 +12,13 @@ import fpdf
 import json
 import pandas as pd
 from . import generateInvoice
-from queue import Queue
 
 bp = Blueprint('actions', __name__)
 CORS(bp)
 dictKeys = ['Product ID', 'Name', 'Condition', 'Price', 'Card Number']
 li = []
 dataList = []
-listeners = []
+latest = None
 
 conditionDict = {
     'MT' : "Mint",
@@ -1246,30 +1245,47 @@ def cardMarketTable():
 @bp.route('/cardMarketOrder', methods=('POST',))
 def cardMarketOrder():
     data = request.get_json()
-    
-    for q in listeners:
-        q.put(data)
-    return jsonify({'status': 'success'}), 201
+    db = get_db()
+    shipping_info = data['shipping_info']
+    cards = data['cards']
 
-@bp.route('/stream')
-def stream():
-    def event_stream():
-        q = Queue();
-        listeners.append(q)
+    try:
+        for card in cards:
+            id = db.execute("SELECT id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchone()[0]
+            if id != None:
+                card['id'] = id
+    except:
+        print('There was an error while getting card ids')
+        return jsonify({'status', 'error', 'message' : 'Failed to match cards to card ids'}), 400
+    sealed = data['sealed']
 
-        while True:
-            data = q.get()
-            shipping_info = data['shipping_info']
-            cards = data['cards']
-            cards[0]['id'] = 3;
-            sealed = data['sealed']
-            orderInfo = {
-                    "shipping_info" : shipping_info,
-                    "cards" : cards,
-                    "sealed" : sealed
-                    }
-            yield f'data: {json.dumps(orderInfo)}\n\n'
-    return Response(event_stream(), mimetype="text/event-stream")
+    try:
+        for item in sealed:
+            id = db.execute('SELECT id FROM WHERE name = ? AND sale_id IS NULL',(item['name'],)).fetchone()[0]
+            if id != None:
+              item['id'] = id
+    except
+        print("There was an error while getting sealed ids")
+        return jsonify({'status' : 'error', 'message': 'There was an error while getting sealed ids'})
+
+    orderInfo = {
+            "shipping_info" : shipping_info,
+            "cards" : cards,
+            "sealed" : sealed
+            }
+
+    latest = orderInfo
+    return jsonify({'status': 'success'}), 200
+
+@bp.route('/getLatest', methods=('GET',))
+def getLatest():
+    global latest
+    last = latest
+    latest = None
+    if last is not None:
+        return jsonify({'status': 'success', 'message': last}), 200
+    else:
+        return jsonify({'status': 'empty'}), 200
 
 def createDicts(lines):
     zipped = list(zip(*[line.split(';') for line in lines]))
