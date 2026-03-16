@@ -959,7 +959,6 @@ function saveModalDataToSession() {
         clientCountry: document.querySelector('.client-country')?.value || '',
         paybackDate: document.querySelector('.date-input')?.value || '',
         price: document.querySelector('.price-input')?.value || '',
-        shippingWay: document.querySelector('.shipping-way')?.value || '',
         shippingPrice: document.querySelector('.shipping-price')?.value || '',
         paymentMethods: []
     };
@@ -989,7 +988,6 @@ function loadModalDataFromSession(recieverDiv) {
         const clientCountry = recieverDiv.querySelector('.client-country');
         const paybackDate = recieverDiv.querySelector('.date-input');
         const priceInput = recieverDiv.querySelector('.price-input');
-        const shippingWay = recieverDiv.querySelector('.shipping-way');
         const shippingPrice = recieverDiv.querySelector('.shipping-price');
 
         if (clientName) clientName.value = modalData.clientName;
@@ -998,7 +996,6 @@ function loadModalDataFromSession(recieverDiv) {
         if (clientCountry) clientCountry.value = modalData.clientCountry;
         if (paybackDate && modalData.paybackDate) paybackDate.value = modalData.paybackDate;
         if (priceInput) priceInput.value = modalData.price;
-        if (shippingWay) shippingWay.value = modalData.shippingWay;
         if (shippingPrice) shippingPrice.value = modalData.shippingPrice;
 
         // Restore payment methods
@@ -1622,23 +1619,30 @@ function addHoloToCart() {
 setInterval(async () => {
     try {
         const response = await fetch('/getLatest');
-        const data = await response.json()
+        const data = await response.json();
         if (data.status === 'success') {
-            const shippingInfo = data.message.shippingInfo;
+            const shippingInfo = data.message.shipping_info;
             const cards = data.message.cards;
             const sealed = data.message.sealed;
 
-            saveModalDataToSession();
+            sessionStorage.removeItem('invoiceModalData');
+            sessionStorage.setItem('invoiceModalData', JSON.stringify(shippingInfo));
 
+            console.log(cards);
             cards.forEach((card) => {
-                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, card.id)
+                if (existingIDs.has(card.id)) return;
+                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, [card.id]);
+                cartLines.push(line);
+                renderCartLine(line);
+                existingIDs.add(card.id);
+            });
 
-            })
-            console.log(data.message)
+            sealed.forEach((item) => {
+                addSealedToCart({ name: item.name, market_value: item.market_value }, item.id);
+            });
 
+            console.log(data.message);
         }
-
-
     } catch (error) {
         renderAlert(error, 'error');
     }
