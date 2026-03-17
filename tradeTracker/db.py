@@ -146,6 +146,14 @@ CREATE TABLE collection(
     buy_price REAL,
     market_value REAL
 );
+
+CREATE TABLE barter(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    auction_id INTEGER,
+    sale_id INTEGER,
+    FOREIGN KEY (auction_id) REFERENCES auction(id),
+    FOREIGN KEY (sale_id) REFERENCES sales(id)
+    );
 '''
         db.executescript(schema)
     except Exception as e:

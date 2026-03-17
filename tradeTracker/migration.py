@@ -40,6 +40,8 @@ def migrate_database(db_path):
         addSealedProductsTable(db_path)
         # Migration 7: Add shipping info collumn to sales table
         addShippingInfoColumn(db_path)
+
+        addBarterTable(db_path)
         
         print("Database migration check complete.")
     except sqlite3.Error as e:
@@ -131,6 +133,35 @@ def _migrate_to_sales_history_wrapper(db_path):
         else:
             print("Sales table already exists, skipping sales history migration.")
             
+    except sqlite3.Error as e:
+        print(f"Error checking for sales table: {e}")
+
+def addBarterTable(db_path):
+    """
+    Check if barter table exists and if not migrate
+    """
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='barter'")
+        barterTableExists = cursor.fetchone() is not None
+
+
+        if not barterTableExists:
+            print("Barter table not found, running migration...")
+            cursor.execute("""
+                CREATE TABLE barter(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    auction_id INTEGER,
+                    sale_id INTEGER,
+                    FOREIGN KEY (auction_id) REFERENCES auction(id),
+                    FOREIGN KEY (sale_id) REFERENCES sales(id)
+    );
+ 
+            """)
+        else:
+            print("Barter table already exists, skipping migration")
     except sqlite3.Error as e:
         print(f"Error checking for sales table: {e}")
 
