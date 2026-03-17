@@ -1615,38 +1615,39 @@ function addHoloToCart() {
         }
     });
 }
+function startPolling() {
+    setInterval(async () => {
+        try {
+            const response = await fetch('/getLatest');
+            const data = await response.json();
+            if (data.status === 'success') {
+                const shippingInfo = data.message.shipping_info;
+                const cards = data.message.cards;
+                const sealed = data.message.sealed;
 
-setInterval(async () => {
-    try {
-        const response = await fetch('/getLatest');
-        const data = await response.json();
-        if (data.status === 'success') {
-            const shippingInfo = data.message.shipping_info;
-            const cards = data.message.cards;
-            const sealed = data.message.sealed;
+                sessionStorage.removeItem('invoiceModalData');
+                sessionStorage.setItem('invoiceModalData', JSON.stringify(shippingInfo));
 
-            sessionStorage.removeItem('invoiceModalData');
-            sessionStorage.setItem('invoiceModalData', JSON.stringify(shippingInfo));
+                console.log(cards);
+                cards.forEach((card) => {
+                    if (existingIDs.has(card.id)) return;
+                    const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, [card.id]);
+                    cartLines.push(line);
+                    renderCartLine(line);
+                    existingIDs.add(card.id);
+                });
 
-            console.log(cards);
-            cards.forEach((card) => {
-                if (existingIDs.has(card.id)) return;
-                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, [card.id]);
-                cartLines.push(line);
-                renderCartLine(line);
-                existingIDs.add(card.id);
-            });
+                sealed.forEach((item) => {
+                    addSealedToCart({ name: item.name, market_value: item.market_value }, item.id);
+                });
 
-            sealed.forEach((item) => {
-                addSealedToCart({ name: item.name, market_value: item.market_value }, item.id);
-            });
-
-            console.log(data.message);
+                console.log(data.message);
+            }
+        } catch (error) {
+            renderAlert(error, 'error');
         }
-    } catch (error) {
-        renderAlert(error, 'error');
-    }
-}, 5000);
+    }, 5000);
+}
 
 
 function addResultScrollingWithArrows(searchInput, resultsQueue) {
@@ -2993,4 +2994,5 @@ if (document.title === "Trade Tracker") {
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
     }, false);
+    startPolling();
 }

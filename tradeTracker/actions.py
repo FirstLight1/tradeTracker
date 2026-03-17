@@ -325,7 +325,8 @@ def addBulkItems(auction_id):
 def loadAuctions():
     db = get_db()
     auctions = db.execute(
-        'SELECT DISTINCT a.* FROM auctions a '
+        'SELECT DISTINCT a.*, b.sale_id FROM auctions a '
+        'LEFT JOIN barter b ON b.auction_id = a.id '
         'LEFT JOIN cards c ON a.id = c.auction_id '
         'LEFT JOIN sale_items si ON c.id = si.card_id '
         'WHERE a.id = 1 OR si.card_id IS NULL '
@@ -346,6 +347,7 @@ def loadAuctions():
                           (migrated, auction_dict['id']))
                 auction_dict['payment_method'] = migrated
         auctions_list.append(auction_dict)
+    print(auctions_list)
     db.commit()
     return jsonify(auctions_list)
 
@@ -526,8 +528,9 @@ def loadSoldHistory():
         '(COALESCE((SELECT SUM(si.profit) FROM sale_items si WHERE si.sale_id = s.id), 0) + '
         'COALESCE((SELECT SUM(market_value - price) FROM sealed WHERE sale_id = s.id),0) + '
         'COALESCE((SELECT SUM(bs.total_price - bs.quantity * bs.unit_price) FROM bulk_sales bs WHERE bs.sale_id = s.id), 0)) '
-        'as total_profit '
+        'as total_profit, b.auction_id '
         'FROM sales s '
+        'LEFT JOIN barter b ON b.sale_id = s.id '
         'ORDER BY sale_date DESC'
     ).fetchall()
     return jsonify([dict(sale) for sale in sales])
