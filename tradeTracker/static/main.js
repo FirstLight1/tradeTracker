@@ -2629,6 +2629,7 @@ async function loadAuctions() {
                 auctionDiv.classList.add('singles');
             }
             auctionDiv.setAttribute('data-id', auction.id);
+            auctionDiv.id = auction.id;
             let auctionName = auction.auction_name || "Auction " + (auction.id - 1); // Fallback for name
             let auctionPrice = auction.auction_price || null; // Fallback for buy price
             const buyDate = new Date(auction.date_created);
@@ -2640,6 +2641,7 @@ async function loadAuctions() {
             // Parse payment methods
             const payments = parsePaymentMethods(auction.payment_method);
             const paymentDisplay = formatPaymentDisplay(payments);
+            const invoiceNumber = auction.invoice_number;
 
             auctionDiv.innerHTML = `
                 <p class="auction-name">${auctionName}</p>
@@ -2651,6 +2653,12 @@ async function loadAuctions() {
                 </div>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
+                <div>
+                    ${auction.sale_id == null
+                    ? `<select><option>test</option></select>`
+                    : `<a href="/sold#${auction.sale_id}">Invoice Number: ${invoiceNumber}</a>`
+                }
+                </div>
                 <div class="cards-container">
                     <!-- Cards will be loaded here -->
                 </div>

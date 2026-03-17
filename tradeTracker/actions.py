@@ -325,8 +325,9 @@ def addBulkItems(auction_id):
 def loadAuctions():
     db = get_db()
     auctions = db.execute(
-        'SELECT DISTINCT a.*, b.sale_id FROM auctions a '
+        'SELECT DISTINCT a.*, b.sale_id, s.invoice_number FROM auctions a '
         'LEFT JOIN barter b ON b.auction_id = a.id '
+        'LEFT JOIN sales s ON b.sale_id = s.id '
         'LEFT JOIN cards c ON a.id = c.auction_id '
         'LEFT JOIN sale_items si ON c.id = si.card_id '
         'WHERE a.id = 1 OR si.card_id IS NULL '
@@ -561,6 +562,18 @@ def loadSoldCards(sale_id):
     }
 
     return jsonify(response)
+
+@bp.route('/unlinkedBarterIds')
+def unlinkedBarterIds():
+    db = get_db()
+    ids = db.execute(
+        'SELECT \'auction\' AS type, id FROM auctions '
+            'WHERE id NOT IN (SELECT auction_id FROM barter WHERE auction_id IS NOT NULL) '
+            'UNION ALL '
+            'SELECT \'sale\' AS type, id FROM sales '
+            'WHERE id NOT IN (SELECT sale_id FROM barter WHERE sale_id IS NOT NULL)'
+    )
+    return jsonify({'status': 'success', 'data': [dict(row) for row in ids]})
 
 @bp.route('/orderReturn/<int:saleId>')
 def orderReturn(saleId):
