@@ -60,7 +60,7 @@ def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, p
     )
     
     try:
-        nameAndSurname = "".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")])
+        nameAndSurname = " ".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")])
     except:
         ##TODO - change this to an error message
         nameAndSurname = ' '

@@ -1249,16 +1249,14 @@ def cardMarketOrder():
     shipping_info = data['shipping_info']
     cards = data['cards']
 
-    #try
-    for card in cards:
-        id = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchone()
-        print(type(id))
-        if id != None:
-             print(id[0])
-             card['id'] = id[0]
-    #except:
-     #   print('There was an error while getting card ids')
-      #  return jsonify({'status': 'error', 'message' : 'Failed to match cards to card ids'}), 400
+    try:
+        for card in cards:
+            id = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchone()
+            if id != None: 
+                card['cardId'] = id[0]
+    except:
+        print('There was an error while getting card ids')
+        return jsonify({'status': 'error', 'message' : 'Failed to match cards to card ids'}), 400
     sealed = data['sealed']
 
     try:
@@ -1271,7 +1269,6 @@ def cardMarketOrder():
         return jsonify({'status' : 'error', 'message': 'There was an error while getting sealed ids'})
 
     shipping_info['paybackDate'] = datetime.date.today().strftime("%d/%m/%Y")
-    print(shipping_info['paybackDate'])
     orderInfo = {
             "shipping_info" : shipping_info,
             "cards" : cards,
@@ -1657,7 +1654,6 @@ def invoice(vendor):
 
         if sealed:
             for item in sealed:
-                print(item.get('sid'))
                 db.execute('UPDATE sealed SET sale_id = ? WHERE id = ?',(sale_id, item.get("sid").replace('s','')))
 
         if bulk:

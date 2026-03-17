@@ -1616,6 +1616,40 @@ function addHoloToCart() {
     });
 }
 
+function spawnMissingIdModal(card){
+    let modal = document.querySelector('.missingIdModal');
+    if(!modal){
+        modal = document.createElement("div");
+        modal.classList.add('missingIdModal');
+        modal.innerHTML = `
+            <div class="modal-card-list">
+                <div class="missingId-header">
+                    <p>Could not find these cards in unsold cards</p>
+                    <button class='close-missingId-modal'>X</button>
+                </div>
+                <div class="missingId-list"></div>
+            </div>
+        `;
+
+        const close = modal.querySelector('.close-missingId-modal');
+        close.addEventListener('click', () => {
+            modal.remove();
+        });
+    }
+
+    const cardDiv = document.createElement("div");
+    cardDiv.innerHTML =`
+        <p>${card.name}</p>
+        <p>${card.num}</p>
+        <p>${card.condition}</p>
+        <p>${card.marketValue}€</p>
+    `;
+    cardDiv.classList.add('missingId-item');
+    modal.querySelector('.missingId-list').append(cardDiv);
+
+    document.body.appendChild(modal);
+}
+
 setInterval(async () => {
     try {
         const response = await fetch('/getLatest');
@@ -1627,11 +1661,13 @@ setInterval(async () => {
 
             sessionStorage.removeItem('invoiceModalData');
             sessionStorage.setItem('invoiceModalData', JSON.stringify(shippingInfo));
-
-            console.log(cards);
             cards.forEach((card) => {
-                if (existingIDs.has(card.id)) return;
-                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, [card.id]);
+                if (card.cardId === null){
+                    spawnMissingIdModal(card);
+                    return;
+                }
+                if (existingIDs.has(card.cardId)) return;
+                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, [card.cardId]);
                 cartLines.push(line);
                 renderCartLine(line);
                 existingIDs.add(card.id);
@@ -1641,7 +1677,6 @@ setInterval(async () => {
                 addSealedToCart({ name: item.name, market_value: item.market_value }, item.id);
             });
 
-            console.log(data.message);
         }
     } catch (error) {
         renderAlert(error, 'error');
