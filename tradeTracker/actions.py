@@ -1589,8 +1589,8 @@ def getCardIds():
         return jsonify({'status': 'success', 'card_ids': ids}), 200
 
 
-@bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
-def invoice(vendor):
+@bp.route('/invoice', methods=('GET', 'POST'))
+def invoice():
     if request.method == 'POST':
         cartContent = request.get_json()
         recieverInfo = cartContent['recieverInfo']
@@ -1637,9 +1637,6 @@ def invoice(vendor):
         sale_id = cursor.lastrowid
         
         # Add sale items
-        # vendor == 0 means CardMarket, vendor == 1 means other platform
-        sold_cm_value = 1 if vendor == 1 else 0
-        sold_value = 0 if vendor == 1 else 1
         if len(cartContent.get('cards')) > 0:
             for card in cartContent.get('cards', []):
                 sell_price = float(card.get('marketValue', 0))
@@ -1647,9 +1644,9 @@ def invoice(vendor):
                             (sale_date, card.get('cardId')))
 
                 db.execute(
-                        'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
-                        'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
-                        (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
+                        'INSERT INTO sale_items (sale_id, card_id, sell_price, profit) '
+                        'VALUES (?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
+                        (sale_id, card.get('cardId'), sell_price, sell_price, card.get('cardId'))
                         )
 
         if sealed:

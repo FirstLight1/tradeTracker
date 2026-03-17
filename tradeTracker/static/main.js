@@ -1066,6 +1066,44 @@ function shoppingCart() {
         });
     }
 
+    const deleteCart = document.querySelector('.delete-cart');
+    if (deleteCart) {
+        let confirmResetTimeout = null;
+        deleteCart.addEventListener('click', () => {
+            const isConfirmState = deleteCart.dataset.confirmState === 'true';
+
+            if (!isConfirmState) {
+                deleteCart.textContent = 'Confirm';
+                deleteCart.dataset.confirmState = 'true';
+                if (confirmResetTimeout) {
+                    clearTimeout(confirmResetTimeout);
+                }
+                confirmResetTimeout = setTimeout(() => {
+                    deleteCart.textContent = 'Delete Cart';
+                    deleteCart.dataset.confirmState = 'false';
+                    confirmResetTimeout = null;
+                }, 3000);
+                return;
+            }
+
+            if (confirmResetTimeout) {
+                clearTimeout(confirmResetTimeout);
+                confirmResetTimeout = null;
+            }
+            sessionStorage.removeItem('invoiceModalData');
+            sessionStorage.removeItem('cartData');
+            contentDiv.innerHTML = `<p>Your cart is empty</p>`;
+            cartLines.length = 0;
+            sealedContent.innerHTML = ``;
+            bulkCartDiv.innerHTML = ``;
+            holoCartDiv.innerHTML = ``;
+            loadBulkHoloValues();
+            existingIDs.clear();
+            deleteCart.textContent = 'Delete Cart';
+            deleteCart.dataset.confirmState = 'false';
+        });
+    }
+
 
     const confirmButton = document.querySelector(".confirm-btn");
     confirmButton.addEventListener('click', async () => {
@@ -1330,10 +1368,9 @@ function shoppingCart() {
                         }
                     }
                 }
-                let vendorCheckBox = document.querySelector('.vendor-type').checked;
                 cartContent.recieverInfo.total = Number(cartValue(cartContent));
                 if (Object.keys(cartContent).length !== 0) {
-                    const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
+                    const response = await fetch(`/invoice`,
                         {
                             method: 'POST',
                             headers: {
@@ -1347,14 +1384,13 @@ function shoppingCart() {
                         for (const key in cartContent) {
                             delete cartContent[key];
                         }
-                        contentDiv.innerHTML = 'Your cart is empty';
+                        contentDiv.innerHTML = '<p>Your cart is empty</p>';
                         bulkCartContent.innerHTML = '';
                         holoCartContent.innerHTML = '';
                         sealedContent.innerHTML = '';
                         loadBulkHoloValues();
                         cartLines.length = 0;
                         existingIDs.clear();
-                        vendorCheckBox = false;
                         recieverDiv.remove();
                         recieverDiv = null;
 
@@ -1836,7 +1872,6 @@ function displaySearchResults(results, resultsQueue, searchInput) {
             card.cardNum = result.card_num;
             card.condition = result.condition;
             card.marketValue = result.market_value;
-            console.log(result)
 
             const availableCount = result.available_count ? result.available_count : 1;
             let pendingQty = 1;
