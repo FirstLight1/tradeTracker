@@ -1251,9 +1251,18 @@ def cardMarketOrder():
 
     try:
         for card in cards:
-            id = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchone()
-            if id != None: 
-                card['cardId'] = id[0]
+            
+            try:
+                count = int(card.get('count', 1))
+            except (ValueError, TypeError):
+                count = 1
+            print(count) 
+            rows = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchmany(count)
+    
+            ids = [row[0] for row in rows]
+            if len(ids) > 0: 
+                card['cardId'] = ids 
+    
     except:
         print('There was an error while getting card ids')
         return jsonify({'status': 'error', 'message' : 'Failed to match cards to card ids'}), 400
@@ -1274,6 +1283,7 @@ def cardMarketOrder():
             "cards" : cards,
             "sealed" : sealed
             }
+    print(orderInfo)
     global latest
     latest = orderInfo
     return jsonify({'status': 'success'}), 200

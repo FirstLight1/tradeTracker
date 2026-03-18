@@ -87,6 +87,12 @@ class CartLine {
             && this.condition === condition;
     }
 
+    maxQuantity(){
+        const quantity = this.cardIds.push(...this.reservableIds);
+        this.reservableIds.length = 0;
+        return quantity; 
+    }
+
     // For sessionStorage
     toJSON() {
         return {
@@ -1042,6 +1048,20 @@ function clearModalDataFromSession() {
     sessionStorage.removeItem('invoiceModalData');
 }
 
+function deleteCartContent(contentDiv, bulkCartContent, holoCartContent, sealedContent, recieverDiv = null){
+    contentDiv.innerHTML = '<p>Your cart is empty</p>';
+    bulkCartContent.innerHTML = '';
+    holoCartContent.innerHTML = '';
+    sealedContent.innerHTML = '';
+    loadBulkHoloValues();
+    cartLines.length = 0;
+    existingIDs.clear();
+    if (recieverDiv != null){
+        recieverDiv.remove();
+        recieverDiv = null;
+    }
+}
+
 function initializeCart() {
     shoppingCart();
     addBulkToCart();
@@ -1092,13 +1112,7 @@ function shoppingCart() {
             }
             sessionStorage.removeItem('invoiceModalData');
             sessionStorage.removeItem('cartData');
-            contentDiv.innerHTML = `<p>Your cart is empty</p>`;
-            cartLines.length = 0;
-            sealedContent.innerHTML = ``;
-            bulkCartDiv.innerHTML = ``;
-            holoCartDiv.innerHTML = ``;
-            loadBulkHoloValues();
-            existingIDs.clear();
+            deleteCartContent(contentDiv,bulkCartDiv, holoCartDiv,sealedContent);
             deleteCart.textContent = 'Delete Cart';
             deleteCart.dataset.confirmState = 'false';
         });
@@ -1384,15 +1398,8 @@ function shoppingCart() {
                         for (const key in cartContent) {
                             delete cartContent[key];
                         }
-                        contentDiv.innerHTML = '<p>Your cart is empty</p>';
-                        bulkCartContent.innerHTML = '';
-                        holoCartContent.innerHTML = '';
-                        sealedContent.innerHTML = '';
+                        deleteCartContent(contentDiv,bulkCartContent, holoCartContent, sealedContent, recieverDiv)
                         loadBulkHoloValues();
-                        cartLines.length = 0;
-                        existingIDs.clear();
-                        recieverDiv.remove();
-                        recieverDiv = null;
 
                         // Clear sessionStorage on successful invoice generation
                         clearModalDataFromSession();
@@ -1696,6 +1703,7 @@ setInterval(async () => {
             const sealed = data.message.sealed;
 
             sessionStorage.removeItem('invoiceModalData');
+            deleteCartContent(document.querySelector('.cart-content'), document.querySelector('.bulk-cart-content'),document.querySelector('.holo-cart-content'),document.querySelector('.sealed-content'));
             sessionStorage.setItem('invoiceModalData', JSON.stringify(shippingInfo));
             cards.forEach((card) => {
                 if (card.cardId === null){
@@ -1703,7 +1711,9 @@ setInterval(async () => {
                     return;
                 }
                 if (existingIDs.has(card.cardId)) return;
-                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, [card.cardId]);
+                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, card.cardId);
+                line.maxQuantity();
+                console.log(line);
                 cartLines.push(line);
                 renderCartLine(line);
                 existingIDs.add(card.id);
