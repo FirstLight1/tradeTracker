@@ -700,13 +700,14 @@ def generateSoldReport():
         bulkAndHoloList[i].update({'buy_price': 0.01} if item_type['item_type'] == 'bulk' else {'buy_price': 0.03})
         i += 1
 
-    try:
+    #try:
+    if True:
         pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList, shipping_list)
         xls_path = createBuyReport(month, year, db);
         return jsonify({'status': 'success', 'pdf_path': pdf_path, 'xls_path':xls_path}), 200
-    except Exception as e:
-        print(f"Error generating PDF: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+    #except Exception as e:
+    #    print(f"Error generating PDF: {e}")
+    #    return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
@@ -780,9 +781,10 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
 
     for s in shipping:
         s = Decimal(s)
+        removeVat = Decimal(1.23)
         total_shipping_with_VAT += s
-        total_shipping_without_VAT += Decimal(s / 1.23)
-        total_shipping_VAT += Decimal(s - (s / 1.23))
+        total_shipping_without_VAT += Decimal(s / removeVat)
+        total_shipping_VAT += Decimal(s - (s / removeVat))
     
     pdf.cell(0, 8, f'Total Buy Price: {total_buy_price:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}€', 0, 1)
