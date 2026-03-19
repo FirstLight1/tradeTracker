@@ -1713,14 +1713,16 @@ setInterval(async () => {
                 if (existingIDs.has(card.cardId)) return;
                 const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, card.cardId);
                 line.maxQuantity();
-                console.log(line);
                 cartLines.push(line);
                 renderCartLine(line);
                 existingIDs.add(card.id);
             });
 
             sealed.forEach((item) => {
-                addSealedToCart({ name: item.name, market_value: item.market_value }, item.id);
+                const count = item.count
+                for(let i = 0; i < count; i++){
+                    addSealedToCart({ name: item.name, market_value: item.market_value }, item.id[i]);
+                }
             });
 
         }

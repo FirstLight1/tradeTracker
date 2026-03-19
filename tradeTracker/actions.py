@@ -1256,7 +1256,6 @@ def cardMarketOrder():
                 count = int(card.get('count', 1))
             except (ValueError, TypeError):
                 count = 1
-            print(count) 
             rows = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchmany(count)
     
             ids = [row[0] for row in rows]
@@ -1270,9 +1269,16 @@ def cardMarketOrder():
 
     try:
         for item in sealed:
-            id = db.execute('SELECT id FROM WHERE name = ? AND sale_id IS NULL',(item['name'],)).fetchone()
-            if id != None:
-              item['id'] = id[0]
+            try:
+                count = int(item.get('count',1))
+            except:
+                count = 1
+
+
+            rows  = db.execute('SELECT id FROM WHERE name = ? AND sale_id IS NULL',(item['name'],)).fetchmany(count)
+            ids = [row[0] for row in rows]
+            if len(ids) > 0:
+              item['id'] = ids
     except:
         print("There was an error while getting sealed ids")
         return jsonify({'status' : 'error', 'message': 'There was an error while getting sealed ids'})
@@ -1283,7 +1289,6 @@ def cardMarketOrder():
             "cards" : cards,
             "sealed" : sealed
             }
-    print(orderInfo)
     global latest
     latest = orderInfo
     return jsonify({'status': 'success'}), 200
