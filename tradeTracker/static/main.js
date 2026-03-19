@@ -2581,13 +2581,14 @@ async function loadSealed(viewButton) {
                     const sealedDiv = document.createElement('div');
                     sealedDiv.classList.add('sealed-item');
                     sealedDiv.setAttribute('sid', sealedData.sid);
-                    const margin = Number(sealedData.price) - Number(sealedData.market_value);
+                    const margin = Number(sealedData.market_value) - Number(sealedData.price);
                     const timeStamp = sealedData.date.replace('Z', '');
                     const date = new Date(timeStamp);
                     let formatedDate = date.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit' });
                     sealedDiv.innerHTML = `
                         <p class='sealed-name'>${sealedData.name}</p>
                         <p class='unit-price'>${sealedData.price}</p>
+                        <p class='VAT-sealed'>${(sealedData.price / 1.23).toFixed(2)}</p>
                         <p class='market-value-sealed'>${sealedData.market_value}</p>
                         <p class='margin'>${margin}</p>
                         <p class='add-date'>${formatedDate}</p>
