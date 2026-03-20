@@ -118,7 +118,7 @@ h1 {
 .search-results div{
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, 1fr) auto  15px repeat(3, 1fr) ;
+  grid-template-columns: repeat(3, 1fr) auto 70px repeat(3, 1fr) ;
   column-gap:25px;
   align-items: center;
   margin-top: 8px;
