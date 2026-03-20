@@ -2616,6 +2616,29 @@ async function loadSealed(viewButton) {
     }
 }
 
+async function loadUnlinkedIds(){
+    try{
+        const response = await fetch('/unlinkedBarterIds');
+        const data = await response.json();
+        if(data.status === 'success'){
+            return data.data;
+        }else{
+           throw('Error');
+        }
+    }catch(err){
+        renderAlert('There was an error fetching non-barter ids' + err, 'error');
+    }
+}
+
+async function renderBarterSelect(select){
+    const data = await loadUnlinkedIds();
+    
+    data.forEach((row) => {
+        select.innerHTML += `<option value="${row.id}">${row.invoice_number}</option>`
+    });
+    return select
+}
+
 async function loadAuctions() {
     const auctionContainer = document.querySelector('.auction-container');
     try {
@@ -2655,7 +2678,7 @@ async function loadAuctions() {
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
                 <div>
                     ${auction.sale_id == null
-                    ? `<select><option>test</option></select>`
+                    ? `<select class='barter-id-select'><option>Select Invoice Number to link</option></select>`
                     : `<a href="/sold#${auction.sale_id}">Invoice Number: ${invoiceNumber}</a>`
                 }
                 </div>
@@ -2669,6 +2692,36 @@ async function loadAuctions() {
             auctionDiv.paymentsData = payments;
 
         });
+    
+        const barterSelects = document.querySelectorAll('.barter-id-select');
+        barterSelects.forEach((select) => {
+            select.addEventListener('focus', ()=> {
+                renderBarterSelect(select);
+            });
+            select.addEventListener('change',async (event) => {
+                const auctionDiv = event.target.closest('.auction-tab');
+                const auctionId = auctionDiv.getAttribute('data-id');
+                const selected = event.target.value;
+
+                try{
+                    const res = await fetch(`/linkAuctionToSale/${auctionId}`,{
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({'sale_id': selected})
+                    });
+                    const data = await res.json()
+                    if(data.status === 'success'){
+                        console.log('success')
+                    }
+                }catch (err){
+                    renderAlert('There was an error' +err, 'error')
+                } 
+
+            });
+        });
+
         // Handle payment editing - define as named function to allow re-attachment
         const handleEditPayment = (event) => {
             const auctionDiv = event.target.closest('.auction-tab');

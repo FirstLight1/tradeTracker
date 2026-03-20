@@ -348,7 +348,6 @@ def loadAuctions():
                           (migrated, auction_dict['id']))
                 auction_dict['payment_method'] = migrated
         auctions_list.append(auction_dict)
-    print(auctions_list)
     db.commit()
     return jsonify(auctions_list)
 
@@ -566,14 +565,18 @@ def loadSoldCards(sale_id):
 @bp.route('/unlinkedBarterIds')
 def unlinkedBarterIds():
     db = get_db()
-    ids = db.execute(
-        'SELECT \'auction\' AS type, id FROM auctions '
-            'WHERE id NOT IN (SELECT auction_id FROM barter WHERE auction_id IS NOT NULL) '
-            'UNION ALL '
-            'SELECT \'sale\' AS type, id FROM sales '
-            'WHERE id NOT IN (SELECT sale_id FROM barter WHERE sale_id IS NOT NULL)'
-    )
+    ids = db.execute('SELECT id, invoice_number FROM sales WHERE id NOT IN (SELECT sale_id FROM barter WHERE sale_id IS NOT NULL) ORDER BY id DESC')
     return jsonify({'status': 'success', 'data': [dict(row) for row in ids]})
+
+@bp.route('/linkAuctionToSale/<int:auction_id>',methods=('POST',))
+def linkAuctionToSale(auction_id):
+    db = get_db()
+    id = request.get_json()
+    
+    db.execute('INSERT INTO barter(auction_id, sale_id) VALUES (?,?)',(auction_id, id['sale_id']))
+    db.commit()
+
+    return jsonify({'status': 'success'})
 
 @bp.route('/orderReturn/<int:saleId>')
 def orderReturn(saleId):

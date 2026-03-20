@@ -155,7 +155,7 @@ def addBarterTable(db_path):
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     auction_id INTEGER,
                     sale_id INTEGER,
-                    FOREIGN KEY (auction_id) REFERENCES auction(id),
+                    FOREIGN KEY (auction_id) REFERENCES auctions(id),
                     FOREIGN KEY (sale_id) REFERENCES sales(id)
     );
  
