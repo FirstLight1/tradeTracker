@@ -1368,16 +1368,16 @@ function shoppingCart() {
 
                     if (adjustableSubtotal > 0) {
                         const scale = targetAdjustable / adjustableSubtotal;
+                        const allItems = [...(cartContent.cards|| 0), ...(cartContent.sealed || 0)];
 
-                        if (cartContent.cards) {
-                            for (let i = 0; i < cartContent.cards.length; i++) {
-                                cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue * scale).toFixed(2);
-                            }
-                        }
-
-                        if (cartContent.sealed) {
-                            for (let i = 0; i < cartContent.sealed.length; i++) {
-                                cartContent.sealed[i].marketValue = (cartContent.sealed[i].marketValue * scale).toFixed(2);
+                        let distributed = 0;
+                        for(let i = 0; i < allItems.length; i++){
+                            if(i === allItems.length -1){
+                                allItems[i].marketValue = (targetAdjustable - distributed).toFixed(2);
+                            } else{
+                                const scaled = parseFloat((allItems[i].marketValue * scale).toFixed(2));
+                                allItems[i].marketValue = scaled.toFixed(2);
+                                distributed += scaled;
                             }
                         }
                     }
