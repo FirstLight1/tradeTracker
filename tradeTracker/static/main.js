@@ -1682,9 +1682,9 @@ function spawnMissingIdModal(card){
 
     const cardDiv = document.createElement("div");
     cardDiv.innerHTML =`
-        <p>${card.name}</p>
-        <p>${card.num}</p>
-        <p>${card.condition}</p>
+        <p>${card.name || ""}</p>
+        <p>${card.num || ""}</p>
+        <p>${card.condition || ""}</p>
         <p>${card.marketValue}€</p>
     `;
     cardDiv.classList.add('missingId-item');
@@ -1706,19 +1706,29 @@ setInterval(async () => {
             deleteCartContent(document.querySelector('.cart-content'), document.querySelector('.bulk-cart-content'),document.querySelector('.holo-cart-content'),document.querySelector('.sealed-content'));
             sessionStorage.setItem('invoiceModalData', JSON.stringify(shippingInfo));
             cards.forEach((card) => {
-                if (card.cardId === null){
-                    spawnMissingIdModal(card);
-                    return;
-                }
-                if (existingIDs.has(card.cardId)) return;
-                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, card.cardId);
+                const validIds = []
+                card.cardId.forEach((id) => {
+                    if (id === null) {
+                        spawnMissingIdModal(card);
+                    } else {
+                        validIds.push(id);
+                    }
+                });
+                
+                if (validIds.length === 0) return;
+                if (validIds.some(id => existingIDs.has(id))) return;
+
+                const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, validIds);
                 line.maxQuantity();
                 cartLines.push(line);
                 renderCartLine(line);
-                existingIDs.add(card.id);
+                validIds.forEach(id => existingIDs.add(id)); 
             });
 
             sealed.forEach((item) => {
+                if(item.id === null){
+                    spawnMissingIdModal(item);
+                }
                 const count = item.count
                 for(let i = 0; i < count; i++){
                     addSealedToCart({ name: item.name, market_value: item.market_value }, item.id[i]);

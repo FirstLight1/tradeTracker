@@ -1261,8 +1261,8 @@ def cardMarketOrder():
             rows = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchmany(count)
     
             ids = [row[0] for row in rows]
-            if len(ids) > 0: 
-                card['cardId'] = ids 
+            ids += [None] * (count - len(ids))
+            card['cardId'] = ids
     
     except:
         print('There was an error while getting card ids')
