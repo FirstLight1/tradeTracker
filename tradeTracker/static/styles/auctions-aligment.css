@@ -57,11 +57,38 @@ p{
     margin-bottom: 15px;
     text-align: center;
     cursor: pointer;
+    justify-content: center;
+}
+
+.auction-container .auction-tab{
+    grid-template-columns: 220px 140px 170px 240px 120px 120px 240px;
+    grid-column-gap: 24px;
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.sealed-container.auction-tab{
+    grid-template-columns: 220px 140px 170px 240px 120px 120px 240px;
+    grid-column-gap: 24px;
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.auction-container .auction-tab > *{
+    justify-self: center;
+    align-self: center;
+}
+
+.sealed-container.auction-tab > *{
+    justify-self: center;
+    align-self: center;
 }
 
 .sold-tab{
-    grid-template-columns: repeat(4, 150px) repeat(3, 50px);
-    
+    grid-template-columns: repeat(4, 150px) repeat(4, 50px);
+    justify-content: center;
 }
 
 .auction-header{
@@ -185,7 +212,37 @@ p{
     gap: 5px;
     text-align:center;
     padding-bottom: 5px;
-    margin-top: 80px;
+    margin-top: 10px;
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.auction-container .auction-tab .payment-method-container {
+    align-items: center;
+    text-align: center;
+    max-width: 240px;
+}
+
+.auction-container .auction-tab .payment-method {
+    text-align: center;
+}
+
+.auction-container .auction-tab .barter-id-select,
+.auction-container .auction-tab .sale-link{
+    width: 100%;
+    max-width: 240px;
+    box-sizing: border-box;
+}
+
+.auction-container .auction-tab .auction-link-cell{
+    width: 240px;
+    min-width: 0;
+}
+
+.auction-container .auction-tab .sale-link {
+    display: inline-flex;
+    justify-content: center;
 }
 
 .button-container{
@@ -205,6 +262,49 @@ p{
     pointer-events: none;
 }
 
+.auction-tab .cards-container{
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-self: center;
+}
+
+.sold-tab .cards-container{
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-self: center;
+}
+
+.sold-tab .return{
+    margin-right: 35px;
+}
+
+.sold-tab .link-img{
+    margin-left: 15px;
+}
+
+.auction-link-hint{
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auction-link-hint::after{
+    content: 'Show auction';
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.auction-link-hint:hover::after{
+    opacity: 1;
+}
+
 .cards-container *{
     pointer-events: auto;
 }
@@ -220,6 +320,9 @@ p{
     margin-top: 15px;
     margin-bottom: 15px;
     text-align: center;
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .sealed-header,
@@ -239,4 +342,8 @@ p{
 .sealed-item {
     margin-top: 15px;
     margin-bottom: 15px;
+}
+
+.link-img{
+    height: 68px;
 }

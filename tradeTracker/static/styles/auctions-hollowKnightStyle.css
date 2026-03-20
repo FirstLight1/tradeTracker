@@ -212,6 +212,93 @@ button a{
     text-decoration: none;
 }
 
+a.sale-link{
+  color: var(--accent-cyan);
+  font-family: var(--primary-font), serif;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  border: 1px solid rgba(127, 255, 212, 0.25);
+  border-radius: 16px;
+  padding: 6px 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(127, 255, 212, 0.08) 0%,
+    rgba(147, 112, 219, 0.08) 100%
+  );
+  box-shadow:
+    inset 0 0 8px rgba(127, 255, 212, 0.12),
+    0 0 12px rgba(127, 255, 212, 0.1);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+a.sale-link:hover,
+a.sale-link:focus{
+  color: var(--text-color);
+  border-color: rgba(127, 255, 212, 0.55);
+  box-shadow:
+    inset 0 0 12px rgba(127, 255, 212, 0.18),
+    0 0 20px rgba(127, 255, 212, 0.22);
+  outline: none;
+}
+
+
+.auction-tab select,
+.sold-tab select{
+  background: linear-gradient(
+    135deg,
+    rgba(26, 31, 46, 0.94) 0%,
+    rgba(13, 17, 23, 0.96) 100%
+  );
+  color: var(--text-color);
+  border: 1px solid rgba(127, 255, 212, 0.35);
+  border-radius: 12px;
+  padding: 6px 28px 6px 12px;
+  font-family: var(--primary-font), serif;
+  letter-spacing: 0.03em;
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.35),
+    0 0 12px rgba(127, 255, 212, 0.1);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--accent-cyan) 50%),
+    linear-gradient(135deg, var(--accent-cyan) 50%, transparent 50%),
+    linear-gradient(
+      135deg,
+      rgba(26, 31, 46, 0.94) 0%,
+      rgba(13, 17, 23, 0.96) 100%
+    );
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px),
+    0 0;
+  background-size: 5px 5px, 5px 5px, 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.auction-tab select:focus,
+.sold-tab select:focus{
+  border-color: rgba(127, 255, 212, 0.72);
+  box-shadow:
+    inset 0 0 14px rgba(127, 255, 212, 0.2),
+    0 0 18px rgba(127, 255, 212, 0.22);
+  outline: none;
+}
+
+.auction-tab select option,
+.sold-tab select option{
+  background: #141b2a;
+  color: var(--text-color);
+  font-family: var(--primary-font), serif;
+}
+
+.auction-tab select option:checked,
+.sold-tab select option:checked{
+  background: linear-gradient(135deg, rgba(127, 255, 212, 0.22) 0%, rgba(147, 112, 219, 0.22) 100%);
+  color: #e6ffff;
+}
+
 .nav-bar div:hover .arrow{
   opacity: 1;
   transition: opacity 0.5s;

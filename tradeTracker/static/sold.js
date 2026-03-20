@@ -9,7 +9,6 @@ async function loadContent(button, soldDate){
         const response = await fetch('/loadSoldCards/' + saleId);
         const soldItems = await response.json();
         cardsContainer.style.display = 'flex';
-        cardsContainer.style.marginLeft = '-400px';
         button.textContent = 'Hide';
         
         if(soldItems.length === 0){
@@ -125,6 +124,10 @@ async function loadHistory(){
             <p>${name}</p>
             <button class="view-auction" data-id="${sale.id}">View</button>
             <button class="return" data-id="${sale.id}" >Return</button>
+            ${sale.auction_id === null ? 
+            `<p></p>`
+            : `<span class='auction-link-hint'><a href='/#${sale.auction_id}'><img class='link-img' src="https://upload.wikimedia.org/wikipedia/en/3/3d/480px-Gawr_Gura_-_Portrait_01.png" alt="Show auction"></a></span>`
+            } 
             <div class="cards-container">
             <!-- Cards will be loaded here -->
             </div>

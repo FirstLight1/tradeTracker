@@ -171,6 +171,25 @@ input[type="text"], select, textarea {
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+a.sale-link{
+  color: var(--accent-teal);
+  text-decoration: none;
+  border: 1px solid rgba(90, 209, 199, 0.3);
+  border-radius: 16px;
+  padding: 6px 12px;
+  background: rgba(90, 209, 199, 0.08);
+  box-shadow: inset 0 0 8px rgba(90, 209, 199, 0.12);
+  transition: all 0.25s ease;
+}
+
+a.sale-link:hover,
+a.sale-link:focus{
+  color: var(--text-color);
+  border-color: rgba(90, 209, 199, 0.6);
+  box-shadow: 0 0 16px rgba(90, 209, 199, 0.2), inset 0 0 10px rgba(90, 209, 199, 0.16);
+  outline: none;
+}
+
 input[type="text"]:focus, select:focus, textarea:focus {
   border-color: var(--accent-teal);
   box-shadow: 0 0 18px var(--accent-teal) inset, 0 0 8px var(--glow-color);

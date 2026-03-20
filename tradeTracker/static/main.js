@@ -1920,7 +1920,6 @@ async function loadAuctionContent(button) {
     try {
         if (cardsContainer.childElementCount === 0 || cardsContainer.style.display === 'none') {
             cardsContainer.style.display = 'flex';
-            cardsContainer.style.marginLeft = '-600px';
             button.textContent = 'Hide';
 
             // Only fetch if we don't have content already
@@ -2483,7 +2482,6 @@ async function loadSealed(viewButton) {
     const contentDiv = document.querySelector('.sealed-tab-content')
     if (sealedTab.style.display === 'none' || sealedTab.childElementCount === 0) {
         sealedTab.style.display = 'flex';
-        sealedTab.style.marginLeft = '-600px';
         viewButton.innerHTML = 'Hide';
 
         // Only fetch if we don't have items already
@@ -2676,10 +2674,10 @@ async function loadAuctions() {
                 </div>
                 <button class="view-auction" data-id="${auction.id}">View</button>
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
-                <div>
+                <div class="auction-link-cell">
                     ${auction.sale_id == null
                     ? `<select class='barter-id-select'><option>Select Invoice Number to link</option></select>`
-                    : `<a href="/sold#${auction.sale_id}">Invoice Number: ${invoiceNumber}</a>`
+                    : `<a class="sale-link" href="/sold#${auction.sale_id}">Invoice Number: ${invoiceNumber}</a>`
                 }
                 </div>
                 <div class="cards-container">
