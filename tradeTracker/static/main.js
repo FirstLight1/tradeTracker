@@ -2676,7 +2676,7 @@ async function loadAuctions() {
                 <button class="delete-auction" data-id="${auction.id}">Delete</button>
                 <div class="auction-link-cell">
                     ${auction.sale_id == null
-                    ? `<select class='barter-id-select'><option>Select Invoice Number to link</option></select>`
+                    ? `<select class='barter-id-select'><option value="null">Select Invoice Number to link</option></select>`
                     : `<a class="sale-link" href="/sold#${auction.sale_id}">Invoice Number: ${invoiceNumber}</a>`
                 }
                 </div>
@@ -2700,7 +2700,7 @@ async function loadAuctions() {
                 const auctionDiv = event.target.closest('.auction-tab');
                 const auctionId = auctionDiv.getAttribute('data-id');
                 const selected = event.target.value;
-
+                if(selected === 'null') return;
                 try{
                     const res = await fetch(`/linkAuctionToSale/${auctionId}`,{
                         method: 'POST',
