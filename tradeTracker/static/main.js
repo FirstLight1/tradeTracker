@@ -2576,9 +2576,10 @@ async function loadSealed(viewButton) {
         sealedTab.style.display = 'flex';
         sealedTab.style.marginLeft = '-600px';
         viewButton.innerHTML = 'Hide';
+        console.log(sealedTab.childElementCount);
 
         // Only fetch if we don't have items already
-        if (sealedTab.childElementCount === 3) {
+        if (contentDiv.childElementCount === 0) {
             try {
                 const response = await fetch('/loadSealed');
                 const data = await response.json();
@@ -2591,7 +2592,7 @@ async function loadSealed(viewButton) {
                     const sealedDiv = document.createElement('div');
                     sealedDiv.classList.add('sealed-item');
                     sealedDiv.setAttribute('sid', sealedData.sid);
-                    const margin = Number(sealedData.market_value) - Number(sealedData.price);
+                    const margin = (Number(sealedData.market_value) - Number(sealedData.price)).toFixed(2);
                     const timeStamp = sealedData.date.replace('Z', '');
                     const date = new Date(timeStamp);
                     let formatedDate = date.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit' });
