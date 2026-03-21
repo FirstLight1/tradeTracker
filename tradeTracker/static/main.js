@@ -187,12 +187,13 @@ export function renderAlert(text, type) {
 export function scrollOnLoad() {
     window.addEventListener('load', () => {
         const hash = window.location.hash;
-
-        if (hash) {
+        console.log(hash);
+        const id = hash.startsWith('#') ? hash.slice(1) : hash; 
+        if (id) { 
             const interval = setInterval(() => {
-                const el = document.querySelector(hash);
+                const el = document.getElementById(id);
                 if (el) {
-                    el.scrollIntoView({ behavior: 'smooth' });
+                    el.scrollIntoView({ behavior: 'instant', block:'center' });
                     clearInterval(interval);
                 }
             }, 100);
@@ -3065,9 +3066,9 @@ if (document.title === "Trade Tracker") {
     initializeCart();
     initializeBulkHolo();
     loadCartContentFromSession();
+    scrollOnLoad();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
-        scrollOnLoad();
     }, false);
     startPolling();
 }
