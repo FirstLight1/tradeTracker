@@ -182,7 +182,22 @@ export function renderAlert(text, type) {
         alertDiv.innerHTML = '';
         alertDiv.classList.remove(...alertDiv.classList)
     }, 6000)
+}
 
+export function scrollOnLoad() {
+    window.addEventListener('load', () => {
+        const hash = window.location.hash;
+
+        if (hash) {
+            const interval = setInterval(() => {
+                const el = document.querySelector(hash);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                    clearInterval(interval);
+                }
+            }, 100);
+        }
+    })
 }
 
 function paymentTypeSelect(className, defaultValue = '') {
@@ -2614,23 +2629,23 @@ async function loadSealed(viewButton) {
     }
 }
 
-async function loadUnlinkedIds(){
-    try{
+async function loadUnlinkedIds() {
+    try {
         const response = await fetch('/unlinkedBarterIds');
         const data = await response.json();
-        if(data.status === 'success'){
+        if (data.status === 'success') {
             return data.data;
-        }else{
-           throw('Error');
+        } else {
+            throw ('Error');
         }
-    }catch(err){
+    } catch (err) {
         renderAlert('There was an error fetching non-barter ids' + err, 'error');
     }
 }
 
-async function renderBarterSelect(select){
+async function renderBarterSelect(select) {
     const data = await loadUnlinkedIds();
-    
+
     data.forEach((row) => {
         select.innerHTML += `<option value="${row.id}">${row.invoice_number}</option>`
     });
@@ -2690,32 +2705,32 @@ async function loadAuctions() {
             auctionDiv.paymentsData = payments;
 
         });
-    
+
         const barterSelects = document.querySelectorAll('.barter-id-select');
         barterSelects.forEach((select) => {
-            select.addEventListener('focus', ()=> {
+            select.addEventListener('focus', () => {
                 renderBarterSelect(select);
             });
-            select.addEventListener('change',async (event) => {
+            select.addEventListener('change', async (event) => {
                 const auctionDiv = event.target.closest('.auction-tab');
                 const auctionId = auctionDiv.getAttribute('data-id');
                 const selected = event.target.value;
-                if(selected === 'null') return;
-                try{
-                    const res = await fetch(`/linkAuctionToSale/${auctionId}`,{
+                if (selected === 'null') return;
+                try {
+                    const res = await fetch(`/linkAuctionToSale/${auctionId}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({'sale_id': selected})
+                        body: JSON.stringify({ 'sale_id': selected })
                     });
                     const data = await res.json()
-                    if(data.status === 'success'){
+                    if (data.status === 'success') {
                         console.log('success')
                     }
-                }catch (err){
-                    renderAlert('There was an error' +err, 'error')
-                } 
+                } catch (err) {
+                    renderAlert('There was an error' + err, 'error')
+                }
 
             });
         });
@@ -3052,6 +3067,7 @@ if (document.title === "Trade Tracker") {
     loadCartContentFromSession();
     document.addEventListener('DOMContentLoaded', async () => {
         await updateInventoryValueAndTotalProfit();
+        scrollOnLoad();
     }, false);
     startPolling();
 }

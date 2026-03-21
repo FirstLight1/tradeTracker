@@ -1,17 +1,17 @@
-import { renderField, renderAlert } from "./main.js";
+import { renderField, renderAlert, scrollOnLoad } from "./main.js";
 
-async function loadContent(button, soldDate){
+async function loadContent(button, soldDate) {
     const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
     const saleId = button.getAttribute('data-id');
     const saleEntry = button.closest('.auction-tab');
     const cardsContainer = saleEntry.querySelector('.cards-container');
-    if (cardsContainer.childElementCount === 0 || cardsContainer.style.display === 'none'){
+    if (cardsContainer.childElementCount === 0 || cardsContainer.style.display === 'none') {
         const response = await fetch('/loadSoldCards/' + saleId);
         const soldItems = await response.json();
         cardsContainer.style.display = 'flex';
         button.textContent = 'Hide';
-        
-        if(soldItems.length === 0){
+
+        if (soldItems.length === 0) {
             cardsContainer.innerHTML = '';
         } else {
             cardsContainer.innerHTML = `
@@ -34,8 +34,8 @@ async function loadContent(button, soldDate){
                 const cardElement = document.createElement('div');
                 cardElement.classList.add('card');
 
-                
-                
+
+
                 cardElement.innerHTML = `
                     ${renderField(card.card_name, 'text', ['card-info', 'card-name'], 'Card Name', 'card_name')}
                     ${renderField(card.card_num, 'text', ['card-info', 'card-num'], 'Card Number', 'card_num')}
@@ -50,7 +50,7 @@ async function loadContent(button, soldDate){
                 `;
                 cardsContainer.appendChild(cardElement);
             });
-            sealedSales.forEach(item =>{
+            sealedSales.forEach(item => {
                 const sealedDiv = document.createElement('div');
                 sealedDiv.classList.add('card');
 
@@ -73,7 +73,7 @@ async function loadContent(button, soldDate){
                 bulkElement.classList.add('card');
 
                 let buy_price;
-                if (bulk.item_type === 'holo'){
+                if (bulk.item_type === 'holo') {
                     buy_price = 0.03;
                 } else {
                     buy_price = 0.01;
@@ -98,7 +98,7 @@ async function loadContent(button, soldDate){
     }
 }
 
-async function loadHistory(){
+async function loadHistory() {
     const response = await fetch('/loadSoldHistory');
     const sales = await response.json();
     const historyContainer = document.querySelector('.sales-history-container');
@@ -111,10 +111,10 @@ async function loadHistory(){
         const saleDate = new Date(sale.sale_date);
         const formattedDate = `${saleDate.getDate().toString().padStart(2, '0')}.${(saleDate.getMonth() + 1).toString().padStart(2, '0')}.${saleDate.getFullYear()}`;
         let name = "";
-        try{
+        try {
             const recieverInfo = JSON.parse(sale.notes);
             name = recieverInfo.nameAndSurname;
-        } catch (e){
+        } catch (e) {
             name = sale.notes;
         }
         saleElement.innerHTML = `
@@ -124,9 +124,9 @@ async function loadHistory(){
             <p>${name}</p>
             <button class="view-auction" data-id="${sale.id}">View</button>
             <button class="return" data-id="${sale.id}" >Return</button>
-            ${sale.auction_id === null ? 
-            `<p></p>`
-            : `<span class='auction-link-hint'><a href='/#${sale.auction_id}'><img class='link-img' src="https://upload.wikimedia.org/wikipedia/en/3/3d/480px-Gawr_Gura_-_Portrait_01.png" alt="Show auction"></a></span>`
+            ${sale.auction_id === null ?
+                `<p></p>`
+                : `<span class='auction-link-hint'><a href='/#${sale.auction_id}'><img class='link-img' src="https://upload.wikimedia.org/wikipedia/en/3/3d/480px-Gawr_Gura_-_Portrait_01.png" alt="Show auction"></a></span>`
             } 
             <div class="cards-container">
             <!-- Cards will be loaded here -->
@@ -139,7 +139,7 @@ async function loadHistory(){
             loadContent(viewButton, saleDate);
         });
         saleElement.addEventListener('click', (event) => {
-            if(event.target !== viewButton){
+            if (event.target !== viewButton) {
                 loadContent(viewButton, saleDate);
             }
         });
@@ -195,3 +195,4 @@ async function loadHistory(){
 }
 
 loadHistory();
+scrollOnLoad();
