@@ -719,13 +719,14 @@ def generateSoldReport():
         bulkAndHoloList[i].update({'buy_price': 0.01} if item_type['item_type'] == 'bulk' else {'buy_price': 0.03})
         i += 1
 
-    try:
+    #try:
+    if True:
         pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList, shipping_list)
         xls_path = createBuyReport(month, year, db);
         return jsonify({'status': 'success', 'pdf_path': pdf_path, 'xls_path':xls_path}), 200
-    except Exception as e:
-        print(f"Error generating PDF: {e}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+    #except Exception as e:
+    #    print(f"Error generating PDF: {e}")
+    #    return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
@@ -799,9 +800,10 @@ def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
 
     for s in shipping:
         s = Decimal(s)
+        removeVat = Decimal(1.23)
         total_shipping_with_VAT += s
-        total_shipping_without_VAT += Decimal(s / 1.23)
-        total_shipping_VAT += Decimal(s - (s / 1.23))
+        total_shipping_without_VAT += Decimal(s / removeVat)
+        total_shipping_VAT += Decimal(s - (s / removeVat))
     
     pdf.cell(0, 8, f'Total Buy Price: {total_buy_price:.2f}€', 0, 1)
     pdf.cell(0, 8, f'Total Sell Price: {total_sell_price:.2f}€', 0, 1)
@@ -1268,29 +1270,41 @@ def cardMarketOrder():
     shipping_info = data['shipping_info']
     cards = data['cards']
 
-    #try
-    for card in cards:
-        id = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchone()
-        print(type(id))
-        if id != None:
-             print(id[0])
-             card['id'] = id[0]
-    #except:
-     #   print('There was an error while getting card ids')
-      #  return jsonify({'status': 'error', 'message' : 'Failed to match cards to card ids'}), 400
+    try:
+        for card in cards:
+            
+            try:
+                count = int(card.get('count', 1))
+            except (ValueError, TypeError):
+                count = 1
+            rows = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchmany(count)
+    
+            ids = [row[0] for row in rows]
+            ids += [None] * (count - len(ids))
+            card['cardId'] = ids
+    
+    except:
+        print('There was an error while getting card ids')
+        return jsonify({'status': 'error', 'message' : 'Failed to match cards to card ids'}), 400
     sealed = data['sealed']
 
     try:
         for item in sealed:
-            id = db.execute('SELECT id FROM WHERE name = ? AND sale_id IS NULL',(item['name'],)).fetchone()
-            if id != None:
-              item['id'] = id[0]
+            try:
+                count = int(item.get('count',1))
+            except:
+                count = 1
+
+
+            rows  = db.execute('SELECT id FROM WHERE name = ? AND sale_id IS NULL',(item['name'],)).fetchmany(count)
+            ids = [row[0] for row in rows]
+            if len(ids) > 0:
+              item['id'] = ids
     except:
         print("There was an error while getting sealed ids")
         return jsonify({'status' : 'error', 'message': 'There was an error while getting sealed ids'})
 
     shipping_info['paybackDate'] = datetime.date.today().strftime("%d/%m/%Y")
-    print(shipping_info['paybackDate'])
     orderInfo = {
             "shipping_info" : shipping_info,
             "cards" : cards,
@@ -1611,8 +1625,8 @@ def getCardIds():
         return jsonify({'status': 'success', 'card_ids': ids}), 200
 
 
-@bp.route('/invoice/<int:vendor>', methods=('GET', 'POST'))
-def invoice(vendor):
+@bp.route('/invoice', methods=('GET', 'POST'))
+def invoice():
     if request.method == 'POST':
         cartContent = request.get_json()
         recieverInfo = cartContent['recieverInfo']
@@ -1659,9 +1673,6 @@ def invoice(vendor):
         sale_id = cursor.lastrowid
         
         # Add sale items
-        # vendor == 0 means CardMarket, vendor == 1 means other platform
-        sold_cm_value = 1 if vendor == 1 else 0
-        sold_value = 0 if vendor == 1 else 1
         if len(cartContent.get('cards')) > 0:
             for card in cartContent.get('cards', []):
                 sell_price = float(card.get('marketValue', 0))
@@ -1669,14 +1680,13 @@ def invoice(vendor):
                             (sale_date, card.get('cardId')))
 
                 db.execute(
-                        'INSERT INTO sale_items (sale_id, card_id, sell_price, sold_cm, sold, profit) '
-                        'VALUES (?, ?, ?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
-                        (sale_id, card.get('cardId'), sell_price, sold_cm_value, sold_value, sell_price, card.get('cardId'))
+                        'INSERT INTO sale_items (sale_id, card_id, sell_price, profit) '
+                        'VALUES (?, ?, ?, ? - (SELECT card_price FROM cards WHERE id = ?))',
+                        (sale_id, card.get('cardId'), sell_price, sell_price, card.get('cardId'))
                         )
 
         if sealed:
             for item in sealed:
-                print(item.get('sid'))
                 db.execute('UPDATE sealed SET sale_id = ? WHERE id = ?',(sale_id, item.get("sid").replace('s','')))
 
         if bulk:

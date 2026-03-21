@@ -60,7 +60,7 @@ def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, p
     )
     
     try:
-        nameAndSurname = "".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")])
+        nameAndSurname = " ".join([part.capitalize() for part in reciever.get("nameAndSurname").split(" ")])
     except:
         ##TODO - change this to an error message
         nameAndSurname = ' '
@@ -129,11 +129,13 @@ def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, p
         for item in sealed:
             if item.get("auctionId") == None:
                 tax = Decimal("23")
+                price = Decimal(str(item.get("marketValue").replace("€",""))) / Decimal('1.23')
             else:
                 tax = Decimal("0")
+                price = Decimal(str(item.get("marketValue").replace("€","")))
             invoice.add_item(Item(
                 count=1,
-                price=Decimal(str(item.get("marketValue").replace("€",""))),
+                price=price,
                 unit="ks",
                 description=item.get("sealedName"),
                 tax=tax

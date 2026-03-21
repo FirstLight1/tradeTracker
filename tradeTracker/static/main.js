@@ -87,6 +87,12 @@ class CartLine {
             && this.condition === condition;
     }
 
+    maxQuantity(){
+        const quantity = this.cardIds.push(...this.reservableIds);
+        this.reservableIds.length = 0;
+        return quantity; 
+    }
+
     // For sessionStorage
     toJSON() {
         return {
@@ -1058,6 +1064,20 @@ function clearModalDataFromSession() {
     sessionStorage.removeItem('invoiceModalData');
 }
 
+function deleteCartContent(contentDiv, bulkCartContent, holoCartContent, sealedContent, recieverDiv = null){
+    contentDiv.innerHTML = '<p>Your cart is empty</p>';
+    bulkCartContent.innerHTML = '';
+    holoCartContent.innerHTML = '';
+    sealedContent.innerHTML = '';
+    loadBulkHoloValues();
+    cartLines.length = 0;
+    existingIDs.clear();
+    if (recieverDiv != null){
+        recieverDiv.remove();
+        recieverDiv = null;
+    }
+}
+
 function initializeCart() {
     shoppingCart();
     addBulkToCart();
@@ -1079,6 +1099,38 @@ function shoppingCart() {
             if (e.target === cartDiv) {
                 cartDiv.classList.toggle('expanded');
             }
+        });
+    }
+
+    const deleteCart = document.querySelector('.delete-cart');
+    if (deleteCart) {
+        let confirmResetTimeout = null;
+        deleteCart.addEventListener('click', () => {
+            const isConfirmState = deleteCart.dataset.confirmState === 'true';
+
+            if (!isConfirmState) {
+                deleteCart.textContent = 'Confirm';
+                deleteCart.dataset.confirmState = 'true';
+                if (confirmResetTimeout) {
+                    clearTimeout(confirmResetTimeout);
+                }
+                confirmResetTimeout = setTimeout(() => {
+                    deleteCart.textContent = 'Delete Cart';
+                    deleteCart.dataset.confirmState = 'false';
+                    confirmResetTimeout = null;
+                }, 3000);
+                return;
+            }
+
+            if (confirmResetTimeout) {
+                clearTimeout(confirmResetTimeout);
+                confirmResetTimeout = null;
+            }
+            sessionStorage.removeItem('invoiceModalData');
+            sessionStorage.removeItem('cartData');
+            deleteCartContent(contentDiv,bulkCartDiv, holoCartDiv,sealedContent);
+            deleteCart.textContent = 'Delete Cart';
+            deleteCart.dataset.confirmState = 'false';
         });
     }
 
@@ -1332,24 +1384,23 @@ function shoppingCart() {
 
                     if (adjustableSubtotal > 0) {
                         const scale = targetAdjustable / adjustableSubtotal;
+                        const allItems = [...(cartContent.cards|| 0), ...(cartContent.sealed || 0)];
 
-                        if (cartContent.cards) {
-                            for (let i = 0; i < cartContent.cards.length; i++) {
-                                cartContent.cards[i].marketValue = (cartContent.cards[i].marketValue * scale).toFixed(2);
-                            }
-                        }
-
-                        if (cartContent.sealed) {
-                            for (let i = 0; i < cartContent.sealed.length; i++) {
-                                cartContent.sealed[i].marketValue = (cartContent.sealed[i].marketValue * scale).toFixed(2);
+                        let distributed = 0;
+                        for(let i = 0; i < allItems.length; i++){
+                            if(i === allItems.length -1){
+                                allItems[i].marketValue = (targetAdjustable - distributed).toFixed(2);
+                            } else{
+                                const scaled = parseFloat((allItems[i].marketValue * scale).toFixed(2));
+                                allItems[i].marketValue = scaled.toFixed(2);
+                                distributed += scaled;
                             }
                         }
                     }
                 }
-                let vendorCheckBox = document.querySelector('.vendor-type').checked;
                 cartContent.recieverInfo.total = Number(cartValue(cartContent));
                 if (Object.keys(cartContent).length !== 0) {
-                    const response = await fetch(`/invoice/${Number(vendorCheckBox)}`,
+                    const response = await fetch(`/invoice`,
                         {
                             method: 'POST',
                             headers: {
@@ -1363,16 +1414,8 @@ function shoppingCart() {
                         for (const key in cartContent) {
                             delete cartContent[key];
                         }
-                        contentDiv.innerHTML = 'Your cart is empty';
-                        bulkCartContent.innerHTML = '';
-                        holoCartContent.innerHTML = '';
-                        sealedContent.innerHTML = '';
+                        deleteCartContent(contentDiv,bulkCartContent, holoCartContent, sealedContent, recieverDiv)
                         loadBulkHoloValues();
-                        cartLines.length = 0;
-                        existingIDs.clear();
-                        vendorCheckBox = false;
-                        recieverDiv.remove();
-                        recieverDiv = null;
 
                         // Clear sessionStorage on successful invoice generation
                         clearModalDataFromSession();
@@ -1642,27 +1685,79 @@ function startPolling() {
                 const sealed = data.message.sealed;
 
                 sessionStorage.removeItem('invoiceModalData');
+                deleteCartContent(document.querySelector('.cart-content'), document.querySelector('.bulk-cart-content'), document.querySelector('.holo-cart-content'), document.querySelector('.sealed-content'));
                 sessionStorage.setItem('invoiceModalData', JSON.stringify(shippingInfo));
-
-                console.log(cards);
                 cards.forEach((card) => {
-                    if (existingIDs.has(card.id)) return;
-                    const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, [card.id]);
+                    const validIds = [];
+                    const cardIds = Array.isArray(card.cardId) ? card.cardId : [card.id];
+                    cardIds.forEach((id) => {
+                        if (id === null) {
+                            spawnMissingIdModal(card);
+                        } else {
+                            validIds.push(id);
+                        }
+                    });
+
+                    if (validIds.length === 0) return;
+                    if (validIds.some(id => existingIDs.has(id))) return;
+
+                    const line = new CartLine(card.name, card.num, card.condition, null, card.marketValue, validIds);
+                    line.maxQuantity();
                     cartLines.push(line);
                     renderCartLine(line);
-                    existingIDs.add(card.id);
+                    validIds.forEach(id => existingIDs.add(id));
                 });
 
                 sealed.forEach((item) => {
-                    addSealedToCart({ name: item.name, market_value: item.market_value }, item.id);
+                    const sealedIds = Array.isArray(item.id) ? item.id : [item.id];
+                    if (sealedIds.every(id => id === null)) {
+                        spawnMissingIdModal(item);
+                        return;
+                    }
+                    const count = item.count || sealedIds.length || 1;
+                    for (let i = 0; i < count; i++) {
+                        addSealedToCart({ name: item.name, market_value: item.market_value }, sealedIds[i]);
+                    }
                 });
-
-                console.log(data.message);
             }
         } catch (error) {
             renderAlert(error, 'error');
         }
     }, 5000);
+}
+
+function spawnMissingIdModal(card) {
+    let modal = document.querySelector('.missingIdModal');
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.classList.add('missingIdModal');
+        modal.innerHTML = `
+            <div class="modal-card-list">
+                <div class="missingId-header">
+                    <p>Could not find these cards in unsold cards</p>
+                    <button class='close-missingId-modal'>X</button>
+                </div>
+                <div class="missingId-list"></div>
+            </div>
+        `;
+
+        const close = modal.querySelector('.close-missingId-modal');
+        close.addEventListener('click', () => {
+            modal.remove();
+        });
+    }
+
+    const cardDiv = document.createElement("div");
+    cardDiv.innerHTML =`
+        <p>${card.name || ""}</p>
+        <p>${card.num || ""}</p>
+        <p>${card.condition || ""}</p>
+        <p>${card.marketValue || card.market_value || ""}€</p>
+    `;
+    cardDiv.classList.add('missingId-item');
+    modal.querySelector('.missingId-list').append(cardDiv);
+
+    document.body.appendChild(modal);
 }
 
 
@@ -1818,7 +1913,6 @@ function displaySearchResults(results, resultsQueue, searchInput) {
             card.cardNum = result.card_num;
             card.condition = result.condition;
             card.marketValue = result.market_value;
-            console.log(result)
 
             const availableCount = result.available_count ? result.available_count : 1;
             let pendingQty = 1;
@@ -2499,9 +2593,10 @@ async function loadSealed(viewButton) {
     if (sealedTab.style.display === 'none' || sealedTab.childElementCount === 0) {
         sealedTab.style.display = 'flex';
         viewButton.innerHTML = 'Hide';
+        console.log(sealedTab.childElementCount);
 
         // Only fetch if we don't have items already
-        if (sealedTab.childElementCount === 3) {
+        if (contentDiv.childElementCount === 0) {
             try {
                 const response = await fetch('/loadSealed');
                 const data = await response.json();
@@ -2514,13 +2609,14 @@ async function loadSealed(viewButton) {
                     const sealedDiv = document.createElement('div');
                     sealedDiv.classList.add('sealed-item');
                     sealedDiv.setAttribute('sid', sealedData.sid);
-                    const margin = Number(sealedData.price) - Number(sealedData.market_value);
+                    const margin = (Number(sealedData.market_value) - Number(sealedData.price)).toFixed(2);
                     const timeStamp = sealedData.date.replace('Z', '');
                     const date = new Date(timeStamp);
                     let formatedDate = date.toLocaleDateString('sk-SK', { year: 'numeric', month: '2-digit', day: '2-digit' });
                     sealedDiv.innerHTML = `
                         <p class='sealed-name'>${sealedData.name}</p>
                         <p class='unit-price'>${sealedData.price}</p>
+                        <p class='VAT-sealed'>${(sealedData.price / 1.23).toFixed(2)}</p>
                         <p class='market-value-sealed'>${sealedData.market_value}</p>
                         <p class='margin'>${margin}</p>
                         <p class='add-date'>${formatedDate}</p>
