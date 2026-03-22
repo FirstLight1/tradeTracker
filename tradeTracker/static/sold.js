@@ -1,5 +1,11 @@
 import { renderField, renderAlert, scrollOnLoad } from "./main.js";
 
+const BULK_TYPE_BUY_PRICES = {
+    bulk: 0.01,
+    holo: 0.03,
+    ex: 0.15
+};
+
 async function loadContent(button, soldDate) {
     const formattedDate = `${soldDate.getDate().toString().padStart(2, '0')}.${(soldDate.getMonth() + 1).toString().padStart(2, '0')}.${soldDate.getFullYear()}`;
     const saleId = button.getAttribute('data-id');
@@ -72,12 +78,7 @@ async function loadContent(button, soldDate) {
                 const bulkElement = document.createElement('div');
                 bulkElement.classList.add('card');
 
-                let buy_price;
-                if (bulk.item_type === 'holo') {
-                    buy_price = 0.03;
-                } else {
-                    buy_price = 0.01;
-                }
+                const buy_price = BULK_TYPE_BUY_PRICES[bulk.item_type] ?? 0;
                 bulkElement.innerHTML = `
                     <p class='card-info card-name'>${bulk.item_type}</p>
                     <p class='card-info card-num'></p>

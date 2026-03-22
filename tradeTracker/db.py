@@ -96,6 +96,7 @@ CREATE TABLE bulk_counter(
 
 INSERT INTO bulk_counter (counter_name, counter) VALUES ('bulk', 0);
 INSERT INTO bulk_counter (counter_name, counter) VALUES ('holo', 0);
+INSERT INTO bulk_counter (counter_name, counter) VALUES ('ex', 0);
 
 CREATE TABLE bulk_items(
     id INTEGER PRIMARY KEY AUTOINCREMENT,

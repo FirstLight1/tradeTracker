@@ -10,7 +10,27 @@ from InvoiceGenerator.api import Invoice, CreditNote, Item, Client, Provider, Cr
 from InvoiceGenerator.pdf import SimpleInvoice, CreditNoteInvoice
 from flask import current_app
 
-def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, payment_methods=None, shipping=None):
+
+BULK_ITEM_DEFAULTS = {
+    'bulk': {'unit_price': Decimal('0.01'), 'description': 'Common bulk cards'},
+    'holo': {'unit_price': Decimal('0.03'), 'description': 'Holo bulk cards'},
+    'ex': {'unit_price': Decimal('0.15'), 'description': 'EX bulk cards'}
+}
+
+
+def add_bulk_invoice_item(invoice, item, item_type):
+    if not item:
+        return
+    item_defaults = BULK_ITEM_DEFAULTS[item_type]
+    invoice.add_item(Item(
+        count=item.get("quantity", 0),
+        price=Decimal(str(item.get("unit_price", item_defaults['unit_price']))),
+        unit="ks",
+        description=item_defaults['description'],
+        tax=Decimal("0")
+    ))
+
+def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, ex=None, payment_methods=None, shipping=None):
     # Read invoice number from env.txt
     if getattr(sys, 'frozen', False):
         # Running as compiled exe
@@ -141,22 +161,9 @@ def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, p
                 tax=tax
             ))
 
-    if bulk:
-        invoice.add_item(Item(
-            count=bulk.get("quantity", 0),
-            price=Decimal(str(bulk.get("unit_price", 0.01))),
-            unit="ks",
-            description="Common bulk cards",
-            tax=Decimal("0")
-        ))
-    if holo:
-        invoice.add_item(Item(
-            count=holo.get("quantity", 0),
-            price=Decimal(str(holo.get("unit_price", 0.03))),
-            unit="ks",
-            description="Holo bulk cards",
-            tax=Decimal("0")
-        ))
+    add_bulk_invoice_item(invoice, bulk, 'bulk')
+    add_bulk_invoice_item(invoice, holo, 'holo')
+    add_bulk_invoice_item(invoice, ex, 'ex')
 
     if shipping:
         shippingPrice = Decimal(str(shipping.get('shippingPrice'))) / Decimal('1.23')
@@ -196,7 +203,7 @@ def generate_invoice(reciever, items=None, sealed=None , bulk=None, holo=None, p
     
     return output_path, invoice_num
 
-def generateCreditNote(reciever, items=None, sealed=None, bulk=None, holo=None, payment_methods=None, shipping=None, original_invoice_num=None):
+def generateCreditNote(reciever, items=None, sealed=None, bulk=None, holo=None, ex=None, payment_methods=None, shipping=None, original_invoice_num=None):
     if getattr(sys, 'frozen', False):
         base_path = sys._MEIPASS
         logo_path = os.path.join(base_path, 'tradeTracker', 'static', 'images', 'logo.png')
@@ -299,23 +306,9 @@ def generateCreditNote(reciever, items=None, sealed=None, bulk=None, holo=None, 
                 tax=tax
             ))
 
-    if bulk:
-        invoice.add_item(Item(
-            count=bulk.get("quantity", 0),
-            price=Decimal(str(bulk.get("unit_price", 0.01))),
-            unit="ks",
-            description="Common bulk cards",
-            tax=Decimal("0")
-        ))
-
-    if holo:
-        invoice.add_item(Item(
-            count=holo.get("quantity", 0),
-            price=Decimal(str(holo.get("unit_price", 0.03))),
-            unit="ks",
-            description="Holo bulk cards",
-            tax=Decimal("0")
-        ))
+    add_bulk_invoice_item(invoice, bulk, 'bulk')
+    add_bulk_invoice_item(invoice, holo, 'holo')
+    add_bulk_invoice_item(invoice, ex, 'ex')
 
     if shipping:
         shippingPrice = Decimal(str(shipping.get('shippingPrice'))) / Decimal('1.23')

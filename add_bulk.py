@@ -47,14 +47,18 @@ def add_bulk_sales_table(db_path):
                 )
             """)
             print("Created bulk_counter table.")
-            cursor.execute("""
-                INSERT OR IGNORE INTO bulk_counter (counter_name, counter)
-                VALUES ('bulk', 0)
-            """)
-            cursor.execute("""
-                INSERT OR IGNORE INTO bulk_counter (counter_name, counter)
-                VALUES ('holo', 0)
-            """)
+        cursor.execute("""
+            INSERT OR IGNORE INTO bulk_counter (counter_name, counter)
+            VALUES ('bulk', 0)
+        """)
+        cursor.execute("""
+            INSERT OR IGNORE INTO bulk_counter (counter_name, counter)
+            VALUES ('holo', 0)
+        """)
+        cursor.execute("""
+            INSERT OR IGNORE INTO bulk_counter (counter_name, counter)
+            VALUES ('ex', 0)
+        """)
         
         if not bulk_sales_exists:
             cursor.execute("""

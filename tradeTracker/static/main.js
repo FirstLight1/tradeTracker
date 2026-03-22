@@ -668,6 +668,10 @@ function cartValue(cartContent) {
     if (cartContent.holoItem) {
         sum += Number(cartContent.holoItem.sell_price);
     }
+
+    if (cartContent.exItem) {
+        sum += Number(cartContent.exItem.sell_price);
+    }
     return sum.toFixed(2);
 }
 
@@ -815,6 +819,7 @@ function saveCartContentToSession() {
     const sealedEl = document.querySelector('.sealed-content').children;
     const bulkEl = document.querySelector('.bulk-cart-content');
     const holoEl = document.querySelector('.holo-cart-content');
+    const exEl = document.querySelector('.ex-cart-content');
 
     // Persist cartLines via toJSON
     let cartLinesData = cartLines.map(line => line.toJSON());
@@ -849,11 +854,21 @@ function saveCartContentToSession() {
         }
     }
 
+    let exData = {}
+    if (exEl.children.length > 0) {
+        exData = {
+            type: 'ex',
+            quantity: exEl.querySelector('.ex-quantity').textContent.replace('q: ', ''),
+            price: exEl.querySelector('.ex-sell-price').value || ''
+        }
+    }
+
     const cartData = {
         cartLines: cartLinesData,
         sealed: sealedData,
         bulk: bulkData,
-        holo: holoData
+        holo: holoData,
+        ex: exData
     };
 
     sessionStorage.setItem('cartData', JSON.stringify(cartData));
@@ -963,6 +978,29 @@ function loadCartContentFromSession() {
             });
         }
 
+        // Restore ex items
+        if (cartData.ex && !isEmpty(cartData.ex)) {
+            const exCartDiv = document.querySelector('.ex-cart-content');
+            const div = document.createElement('div');
+            div.classList.add('ex-cart-item-ex');
+            div.innerHTML = `
+                <p>Ex</p>
+                <p class='ex-quantity'>q: ${cartData.ex.quantity}</p>
+                <input type='text' class='ex-sell-price' style='width:70px' value='${cartData.ex.price}'>
+                <button class='remove-from-cart'>Remove</button>
+            `;
+            exCartDiv.appendChild(div);
+
+            const sellPriceInput = div.querySelector('.ex-sell-price');
+            sellPriceInput.addEventListener('blur', saveCartContentToSession);
+
+            const removeButton = div.querySelector('.remove-from-cart');
+            removeButton.addEventListener('click', () => {
+                exCartDiv.innerHTML = '';
+                saveCartContentToSession();
+            });
+        }
+
     } catch (e) {
         renderAlert('Error loading cart data from sessionStorage: ' + e, 'error');
     }
@@ -1064,10 +1102,11 @@ function clearModalDataFromSession() {
     sessionStorage.removeItem('invoiceModalData');
 }
 
-function deleteCartContent(contentDiv, bulkCartContent, holoCartContent, sealedContent, recieverDiv = null){
+function deleteCartContent(contentDiv, bulkCartContent, holoCartContent, exCartContent, sealedContent, recieverDiv = null){
     contentDiv.innerHTML = '<p>Your cart is empty</p>';
     bulkCartContent.innerHTML = '';
     holoCartContent.innerHTML = '';
+    exCartContent.innerHTML = '';
     sealedContent.innerHTML = '';
     loadBulkHoloValues();
     cartLines.length = 0;
@@ -1082,12 +1121,14 @@ function initializeCart() {
     shoppingCart();
     addBulkToCart();
     addHoloToCart();
+    addExToCart();
 }
 
 function shoppingCart() {
     const contentDiv = document.querySelector(".cart-content");
     const bulkCartDiv = document.querySelector(".bulk-cart-content");
     const holoCartDiv = document.querySelector(".holo-cart-content");
+    const exCartDiv = document.querySelector(".ex-cart-content");
     const sealedContent = document.querySelector('.sealed-content');
 
     if (contentDiv.childElementCount === 0) {
@@ -1128,7 +1169,7 @@ function shoppingCart() {
             }
             sessionStorage.removeItem('invoiceModalData');
             sessionStorage.removeItem('cartData');
-            deleteCartContent(contentDiv,bulkCartDiv, holoCartDiv,sealedContent);
+            deleteCartContent(contentDiv, bulkCartDiv, holoCartDiv, exCartDiv, sealedContent);
             deleteCart.textContent = 'Delete Cart';
             deleteCart.dataset.confirmState = 'false';
         });
@@ -1138,7 +1179,7 @@ function shoppingCart() {
     const confirmButton = document.querySelector(".confirm-btn");
     confirmButton.addEventListener('click', async () => {
         const cartContent = {};
-        if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P' && bulkCartDiv.childElementCount === 0 && holoCartDiv.childElementCount === 0 && sealedContent.childElementCount === 0) {
+        if (contentDiv.childElementCount === 1 && contentDiv.children[0].tagName === 'P' && bulkCartDiv.childElementCount === 0 && holoCartDiv.childElementCount === 0 && exCartDiv.childElementCount === 0 && sealedContent.childElementCount === 0) {
             console.log("cart empty");
             return;
         }
@@ -1177,6 +1218,8 @@ function shoppingCart() {
         const bulkItems = bulkCartContent.querySelector('.bulk-cart-item-bulk');
         const holoCartContent = document.querySelector(".holo-cart-content");
         const holoItems = holoCartContent.querySelector('.holo-cart-item-holo');
+        const exCartContent = document.querySelector(".ex-cart-content");
+        const exItems = exCartContent.querySelector('.ex-cart-item-ex');
         if (bulkItems) {
             let bulkQuantity = Number(bulkItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
             if (bulkQuantity === 0) {
@@ -1208,6 +1251,20 @@ function shoppingCart() {
                 buy_price: 0.03
             };
             cartContent.holoItem = holo;
+        }
+
+        if (exItems) {
+            let exQuantity = Number(exItems.querySelectorAll('p')[1].textContent.replace('q: ', ''));
+            exQuantity = exQuantity === 0 ? 1 : exQuantity;
+            const sellPriceInput = exItems.querySelector('.ex-sell-price').value.replace(',', '.');
+            const ex = {
+                counter_name: 'ex',
+                quantity: exQuantity,
+                unit_price: sellPriceInput && exQuantity ? (Number(sellPriceInput) / exQuantity).toFixed(2) : 0.15,
+                sell_price: sellPriceInput ? Number(sellPriceInput) : 0.15,
+                buy_price: 0.15
+            };
+            cartContent.exItem = ex;
         }
 
 
@@ -1375,7 +1432,8 @@ function shoppingCart() {
                 if (cartValueInput != cartVal) {
                     const bulkSub = cartContent.bulkItem ? Number(cartContent.bulkItem.sell_price) : 0;
                     const holoSub = cartContent.holoItem ? Number(cartContent.holoItem.sell_price) : 0;
-                    const fixedSubtotal = bulkSub + holoSub;
+                    const exSub = cartContent.exItem ? Number(cartContent.exItem.sell_price) : 0;
+                    const fixedSubtotal = bulkSub + holoSub + exSub;
                     const cardsSub = cartContent.cards ? cartContent.cards.reduce((sum, c) => sum + Number(c.marketValue), 0) : 0;
                     const sealedSub = cartContent.sealed ? cartContent.sealed.reduce((sum, c) => sum + Number(c.marketValue.replace('€', '')), 0) : 0;
 
@@ -1414,7 +1472,7 @@ function shoppingCart() {
                         for (const key in cartContent) {
                             delete cartContent[key];
                         }
-                        deleteCartContent(contentDiv,bulkCartContent, holoCartContent, sealedContent, recieverDiv)
+                        deleteCartContent(contentDiv, bulkCartContent, holoCartContent, exCartContent, sealedContent, recieverDiv)
                         loadBulkHoloValues();
 
                         // Clear sessionStorage on successful invoice generation
@@ -1674,6 +1732,58 @@ function addHoloToCart() {
         }
     });
 }
+
+function addExToCart() {
+    const button = document.querySelector('.card-add-ex');
+    const input = document.querySelector('.cart-ex-input');
+    const contentDiv = document.querySelector('.ex-cart-content');
+
+    button.addEventListener('click', () => {
+        const value = input.value;
+        const exItems = contentDiv.querySelector('.ex-cart-item-ex');
+        const inventorySize = document.querySelector('.ex-value').textContent;
+        const maxEx = Number(inventorySize);
+        if (Number(value) + currentCartValue('ex') > maxEx) {
+            renderAlert(`You can not add more than ${maxEx} ex items to the cart`, 'error');
+            return;
+        }
+
+        if (!exItems) {
+            if (value && !isNaN(value)) {
+                const div = document.createElement('div');
+                div.classList.add('ex-cart-item-ex');
+                div.innerHTML = `
+                    <p>Ex</p>
+                    <p class='ex-quantity'>q: ${value}</p>
+                    <input type='text' class='ex-sell-price' style='width:70px'>
+                    <button class='remove-from-cart'>Remove</button>`;
+                contentDiv.appendChild(div);
+                const sellPriceInput = contentDiv.querySelector('.ex-sell-price');
+                sellPriceInput.addEventListener('blur', saveCartContentToSession);
+                saveCartContentToSession();
+            }
+        } else {
+            const quantityP = exItems.querySelectorAll('p')[1];
+            let currentQuantity = Number(quantityP.textContent.replace('q: ', ''));
+            if (value && !isNaN(value)) {
+                currentQuantity += Number(value);
+                quantityP.textContent = `q: ${currentQuantity}`;
+                saveCartContentToSession();
+            }
+        }
+        const removeButton = contentDiv.querySelector('.remove-from-cart');
+        removeButton.addEventListener('click', () => {
+            contentDiv.innerHTML = '';
+            saveCartContentToSession();
+        });
+    });
+    input.addEventListener('keydown', (event) => {
+        if (event.key == 'Enter') {
+            button.click();
+        }
+    });
+}
+
 function startPolling() {
     setInterval(async () => {
         try {
@@ -1685,7 +1795,13 @@ function startPolling() {
                 const sealed = data.message.sealed;
 
                 sessionStorage.removeItem('invoiceModalData');
-                deleteCartContent(document.querySelector('.cart-content'), document.querySelector('.bulk-cart-content'), document.querySelector('.holo-cart-content'), document.querySelector('.sealed-content'));
+                deleteCartContent(
+                    document.querySelector('.cart-content'),
+                    document.querySelector('.bulk-cart-content'),
+                    document.querySelector('.holo-cart-content'),
+                    document.querySelector('.ex-cart-content'),
+                    document.querySelector('.sealed-content')
+                );
                 sessionStorage.setItem('invoiceModalData', JSON.stringify(shippingInfo));
                 cards.forEach((card) => {
                     const validIds = [];
@@ -2000,17 +2116,19 @@ function displaySearchResults(results, resultsQueue, searchInput) {
 async function loadBulkHoloValues() {
     let holoVal = document.querySelector('.holo-value');
     let bulkVal = document.querySelector('.bulk-value');
+    let exVal = document.querySelector('.ex-value');
     try {
         const response = await fetch('/bulkCounterValue');
         const data = await response.json();
         if (data.status == 'success') {
             bulkVal.textContent = data.bulk_counter;
             holoVal.textContent = data.holo_counter;
+            exVal.textContent = data.ex_counter;
         } else {
-            renderAlert('There was a problem loading bulk and holo values', 'error');
+            renderAlert('There was a problem loading bulk, holo and ex values', 'error');
         }
     } catch (e) {
-        renderAlert('Error loading bulk/holo values: ' + e, 'error');
+        renderAlert('Error loading bulk/holo/ex values: ' + e, 'error');
     }
 }
 
@@ -2363,6 +2481,7 @@ async function loadAuctionContent(button) {
                 <div><button class="add-sealed-auction">Add sealed</button></div>
                 <div><button class="add-bulk-auction">Add bulk</button></div>
                 <div><button class="add-holo-auction">Add holo</button></div>
+                <div><button class="add-ex-auction">Add ex</button></div>
                 <div><button class="save-added-cards">Save</button></div>
                 `;
         cardsContainer.appendChild(buttonDiv);
@@ -2437,7 +2556,8 @@ async function loadAuctionContent(button) {
                 const hasNewItems = cardsContainer.querySelector('.new-card') ||
                     cardsContainer.querySelector('.add-sealed-item') ||
                     cardsContainer.querySelector('.add-bulk-item') ||
-                    cardsContainer.querySelector('.add-holo-item');
+                    cardsContainer.querySelector('.add-holo-item') ||
+                    cardsContainer.querySelector('.add-ex-item');
                 if (!hasNewItems) {
                     cardsContainer.querySelector('.save-added-cards').hidden = true;
                 }
@@ -2457,6 +2577,22 @@ async function loadAuctionContent(button) {
                     <p class="holo-sell-price">Sell Price: <input type="text" class="holo-sell-price-input" ></p>
                 `;
                 cardsContainer.insertBefore(newHoloDiv, cardsContainer.querySelector('.button-container'));
+            }
+        });
+
+        const addExButton = cardsContainer.querySelector('.add-ex-auction');
+        addExButton.addEventListener('click', () => {
+            cardsContainer.querySelector('.save-added-cards').hidden = false;
+            const exDiv = cardsContainer.querySelector('.add-ex-item');
+            if (!exDiv) {
+                const newExDiv = document.createElement('div');
+                newExDiv.classList.add('add-ex-item');
+                newExDiv.innerHTML = `
+                    <p class="ex-name">Ex Item</p>
+                    <p class="ex-quantity">Quantity: <input type="number" class="ex-quantity-input" min="1"></p>
+                    <p class="ex-sell-price">Sell Price: <input type="text" class="ex-sell-price-input" ></p>
+                `;
+                cardsContainer.insertBefore(newExDiv, cardsContainer.querySelector('.button-container'));
             }
         });
 
@@ -2504,7 +2640,7 @@ async function loadAuctionContent(button) {
             if (bulkDiv) {
                 const bulkItems = { 'item_type': 'bulk', 'quantity': null, 'total_price': null };
                 bulkItems.quantity = bulkDiv.querySelector('.bulk-quantity-input').value.trim() || null;
-                bulkItems.total_price = bulkDiv.querySelector('.bulk-sell-price-input').value.trim() || null;
+                bulkItems.total_price = bulkDiv.querySelector('.bulk-sell-price-input').value.replace(',', '.').trim() || null;
                 bulkItems.unit_price = bulkItems.total_price / bulkItems.quantity || null;
                 itemsToAdd['bulk'] = bulkItems;
             }
@@ -2513,9 +2649,18 @@ async function loadAuctionContent(button) {
             if (holoDiv) {
                 const holoItems = { 'item_type': 'holo', 'quantity': null, 'total_price': null };
                 holoItems.quantity = holoDiv.querySelector('.holo-quantity-input').value.trim() || null;
-                holoItems.total_price = holoDiv.querySelector('.holo-sell-price-input').value.trim() || null;
+                holoItems.total_price = holoDiv.querySelector('.holo-sell-price-input').value.replace(',', '.').trim() || null;
                 holoItems.unit_price = holoItems.total_price / holoItems.quantity || null;
                 itemsToAdd['holo'] = holoItems;
+            }
+
+            const exDiv = cardsContainer.querySelector('.add-ex-item');
+            if (exDiv) {
+                const exItems = { 'item_type': 'ex', 'quantity': null, 'total_price': null };
+                exItems.quantity = exDiv.querySelector('.ex-quantity-input').value.trim() || null;
+                exItems.total_price = exDiv.querySelector('.ex-sell-price-input').value.replace(',', '.').trim() || null;
+                exItems.unit_price = exItems.total_price / exItems.quantity || null;
+                itemsToAdd['ex'] = exItems;
             }
 
             // Handle sealed items
