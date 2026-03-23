@@ -87,10 +87,10 @@ class CartLine {
             && this.condition === condition;
     }
 
-    maxQuantity(){
+    maxQuantity() {
         const quantity = this.cardIds.push(...this.reservableIds);
         this.reservableIds.length = 0;
-        return quantity; 
+        return quantity;
     }
 
     // For sessionStorage
@@ -194,12 +194,12 @@ export function scrollOnLoad() {
     window.addEventListener('load', () => {
         const hash = window.location.hash;
         console.log(hash);
-        const id = hash.startsWith('#') ? hash.slice(1) : hash; 
-        if (id) { 
+        const id = hash.startsWith('#') ? hash.slice(1) : hash;
+        if (id) {
             const interval = setInterval(() => {
                 const el = document.getElementById(id);
                 if (el) {
-                    el.scrollIntoView({ behavior: 'instant', block:'center' });
+                    el.scrollIntoView({ behavior: 'instant', block: 'center' });
                     clearInterval(interval);
                 }
             }, 100);
@@ -1102,7 +1102,7 @@ function clearModalDataFromSession() {
     sessionStorage.removeItem('invoiceModalData');
 }
 
-function deleteCartContent(contentDiv, bulkCartContent, holoCartContent, exCartContent, sealedContent, recieverDiv = null){
+function deleteCartContent(contentDiv, bulkCartContent, holoCartContent, exCartContent, sealedContent, recieverDiv = null) {
     contentDiv.innerHTML = '<p>Your cart is empty</p>';
     bulkCartContent.innerHTML = '';
     holoCartContent.innerHTML = '';
@@ -1111,7 +1111,7 @@ function deleteCartContent(contentDiv, bulkCartContent, holoCartContent, exCartC
     loadBulkHoloValues();
     cartLines.length = 0;
     existingIDs.clear();
-    if (recieverDiv != null){
+    if (recieverDiv != null) {
         recieverDiv.remove();
         recieverDiv = null;
     }
@@ -1442,13 +1442,13 @@ function shoppingCart() {
 
                     if (adjustableSubtotal > 0) {
                         const scale = targetAdjustable / adjustableSubtotal;
-                        const allItems = [...(cartContent.cards|| 0), ...(cartContent.sealed || 0)];
+                        const allItems = [...(cartContent.cards || 0), ...(cartContent.sealed || 0)];
 
                         let distributed = 0;
-                        for(let i = 0; i < allItems.length; i++){
-                            if(i === allItems.length -1){
+                        for (let i = 0; i < allItems.length; i++) {
+                            if (i === allItems.length - 1) {
                                 allItems[i].marketValue = (targetAdjustable - distributed).toFixed(2);
-                            } else{
+                            } else {
                                 const scaled = parseFloat((allItems[i].marketValue * scale).toFixed(2));
                                 allItems[i].marketValue = scaled.toFixed(2);
                                 distributed += scaled;
@@ -1864,7 +1864,7 @@ function spawnMissingIdModal(card) {
     }
 
     const cardDiv = document.createElement("div");
-    cardDiv.innerHTML =`
+    cardDiv.innerHTML = `
         <p>${card.name || ""}</p>
         <p>${card.num || ""}</p>
         <p>${card.condition || ""}</p>
@@ -2701,15 +2701,8 @@ async function loadAuctionContent(button) {
                 renderAlert('Error saving new cards: ' + JSON.stringify(data), 'error');
                 return;
             }
-            if (auctionSingles) {
-                await updateInventoryValueAndTotalProfit();
-            } else {
-                const auctionTab = cardsContainer.closest('.auction-tab');
-                const cards = cardsContainer.querySelectorAll('.card');
-                await setAuctionBuyPrice(cards, itemsToAdd['sealed'], auctionTab);
 
-                await updateInventoryValueAndTotalProfit();
-            }
+            await updateInventoryValueAndTotalProfit();
 
             newCards.forEach(card => card.classList.remove('new-card'));
             //} catch (error) {
