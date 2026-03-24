@@ -1281,7 +1281,9 @@ def groupUnnamed():
 def cardMarketTable():
     if request.method == 'POST':
         db = get_db()
-        cards = request.get_json()
+        data = request.get_json()
+        cards = data.get('cards')
+        sealed = data.get('sealed')
         date = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
         auction = {
             'name': None,
@@ -1329,6 +1331,33 @@ def cardMarketTable():
                 'INSERT INTO cards (card_name, card_num, condition, card_price, market_value, auction_id) VALUES (?, ?, ?, ?, ?, ?)',
                 cardsToInsert
             )            
+
+            sealedToInsert = []
+            for item in sealed:
+                try:
+                    count = int(card.get('count', 1))
+                except (ValueError, TypeError):
+                    count = 1
+                for _ in range(count):
+                    marketValue = item.get('marketValue', 0)
+                    marketValue = float(marketValue) if marketValue is not None else None
+
+                    if marketValue:
+                        buyPrice = round(marketValue * 0.80, 2)
+                    else:
+                        buyPrice = 0
+
+                    sealedToInsert.append((
+                        item.get('name', None),
+                        buyPrice,
+                        marketValue,
+                        auction_id
+                    ))
+
+            db.executemany(
+                'INSERT INTO sealed (name, price, market_value, auction_id) VALUES (?, ?, ?, ?)', sealedToInsert
+            )
+
             db.commit()
             return jsonify({'status': 'success'}), 201
 
