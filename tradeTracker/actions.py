@@ -731,8 +731,7 @@ def generate_credit_note(saleId):
     if not payment_methods and reciever.get('paymentMethod'):
         payment_methods = [{'type': reciever.get('paymentMethod'), 'amount': 0}]
 
-   #try:
-    if True:
+    try:
         pdf_path, cn_num = generateInvoice.generateCreditNote(
             reciever,
             items if items else None,
@@ -744,8 +743,8 @@ def generate_credit_note(saleId):
             shipping,
             original_invoice_num
         )
-    #except Exception as e:
-     #   return jsonify({'status': 'error', 'message': str(e)}), 500
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
     return jsonify({'status': 'success', 'pdf_path': pdf_path, 'cn_num': cn_num}), 200
 
