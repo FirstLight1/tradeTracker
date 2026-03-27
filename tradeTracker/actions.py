@@ -650,7 +650,8 @@ def linkAuctionToSale(auction_id):
 def orderReturn(saleId):
     db = get_db()
 
-    try:
+    #try:
+    if True:
         db.execute('UPDATE cards SET sold_date = NULL WHERE id IN (SELECT card_id FROM sale_items WHERE sale_id = ?)',(saleId, ))
         bulk_sales_rows = db.execute(
             'SELECT item_type, quantity FROM bulk_sales WHERE sale_id = ?', (saleId,)
@@ -666,9 +667,9 @@ def orderReturn(saleId):
                     (bs_row['quantity'], target['id'])
                 )
         db.execute('DELETE FROM sales WHERE id = ?', (saleId, ))
-    except:
-         db.rollback()
-         return jsonify({'status': 'error', 'message': 'There was an error while creating a return'}), 400 
+   # except:
+        # db.rollback()
+        #return jsonify({'status': 'error', 'message': 'There was an error while creating a return'}), 400 
     
     db.commit()
     return jsonify({'status': 'success'}),200
