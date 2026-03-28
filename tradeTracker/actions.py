@@ -31,10 +31,6 @@ conditionDict = {
     'PO' : "Poor"
 }
 
-# Allowed payment types (whitelist)
-
-
-
 def get_bulk_item_unit_price(item_type):
     return CONSTANTS.BULK_ITEM_UNIT_PRICES.get(item_type, 0)
 
@@ -753,14 +749,13 @@ def generateSoldReport():
         bulkAndHoloList[i].update({'buy_price': get_bulk_item_unit_price(item_type['item_type'])})
         i += 1
 
-    #try:
-    if True:
+    try:
         pdf_path = generatePDF(month, year, cards_list, sealedList, bulkAndHoloList, shipping_list)
         xls_path = createBuyReport(month, year, db);
         return jsonify({'status': 'success', 'pdf_path': pdf_path, 'xls_path':xls_path}), 200
-    #except Exception as e:
-    #    print(f"Error generating PDF: {e}")
-    #    return jsonify({'status': 'error', 'message': str(e)}), 500
+    except Exception as e:
+        print(f"Error generating PDF: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 def generatePDF(month, year, cards, sealed,bulkAndHoloList, shipping):
@@ -1576,8 +1571,6 @@ def search():
             else:
                 card_cart_ids.append(cart_id)
         
-        #for id in card_cart_ids:
-        #    print(id)
         # Build WHERE clause for CARDS (alias 'c')
         card_where_conditions = []
         card_params = []
