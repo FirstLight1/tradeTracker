@@ -176,31 +176,6 @@ def parse_payment_methods(payment_method_text):
     return [{"type": payment_type, "amount": 0} for payment_type in payment_types if payment_type]
 
 
-@bp.route('/addAuction')
-def addAuction():
-    return render_template("add-auction.html")
-
-@bp.route('/addSingles')
-def addSingles():
-    return render_template("add-singles.html")
-
-@bp.route('/collection')
-def renderCollection():
-    return render_template("collection.html")
-
-@bp.route('/')
-def renderAuctions():
-    return render_template("index.html")
-
-@bp.route('/renderAddCardsToCollection')
-def renderAddCardsToCollection():
-    return render_template("addCardsToCollection.html")
-
-
-@bp.route('/sold')
-def sold():
-    return render_template("sold.html")
-
 @bp.route('/add', methods=('GET', 'POST'))
 def add():
     if request.method == 'POST':
@@ -1737,8 +1712,6 @@ def invoice():
             return jsonify({'status': 'error', 'message': f'There was an error while validating payments {err}'}), 400
         if not valid:
             return jsonify({'status': 'error', 'message': 'Invalid payment data'}), 400
-
-        print('Cart content:', cartContent)
 
         saleInput = SaleInput(
             reciever=cartContent['recieverInfo'],
