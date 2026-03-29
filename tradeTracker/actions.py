@@ -1,17 +1,17 @@
 from decimal import Decimal
 import sys
-from flask import url_for, Flask, request, g, render_template, Blueprint, jsonify, current_app
+from flask import request, Blueprint, jsonify, current_app
 from flask_cors import CORS
 from tradeTracker.db import get_db
 import datetime
-import csv
-from werkzeug.utils import secure_filename
 import os
-import sqlite3
 import fpdf
 import json
 import pandas as pd
 from . import generateInvoice, CONSTANTS
+from tradeTracker.services.models import SaleInput
+from tradeTracker.services.sale_service import SaleService
+from tradeTracker.services.reciept_service import InvoiceReceiptService
 
 
 bp = Blueprint('actions', __name__)
@@ -1681,18 +1681,14 @@ def getCardIds():
         ids = [dict(row)['id'] for row in cardIds]
         return jsonify({'status': 'success', 'card_ids': ids}), 200
 
-
-from tradeTracker.services.models import SaleInput, ReceiptResult
-from tradeTracker.services.sale_service import SaleService
-from tradeTracker.services.reciept_service import InvoiceReceiptService
-
 @bp.route('/invoice', methods=('GET', 'POST'))
 def invoice():
     if request.method == 'POST':
         cartContent = request.get_json()
 
-        payment_data, valid, err, pdf_path = None, False, None, None
+        payment_data, valid, err = None, False, None
         payment_methods_input = cartContent.get('paymentMethods') or []
+
         if payment_methods_input:
             valid, payment_data, err = validate_and_sanitize_payments(payment_methods_input)
         elif cartContent.get('paymentMethod'):
@@ -1701,6 +1697,7 @@ def invoice():
             valid = True
         else:
             err = 'No payment method provided'
+
         if err != None:
             return jsonify({'status': 'error', 'message': f'There was an error while validating payments {err}'}), 400
         if not valid:
@@ -1719,16 +1716,14 @@ def invoice():
         # Validate inventory before processing
         db = get_db()
        
-        saleResult = SaleService(db,InvoiceReceiptService()).process_sale(saleInput)
-        #try:
-        # Generate the invoice and get the file path
-        # Pass payment methods array (or single method for backwards compatibility)
+        try:
+            saleResult = SaleService(db,InvoiceReceiptService()).process_sale(saleInput)
+        except:
+            db.rollback()
+            return jsonify({'status': 'error', 'message': f'There was an error {e}'}), 400
+
         
         db.commit()
         
         # Send the PDF file as a download
         return jsonify({'status': 'success', 'pdf_path': saleResult.receipt.file_path}), 200
-        #except Exception as e:
-        #    db.rollback()
-        #    return jsonify({'status': 'error', 'message': f'There was an error {e}'}), 400
-
