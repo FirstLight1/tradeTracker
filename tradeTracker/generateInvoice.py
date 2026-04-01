@@ -245,7 +245,7 @@ def generateCreditNote(reciever, items=None, sealed=None, bulk=None, holo=None, 
             t = payment['type']
             result[t] = result.get(t, 0) + payment['amount']
         unique_payment = [{'type': t, 'amount': round(amt, 2)} for t, amt in result.items()]
-        payment_strings = ", ".join(f"{item['type']} :{item['amount']}€ " for item in unique_payment)
+        payment_strings = ", ".join(f"{item['type']} :-{item['amount']}€ " for item in unique_payment)
         invoice.paytype = payment_strings
     else:
         invoice.paytype = reciever.get("paymentMethod", "Hotovosť")
