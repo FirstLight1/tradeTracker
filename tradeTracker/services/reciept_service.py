@@ -8,9 +8,10 @@ class RecieptService(ABC):
         ...
 
 class InvoiceReceiptService(RecieptService):
-    def issue(self, sale_input) -> models.ReceiptResult:
+    def issue(self, sale_input, db) -> models.ReceiptResult:
         pdf_path, invoice_num = generateInvoice.generate_invoice(
             reciever=sale_input.reciever or [],
+            db=db,
             items=sale_input.cards or [],
             sealed=sale_input.sealed or [],
             bulk=sale_input.bulk,

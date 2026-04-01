@@ -548,7 +548,6 @@ def bulkCounterValue():
 @bp.route('/loadSoldHistory')
 def loadSoldHistory():
     db = get_db()
-    # TODO: update profit calculation
     sales = db.execute(
         'SELECT s.*, '
         '(COALESCE((SELECT SUM(si.profit) FROM sale_items si WHERE si.sale_id = s.id), 0) + '
@@ -1718,7 +1717,7 @@ def invoice():
        
         try:
             saleResult = SaleService(db,InvoiceReceiptService()).process_sale(saleInput)
-        except:
+        except Exception as e:
             db.rollback()
             return jsonify({'status': 'error', 'message': f'There was an error {e}'}), 400
 
