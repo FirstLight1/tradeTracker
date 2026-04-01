@@ -2950,20 +2950,6 @@ async function loadAuctions() {
             });
         });
 
-
-        //TODO - investigate if this does something, look like not
-        const auctionTab = document.querySelectorAll('.auction-tab');
-        auctionTab.forEach((tab) => {
-            const paymentMethodSelects = tab.querySelectorAll('.payment-method-select');
-            if (paymentMethodSelects) {
-                paymentMethodSelects.forEach(select => {
-                    attachPaymentMethodSelectListener(select);
-                });
-
-            }
-        });
-
-
         const deleteButton = document.querySelectorAll('.delete-auction');
         deleteButton.forEach(button => {
             button.addEventListener('click', () => {
