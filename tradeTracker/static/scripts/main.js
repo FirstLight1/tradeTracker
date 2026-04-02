@@ -1865,8 +1865,8 @@ async function loadAuctionContent(button) {
                         <p>Condition</p>
                         <p>Buy price</p>
                         <p>Market value</p>
-                        <p>Sell price</p>
                         <p>Margin</p>
+                        <p></p>
                         <p></p>
                         <p></p>
                     </div>
@@ -1883,8 +1883,8 @@ async function loadAuctionContent(button) {
                         <p class='card-info condition ${safeCardConditionClass}' data-field="condition">${DOMPurify.sanitize(card.condition) ? DOMPurify.sanitize(card.condition) : 'Unknown'}</p>
                         ${renderField(card.card_price ? DOMPurify.sanitize(card.card_price) + '€' : null, 'text', ['card-info', 'card-price'], 'Card Price', 'card_price')}
                         ${renderField(card.market_value ? DOMPurify.sanitize(card.market_value) + '€' : null, 'text', ['card-info', 'market-value'], 'Market Value', 'market_value')}
-                        ${renderField(card.sell_price ? DOMPurify.sanitize(card.sell_price) + '€' : null, 'text', ['card-info', 'sell-price'], 'Sell Price', 'sell_price')}
                         ${renderField(card.card_price !== null && card.market_value !== null ? (card.market_value - card.card_price).toFixed(2) + '€' : ' ', 'text', ['card-info', 'profit'], 'profit', true)}
+                        <p></p>
                         <button class="add-to-cart">Add to cart</button>
                         <span hidden class="card-id">${safeCardId}</span>
                         <button class=delete-card data-id="${safeCardId}">Delete</button>
