@@ -42,7 +42,7 @@ def generate_invoice(reciever, db, items=None, sealed=None , bulk=None, holo=Non
 
     # Read or create env.txt with invoice_num
     try:
-        invoice_num = db.execute('SELECT invoice_number FROM sales ORDER BY id DESC LIMIT 1').fetchone()[0]
+        invoice_num = db.execute('SELECT invoice_number FROM sales WHERE invoice_number NOT LIKE "S%" ORDER BY id DESC LIMIT 1').fetchone()[0]
         invoice_num = int(invoice_num) + 1
     except:
         raise Exception("Failed to get invoice_number")

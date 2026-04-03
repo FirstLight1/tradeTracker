@@ -23,6 +23,18 @@ class InvoiceReceiptService(RecieptService):
         return models.ReceiptResult(kind="invoice", number=invoice_num, file_path=pdf_path)
 
 class EKasaReceiptService(RecieptService):
-    def issue(self, sale_input) -> models.ReceiptResult:
+    def issue(self, sale_input, db) -> models.ReceiptResult:
+        invoice_num = db.execute("SELECT invoice_number FROM sales WHERE invoice_number LIKE 'S%' ORDER BY id DESC LIMIT 1").fetchone()
+        print(invoice_num[0])
+        if invoice_num is not None and invoice_num[0] is not None:
+            s = invoice_num[0][0]
+            num = int(invoice_num[0][1:])
+            num += 1
+            invoice_num = s + str(num)
+            print(invoice_num)
+        else:
+            invoice_num = 'S1'
+            print('none')
+        return models.ReceiptResult(kind='ekasa', number=invoice_num)
         # neskôr: call VAROS API
-        raise NotImplementedError
+        #raise NotImplementedError

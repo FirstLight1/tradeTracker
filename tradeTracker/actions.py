@@ -11,7 +11,7 @@ import pandas as pd
 from . import generateInvoice, CONSTANTS
 from tradeTracker.services.models import SaleInput
 from tradeTracker.services.sale_service import SaleService
-from tradeTracker.services.reciept_service import InvoiceReceiptService
+from tradeTracker.services.reciept_service import InvoiceReceiptService, EKasaReceiptService
 
 
 bp = Blueprint('actions', __name__)
@@ -590,7 +590,7 @@ def loadSoldCards(sale_id):
 @bp.route('/unlinkedBarterIds')
 def unlinkedBarterIds():
     db = get_db()
-    ids = db.execute('SELECT id, invoice_number FROM sales WHERE id NOT IN (SELECT sale_id FROM barter WHERE sale_id IS NOT NULL) ORDER BY id DESC')
+    ids = db.execute('SELECT id, invoice_number FROM sales WHERE id NOT IN (SELECT sale_id FROM barter WHERE sale_id IS NOT NULL) AND invoice_number NOT LIKE "S%" ORDER BY id DESC')
     return jsonify({'status': 'success', 'data': [dict(row) for row in ids]})
 
 @bp.route('/linkAuctionToSale/<int:auction_id>',methods=('POST',))
@@ -1680,8 +1680,8 @@ def getCardIds():
         ids = [dict(row)['id'] for row in cardIds]
         return jsonify({'status': 'success', 'card_ids': ids}), 200
 
-@bp.route('/invoice', methods=('GET', 'POST'))
-def invoice():
+@bp.route('/createSale/<string:kind>', methods=('GET', 'POST'))
+def invoice(kind):
     if request.method == 'POST':
         cartContent = request.get_json()
 
@@ -1714,15 +1714,21 @@ def invoice():
         )
         # Validate inventory before processing
         db = get_db()
-       
-        try:
-            saleResult = SaleService(db,InvoiceReceiptService()).process_sale(saleInput)
-        except Exception as e:
-            db.rollback()
-            return jsonify({'status': 'error', 'message': f'There was an error {e}'}), 400
-
+        if kind == 'invoice': 
+            try:
+                saleResult = SaleService(db,InvoiceReceiptService()).process_sale(saleInput)
+                db.commit()
+                return jsonify({'status': 'success', 'pdf_path': saleResult.receipt.file_path}), 200
+            except Exception as e:
+                db.rollback()
+                return jsonify({'status': 'error', 'message': f'There was an error {e}'}), 400
+        elif kind == 'sales_invoice':
+            try:
+                saleResult = SaleService(db, EKasaReceiptService()).process_sale(saleInput)
+                db.commit()
+                return jsonify({'status': 'success', 'pdf_path': 'Sale addded succesfully'}), 200
+            except Exception as e:
+                db.rollback()
+                return jsonify({'status': 'error', 'message': f'There was an error {e}'}), 400
         
-        db.commit()
-        
-        # Send the PDF file as a download
-        return jsonify({'status': 'success', 'pdf_path': saleResult.receipt.file_path}), 200
+        return jsonify({'status': 'error', 'message': 'Invalid kind of request'}), 400
