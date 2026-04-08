@@ -1333,8 +1333,9 @@ def cardMarketOrder():
             try:
                 count = int(card.get('count', 1))
             except (ValueError, TypeError):
+                print('failed to get count')
                 count = 1
-            rows = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE c.card_name = ? AND c.card_num = ? and c.condition = ? AND si.sale_id IS NULL",(card['name'], card['num'], card['condition'])).fetchmany(count)
+            rows = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE lower(c.card_name) = ? AND lower(c.card_num) = ? and upper(c.condition) = ? AND si.sale_id IS NULL",(card['name'].lower(), card['num'].lower(), card['condition'].upper())).fetchmany(count)
     
             ids = [row[0] for row in rows]
             ids += [None] * (count - len(ids))
@@ -1343,7 +1344,7 @@ def cardMarketOrder():
     except:
         print('There was an error while getting card ids')
         return jsonify({'status': 'error', 'message' : 'Failed to match cards to card ids, Error code: Ax16'}), 400
-    sealed = data['sealed']
+        sealed = data['sealed']
 
     try:
         for item in sealed:
@@ -1368,6 +1369,7 @@ def cardMarketOrder():
             "sealed" : sealed
             }
     global latest
+    print(orderInfo)
     latest = orderInfo
     return jsonify({'status': 'success'}), 200
 
