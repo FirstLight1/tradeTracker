@@ -1354,7 +1354,7 @@ def cardMarketOrder():
                 count = 1
 
 
-            rows  = db.execute('SELECT id FROM WHERE name = ? AND sale_id IS NULL',(item['name'],)).fetchmany(count)
+            rows  = db.execute('SELECT id FROM WHERE lower(name) = ? AND sale_id IS NULL',(item['name'].lower(),)).fetchmany(count)
             ids = [row[0] for row in rows]
             if len(ids) > 0:
               item['id'] = ids
@@ -1580,6 +1580,7 @@ def search():
             )
             card_params.append(f'%{term}%')
         
+        #TODO cant this be a group by conditions?
         card_where_clause = " AND ".join(card_where_conditions) if card_where_conditions else "1=1"
         
         # Add card cart exclusion
