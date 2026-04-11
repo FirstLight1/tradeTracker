@@ -1128,13 +1128,12 @@ function shoppingCart() {
                         <input type=text placeholder="${cartVal}" class="price-input">
                     </div>
                     <div>
-                    <p>Shipping</p>
                     <p class='shipping-way'>Doprava / Poštovné – samostatná služba</p>
                     <input type=text placeholder="Price of shipping" class="shipping-price">
                     </div>
                     <div class='invoice-buttons'>
-                        <button class="generate-invoice">Generate Invoice</button>
                         <button class=sales-invoice>Add sale</button>
+                        <button class="generate-invoice">Generate Invoice</button>
                     </div>
                 </div>
                 `;
