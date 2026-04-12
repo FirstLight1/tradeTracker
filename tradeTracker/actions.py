@@ -1327,40 +1327,45 @@ def cardMarketOrder():
     shipping_info = data['shipping_info']
     cards = data['cards']
 
-    try:
-        for card in cards:
-            
-            try:
-                count = int(card.get('count', 1))
-            except (ValueError, TypeError):
-                print('failed to get count')
-                count = 1
-            rows = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE lower(c.card_name) = ? AND lower(c.card_num) = ? and upper(c.condition) = ? AND si.sale_id IS NULL",(card['name'].lower(), card['num'].lower(), card['condition'].upper())).fetchmany(count)
-    
-            ids = [row[0] for row in rows]
-            ids += [None] * (count - len(ids))
-            card['cardId'] = ids
-    
-    except:
-        print('There was an error while getting card ids')
-        return jsonify({'status': 'error', 'message' : 'Failed to match cards to card ids, Error code: Ax16'}), 400
-        sealed = data['sealed']
-
-    try:
-        for item in sealed:
-            try:
-                count = int(item.get('count',1))
-            except:
-                count = 1
+    if cards:
+        try:
+            for card in cards:
+                
+                try:
+                    count = int(card.get('count', 1))
+                except (ValueError, TypeError):
+                    print('failed to get count')
+                    count = 1
+                print(card)
+                rows = db.execute("SELECT c.id FROM cards c LEFT JOIN sale_items si ON c.id = si.card_id WHERE lower(c.card_name) = ? AND lower(c.card_num) = ? and upper(c.condition) = ? AND si.sale_id IS NULL",(card['name'].lower(), card['num'].lower(), card['condition'].upper())).fetchmany(count)
+        
+                ids = [row[0] for row in rows]
+                ids += [None] * (count - len(ids))
+                card['cardId'] = ids
+        
+        except Exception as e:
+            print(e)
+            print('There was an error while getting card ids')
+            return jsonify({'status': 'error', 'message' : 'Failed to match cards to card ids, Error code: Ax16'}), 400
 
 
-            rows  = db.execute('SELECT id FROM WHERE lower(name) = ? AND sale_id IS NULL',(item['name'].lower(),)).fetchmany(count)
-            ids = [row[0] for row in rows]
-            if len(ids) > 0:
-              item['id'] = ids
-    except:
-        print("There was an error while getting sealed ids")
-        return jsonify({'status' : 'error', 'message': 'There was an error while getting sealed ids, Error code: Ax17'})
+    sealed = data['sealed']
+    if sealed:
+        try:
+            for item in sealed:
+                try:
+                    count = int(item.get('count',1))
+                except:
+                    count = 1
+
+
+                rows  = db.execute('SELECT id FROM WHERE lower(name) = ? AND sale_id IS NULL',(item['name'].lower(),)).fetchmany(count)
+                ids = [row[0] for row in rows]
+                if len(ids) > 0:
+                  item['id'] = ids
+        except:
+            print("There was an error while getting sealed ids")
+            return jsonify({'status' : 'error', 'message': 'There was an error while getting sealed ids, Error code: Ax17'})
 
     shipping_info['paybackDate'] = datetime.date.today().strftime("%d/%m/%Y")
     orderInfo = {
